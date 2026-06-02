@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/web/sneat/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
   <script src="/web/sneat/assets/vendor/js/helpers.js"></script>
   <script src="/web/sneat/assets/js/config.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css" />
   <style>
     .rule-table th { white-space: nowrap; font-size: .75rem; }
     .rule-table td { font-size: .8125rem; vertical-align: middle; }
@@ -33,24 +34,60 @@
     .doc-dropdown-menu .doc-inline code { font-size: .6875rem; background: var(--bs-tertiary-bg); padding: .05rem .3rem; border-radius: 3px; }
     .doc-dropdown-menu .doc-divider { border: 0; border-top: 1px solid var(--bs-border-color); margin: .5rem 0; }
     #table-body h5 { margin-top: 1rem; }
-    .dash-kpi { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+    .dash-kpi { font-size: 1.75rem; font-weight: 800; line-height: 1.1; }
     .dash-kpi-label { font-size: .75rem; color: var(--bs-secondary-color); margin-bottom: .25rem; }
     .dash-kpi-unit { font-size: .75rem; font-weight: 400; color: var(--bs-secondary-color); }
-    .dash-card { height: 100%; }
+    .dash-kpi-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+    .dash-kpi-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; color: #fff; flex-shrink: 0; }
+    .dash-kpi-icon-primary { background: linear-gradient(135deg, #0d6efd, #6f42c1); }
+    .dash-kpi-icon-success { background: linear-gradient(135deg, #198754, #20c997); }
+    .dash-kpi-icon-info    { background: linear-gradient(135deg, #0dcaf0, #0d6efd); }
+    .dash-kpi-icon-warning { background: linear-gradient(135deg, #ffc107, #fd7e14); }
+    .dash-card { height: 100%; border: 1px solid var(--bs-border-color); transition: all .2s ease; overflow: hidden; }
+    .dash-card:hover { box-shadow: 0 .25rem .75rem rgba(0,0,0,.06); }
+    .dash-card .card-header { background: linear-gradient(to right, var(--bs-tertiary-bg), transparent); border-bottom: 1px solid var(--bs-border-color); padding: .625rem 1rem; font-weight: 600; font-size: .8125rem; color: var(--bs-heading-color); display: flex; align-items: center; gap: .5rem; }
+    .dash-card .card-header i { color: var(--bs-primary); font-size: 1rem; }
     .dash-card .card-body { padding: 1rem; }
     .dash-bar { display: flex; align-items: center; margin-bottom: .25rem; gap: .5rem; }
     .dash-bar-label { font-size: .6875rem; min-width: 90px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .dash-bar-track { flex: 1; height: 18px; background: var(--bs-tertiary-bg); border-radius: 4px; overflow: hidden; }
     .dash-bar-fill { height: 100%; border-radius: 4px; transition: width .5s ease; min-width: 2px; }
     .dash-bar-val { font-size: .6875rem; min-width: 60px; font-family: monospace; }
-    .dash-donut { width: 120px; height: 120px; border-radius: 50%; margin: 0 auto; position: relative; }
-    .dash-donut-center { position: absolute; inset: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 600; background: var(--bs-body-bg); }
-    .dash-donut-legend { font-size: .6875rem; }
-    .dash-donut-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: .375rem; }
-    .dash-top-table { font-size: .75rem; }
-    .dash-top-table td, .dash-top-table th { padding: .25rem .5rem; }
-    .dash-top-table .num { font-family: monospace; text-align: right; }
-    .dash-updated { font-size: .6875rem; color: var(--bs-secondary-color); text-align: center; padding: .5rem; }
+    .dash-donut { width: 130px; height: 130px; border-radius: 50%; margin: 0 auto; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+    .dash-donut-center { position: absolute; inset: 18px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700; background: var(--bs-body-bg); box-shadow: inset 0 0 4px rgba(0,0,0,.05); line-height: 1.1; }
+    .dash-donut-center small { font-size: .6rem; font-weight: 400; color: var(--bs-secondary-color); }
+    .dash-donut-legend { font-size: .75rem; display: flex; flex-wrap: wrap; justify-content: center; gap: .25rem .5rem; margin-top: .75rem; }
+    .dash-donut-legend .item { display: inline-flex; align-items: center; padding: .15rem .5rem; border-radius: 12px; background: var(--bs-tertiary-bg); font-size: .7rem; }
+    .dash-donut-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: .375rem; flex-shrink: 0; }
+    .dash-top-table { font-size: .75rem; margin-bottom: 0; }
+    .dash-top-table thead th { font-size: .6875rem; text-transform: uppercase; letter-spacing: .03em; color: var(--bs-secondary-color); font-weight: 600; border-bottom: 1px solid var(--bs-border-color); }
+    .dash-top-table td, .dash-top-table th { padding: .375rem .5rem; vertical-align: middle; }
+    .dash-top-table .num { font-family: 'Cascadia Code', monospace; text-align: right; font-variant-numeric: tabular-nums; }
+    .dash-top-table .rank { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; font-size: .6875rem; font-weight: 700; color: #fff; }
+    .dash-top-table .rank-1 { background: linear-gradient(135deg, #ffd700, #ff8c00); }
+    .dash-top-table .rank-2 { background: linear-gradient(135deg, #c0c0c0, #808080); }
+    .dash-top-table .rank-3 { background: linear-gradient(135deg, #cd7f32, #8b4513); }
+    .dash-top-table .rank-n { background: var(--bs-secondary); }
+    .dash-port-name { display: inline-block; font-size: .625rem; padding: .05rem .375rem; border-radius: 3px; background: var(--bs-tertiary-bg); color: var(--bs-secondary-color); margin-left: .375rem; }
+    .dash-updated { font-size: .75rem; color: var(--bs-secondary-color); text-align: center; padding: .75rem; display: flex; align-items: center; justify-content: center; gap: .375rem; }
+    .dash-updated .dot-pulse { width: 8px; height: 8px; border-radius: 50%; background: #198754; animation: dash-pulse 2s infinite; }
+    @keyframes dash-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+    .dash-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; color: var(--bs-secondary-color); font-size: .8125rem; }
+    .dash-empty i { font-size: 2.25rem; opacity: .35; margin-bottom: .5rem; }
+    .dash-trend-legend { display: inline-flex; align-items: center; gap: 1rem; font-size: .75rem; color: var(--bs-secondary-color); }
+    .dash-trend-legend .sw { width: 12px; height: 3px; border-radius: 2px; display: inline-block; margin-right: .375rem; vertical-align: middle; }
+    .dash-trend-wrap { position: relative; }
+    #dashTrendTooltip {
+      position: absolute; pointer-events: none; opacity: 0; transition: opacity .12s ease;
+      background: rgba(30, 30, 46, 0.95); color: #cdd6f4; border: 1px solid #313244;
+      border-radius: 6px; padding: .375rem .625rem; font-size: .6875rem; line-height: 1.5;
+      backdrop-filter: blur(4px); z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,.25);
+      font-family: 'Cascadia Code', monospace; white-space: nowrap;
+    }
+    #dashTrendTooltip .tt-time { color: #a6adc8; font-size: .625rem; margin-bottom: .125rem; }
+    #dashTrendTooltip .tt-row { display: flex; align-items: center; gap: .375rem; }
+    #dashTrendTooltip .tt-dot { width: 8px; height: 8px; border-radius: 50%; }
+    #dashTrendTooltip .tt-val { color: #cdd6f4; font-weight: 600; }
     .log-panel { border-top: 2px solid var(--bs-border-color); background: #1e1e2e; color: #cdd6f4; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: .75rem; }
     .log-toolbar { display: flex; align-items: center; gap: .5rem; padding: .375rem 1rem; background: #181825; border-bottom: 1px solid #313244; }
     .log-toolbar .log-title { font-weight: 600; font-size: .75rem; color: #a6adc8; cursor: pointer; user-select: none; }
@@ -120,6 +157,12 @@
               <div class="text-truncate" id="menuSysLabel">系統現況</div>
             </a>
           </li>
+          <li class="menu-item" id="menuShell">
+            <a href="#" class="menu-link" id="menuShellLink">
+              <i class="menu-icon tf-icons bx bx-terminal"></i>
+              <div class="text-truncate" id="menuShellLabel">Shell</div>
+            </a>
+          </li>
           <li class="menu-divider my-2"></li>
           <li class="menu-item" id="menuDoc">
             <a href="#" class="menu-link" id="menuDocLink">
@@ -151,8 +194,15 @@
                 </button>
                 <div class="dropdown-menu dropdown-menu-end doc-dropdown-menu" id="docDropdownMenu" aria-labelledby="docDropdown"></div>
               </li>
-              <li class="nav-item me-3">
-                <button id="language-toggle" class="btn btn-sm btn-outline-primary">English</button>
+              <li class="nav-item dropdown me-3">
+                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <i class="bx bx-globe me-1"></i><span id="languageDropdownLabel">中文</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" id="languageDropdownMenu" aria-labelledby="languageDropdown">
+                  <li><a class="dropdown-item" href="#" data-lang="zh">中文</a></li>
+                  <li><a class="dropdown-item" href="#" data-lang="en">English</a></li>
+                  <li><a class="dropdown-item" href="#" data-lang="ja">日本語</a></li>
+                </ul>
               </li>
             </ul>
           </div>
@@ -177,19 +227,40 @@
             <div id="dashboardView" style="display:none">
               <div class="row mb-3" id="dashKpiRow"></div>
               <div class="row mb-3">
-                <div class="col-12"><div class="card dash-card"><div class="card-body"><h6 class="card-subtitle mb-2 text-muted" style="font-size:.75rem" id="dashTrendLabel">Traffic Trend (5s interval)</h6><canvas id="dashTrendChart" width="800" height="200" style="width:100%;height:200px;display:block"></canvas></div></div></div>
+                <div class="col-12"><div class="card dash-card">
+                  <div class="card-header"><i class="bx bx-line-chart"></i><span id="dashTrendLabel">Traffic Trend (5s interval)</span><span class="ms-auto dash-trend-legend"><span><span class="sw" style="background:#a6e3a1"></span>In</span><span><span class="sw" style="background:#89b4fa"></span>Out</span></span></div>
+                  <div class="card-body"><div class="dash-trend-wrap"><canvas id="dashTrendChart" width="800" height="220" style="width:100%;height:220px;display:block"></canvas><div id="dashTrendTooltip"></div></div></div>
+                </div></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md-6 mb-3"><div class="card dash-card"><div class="card-body" id="dashPortInOut"><h6 class="card-subtitle mb-2 text-muted" style="font-size:.75rem">Port Traffic In/Out</h6></div></div></div>
-                <div class="col-md-6 mb-3"><div class="card dash-card"><div class="card-body" id="dashProtocolDist"><h6 class="card-subtitle mb-2 text-muted" style="font-size:.75rem">Protocol Distribution</h6></div></div></div>
+                <div class="col-md-6 mb-3"><div class="card dash-card">
+                  <div class="card-header"><i class="bx bx-transfer-alt"></i>Port Traffic In/Out</div>
+                  <div class="card-body" id="dashPortInOut"></div>
+                </div></div>
+                <div class="col-md-6 mb-3"><div class="card dash-card">
+                  <div class="card-header"><i class="bx bx-pie-chart-alt-2"></i>Protocol Distribution</div>
+                  <div class="card-body" id="dashProtocolDist"></div>
+                </div></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md-6 mb-3"><div class="card dash-card"><div class="card-body" id="dashTopSrc"><h6 class="card-subtitle mb-2 text-muted" style="font-size:.75rem">Top Source IPs</h6></div></div></div>
-                <div class="col-md-6 mb-3"><div class="card dash-card"><div class="card-body" id="dashTopDst"><h6 class="card-subtitle mb-2 text-muted" style="font-size:.75rem">Top Destination IPs</h6></div></div></div>
+                <div class="col-md-6 mb-3"><div class="card dash-card">
+                  <div class="card-header"><i class="bx bx-log-in-circle"></i>Top Source IPs</div>
+                  <div class="card-body" id="dashTopSrc"></div>
+                </div></div>
+                <div class="col-md-6 mb-3"><div class="card dash-card">
+                  <div class="card-header"><i class="bx bx-log-out-circle"></i>Top Destination IPs</div>
+                  <div class="card-body" id="dashTopDst"></div>
+                </div></div>
               </div>
               <div class="row mb-3">
-                <div class="col-md-6 mb-3"><div class="card dash-card"><div class="card-body" id="dashTargetDist"><h6 class="card-subtitle mb-2 text-muted" style="font-size:.75rem">Target Distribution</h6></div></div></div>
-                <div class="col-md-6 mb-3"><div class="card dash-card"><div class="card-body" id="dashTopPorts"><h6 class="card-subtitle mb-2 text-muted" style="font-size:.75rem">Top Ports</h6></div></div></div>
+                <div class="col-md-6 mb-3"><div class="card dash-card">
+                  <div class="card-header"><i class="bx bx-target-lock"></i>Target Distribution</div>
+                  <div class="card-body" id="dashTargetDist"></div>
+                </div></div>
+                <div class="col-md-6 mb-3"><div class="card dash-card">
+                  <div class="card-header"><i class="bx bx-rss"></i>Top Ports</div>
+                  <div class="card-body" id="dashTopPorts"></div>
+                </div></div>
               </div>
               <div class="dash-updated" id="dashUpdated"></div>
             </div>
@@ -229,6 +300,11 @@
               <button id="open-iptables-doc" class="btn btn-outline-primary btn-sm"><i class="bx bx-book me-1"></i>命令文件</button>
             </div>
             </div><!-- /tablesView -->
+
+            <!-- Shell View -->
+            <div id="shellView" style="display:none;height:calc(100vh - 220px);">
+              <div id="terminal" style="height:100%;width:100%;"></div>
+            </div>
 
             <!-- System View -->
             <div id="systemView" style="display:none">
@@ -328,6 +404,8 @@
   <script src="/web/sneat/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js"></script>
   <script src="/web/sneat/assets/vendor/js/menu.js"></script>
   <script src="/web/sneat/assets/js/main.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
 
   <script>
     // ─── layer polyfill (layui.layer → Bootstrap) ───
@@ -419,7 +497,8 @@
     const storedLang = localStorage.getItem(languageKey);
     const browserLang = (function () { var l = (navigator.language || "en").toLowerCase(); if (l.startsWith("zh")) return "zh"; if (l.startsWith("ja")) return "ja"; return "en"; })();
     const langOrder = ['zh', 'en', 'ja'];
-    const langLabels = { zh: 'English', en: '日本語', ja: '中文' };
+    const langNames = { zh: '中文', en: 'English', ja: '日本語' };
+    let currentLang = storedLang || browserLang || 'zh';
     if (!langOrder.includes(currentLang)) currentLang = 'zh';
 
     const i18n = {
@@ -444,12 +523,14 @@
         ruleNumberPrefix: "第", ruleNumberSuffix: "條規則", clearEmptyPrompt: "確認清除用戶自定義的所有空鏈？",
         dashLabel: "儀表板", tablesLabel: "防火牆管理", systemLabel: "系統現況", docLabel: "命令文件",
         dashTotalRules: "規則總數", dashTotalChains: "鏈總數", dashTotalPkts: "封包總計", dashTotalBytes: "位元組總計",
+        dashTrendLabel: "流量趨勢 (5 秒取樣)", dashIn: "入站", dashOut: "出站", dashPkt: "封包", dashPortIn: "入封包", dashPortOut: "出封包", dashPortTotal: "總計",
         dashNoData: "無資料", dashUpdated: "更新時間",
         sysHostname: "主機名稱", sysUptime: "運作時間", sysOS: "作業系統", sysIP: "IP 位址",
         sysMemory: "記憶體", sysSwap: "Swap", sysUsed: "已用", sysFree: "可用", sysTotal: "總計",
         sysDisk: "磁碟", sysMount: "掛載點", sysFilesystem: "檔案系統", sysUsePct: "使用率",
         sysProcess: "處理程序", sysPID: "PID", sysName: "名稱", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "狀態",
         sysRefresh: "重新整理", sysSortBy: "排序",
+        shellLabel: "Shell",
       },
       en: {
         title: "{cmd} Web Console", docAssistTitle: "Quick Help", chainLabel: "Chain", defaultPolicy: "Default policy",
@@ -473,12 +554,14 @@
         ruleNumberPrefix: "Rule #", ruleNumberSuffix: "", clearEmptyPrompt: "Clear all empty custom chains?",
         dashLabel: "Dashboard", tablesLabel: "Tables", systemLabel: "System", docLabel: "Command Reference",
         dashTotalRules: "Total Rules", dashTotalChains: "Chains", dashTotalPkts: "Packets", dashTotalBytes: "Bytes",
+        dashTrendLabel: "Traffic Trend (5s interval)", dashIn: "In", dashOut: "Out", dashPkt: "pkt", dashPortIn: "In (pkts)", dashPortOut: "Out (pkts)", dashPortTotal: "Total",
         dashNoData: "No data", dashUpdated: "Updated",
         sysHostname: "Hostname", sysUptime: "Uptime", sysOS: "OS", sysIP: "IP Address",
         sysMemory: "Memory", sysSwap: "Swap", sysUsed: "Used", sysFree: "Free", sysTotal: "Total",
         sysDisk: "Disk", sysMount: "Mount", sysFilesystem: "Filesystem", sysUsePct: "Use%",
         sysProcess: "Processes", sysPID: "PID", sysName: "Name", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "State",
         sysRefresh: "Refresh", sysSortBy: "Sort",
+        shellLabel: "Shell",
       },
       ja: {
         title: "{cmd} 管理コンソール", docAssistTitle: "クイックヘルプ", chainLabel: "チェイン", defaultPolicy: "デフォルトポリシー",
@@ -501,12 +584,14 @@
         ruleNumberPrefix: "ルール #", ruleNumberSuffix: "", clearEmptyPrompt: "空のカスタムチェインをすべて削除しますか？",
         dashLabel: "ダッシュボード", tablesLabel: "ファイアウォール管理", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
         dashTotalRules: "ルール総数", dashTotalChains: "チェイン数", dashTotalPkts: "パケット総数", dashTotalBytes: "バイト総数",
+        dashTrendLabel: "トラフィック傾向 (5秒間隔)", dashIn: "入力", dashOut: "出力", dashPkt: "pkt", dashPortIn: "入力 (pkt)", dashPortOut: "出力 (pkt)", dashPortTotal: "合計",
         dashNoData: "データなし", dashUpdated: "更新時間",
         sysHostname: "ホスト名", sysUptime: "稼働時間", sysOS: "OS", sysIP: "IP アドレス",
         sysMemory: "メモリ", sysSwap: "スワップ", sysUsed: "使用中", sysFree: "空き", sysTotal: "合計",
         sysDisk: "ディスク", sysMount: "マウント", sysFilesystem: "ファイルシステム", sysUsePct: "使用率",
         sysProcess: "プロセス", sysPID: "PID", sysName: "名前", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "状態",
         sysRefresh: "更新", sysSortBy: "並び替え",
+        shellLabel: "Shell",
       }
     };
 
@@ -525,6 +610,7 @@
       $('#menuDashLabel').text(lng.dashLabel || 'Dashboard');
       $('#menuTablesLabel').text(lng.tablesLabel || 'Tables');
       $('#menuSysLabel').text(lng.systemLabel || 'System');
+      $('#menuShellLabel').text(lng.shellLabel || 'Shell');
       $('#menuDocLabel').text(lng.docLabel || 'Command Reference');
       const labels = [
         ["#clear-all-rule", "clearAllRule"], ["#clear-current-table-rule", "clearCurrentRule"],
@@ -536,7 +622,14 @@
       labels.forEach(([sel, k]) => { const el = $(sel); if (el.length) el.html(el.html().replace(/(<\/i>)\s*.*/, '$1 ' + t(k))); });
       const tabs = ["tabRaw", "tabMangle", "tabNat", "tabFilter"];
       $(".iptables-table .nav-link").each((i, el) => { if (tabs[i]) $(el).text(t(tabs[i])); });
-      $("#language-toggle").text(langLabels[lang] || 'English');
+      $("#languageDropdownLabel").text(langNames[lang] || 'English');
+      $("#languageDropdownMenu .dropdown-item").each(function () {
+        $(this).toggleClass("active fw-semibold", $(this).data("lang") === lang);
+        $(this).find(".bx-check").remove();
+        if ($(this).data("lang") === lang) {
+          $(this).append('<i class="bx bx-check ms-auto text-primary"></i>');
+        }
+      });
     }
 
     // ─── Logger ───
@@ -669,83 +762,268 @@
       var canvas = document.getElementById('dashTrendChart');
       if (!canvas || dashTrend.length < 2) return;
       var ctx = canvas.getContext('2d');
-      var W = canvas.width, H = canvas.height;
-      var pad = { top: 20, right: 20, bottom: 25, left: 50 };
-      var plotW = W - pad.left - pad.right, plotH = H - pad.top - pad.bottom;
-      var maxVal = 1, i;
-      for (i = 0; i < dashTrend.length; i++) {
-        maxVal = Math.max(maxVal, dashTrend[i].inPkts || 0, dashTrend[i].outPkts || 0);
+      var dpr = window.devicePixelRatio || 1;
+      var cssW = canvas.clientWidth || 800;
+      var cssH = 220;
+      if (canvas.width !== cssW * dpr || canvas.height !== cssH * dpr) {
+        canvas.width = cssW * dpr;
+        canvas.height = cssH * dpr;
+        canvas.style.height = cssH + 'px';
       }
-      if (maxVal < 1) maxVal = 1;
-      var step = plotW / (dashTrend.length - 1);
-      var frames = animate ? 30 : 1, frame = 0;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var W = cssW, H = cssH;
+      var pad = { top: 18, right: 18, bottom: 30, left: 52 };
+      var plotW = W - pad.left - pad.right, plotH = H - pad.top - pad.bottom;
+
+      // Nice max value (round up to a friendly number)
+      var rawMax = 0, i;
+      for (i = 0; i < dashTrend.length; i++) {
+        rawMax = Math.max(rawMax, dashTrend[i].inPkts || 0, dashTrend[i].outPkts || 0);
+      }
+      if (rawMax < 1) rawMax = 1;
+      var maxVal;
+      if (rawMax <= 10) maxVal = 10;
+      else if (rawMax <= 50) maxVal = 50;
+      else if (rawMax <= 100) maxVal = 100;
+      else if (rawMax <= 500) maxVal = 500;
+      else if (rawMax <= 1000) maxVal = 1000;
+      else if (rawMax <= 5000) maxVal = 5000;
+      else if (rawMax <= 10000) maxVal = 10000;
+      else {
+        var exp = Math.pow(10, Math.floor(Math.log10(rawMax)));
+        maxVal = Math.ceil(rawMax / exp) * exp;
+      }
+
+      var inData = [], outData = [];
+      for (i = 0; i < dashTrend.length; i++) {
+        inData.push(dashTrend[i].inPkts || 0);
+        outData.push(dashTrend[i].outPkts || 0);
+      }
+      function xAt(i) { return pad.left + (i / Math.max(1, dashTrend.length - 1)) * plotW; }
+      function yAt(v) { return pad.top + plotH - (v / maxVal) * plotH; }
+
+      // Catmull-Rom smoothing → cubic Bezier
+      function smoothPath(data) {
+        if (data.length < 2) return null;
+        var pts = [];
+        for (var j = 0; j < data.length; j++) {
+          if (data[j] !== undefined && data[j] !== null) {
+            pts.push({ x: xAt(j), y: yAt(data[j]) });
+          }
+        }
+        if (pts.length < 2) return null;
+        var path = new Path2D();
+        path.moveTo(pts[0].x, pts[0].y);
+        for (var k = 0; k < pts.length - 1; k++) {
+          var p0 = pts[k - 1] || pts[k];
+          var p1 = pts[k];
+          var p2 = pts[k + 1];
+          var p3 = pts[k + 2] || p2;
+          var t = 0.18;
+          var c1x = p1.x + (p2.x - p0.x) * t;
+          var c1y = p1.y + (p2.y - p0.y) * t;
+          var c2x = p2.x - (p3.x - p1.x) * t;
+          var c2y = p2.y - (p3.y - p1.y) * t;
+          path.bezierCurveTo(c1x, c1y, c2x, c2y, p2.x, p2.y);
+        }
+        return { path: path, last: pts[pts.length - 1] };
+      }
+
+      var frames = animate ? 24 : 1, frame = 0;
       function doDraw(f) {
         var progress = f / frames;
-        var drawLen = Math.max(2, Math.floor(progress * dashTrend.length));
         ctx.clearRect(0, 0, W, H);
-        // Grid lines
-        ctx.strokeStyle = '#313244';
-        ctx.lineWidth = 0.5;
-        for (i = 0; i < 4; i++) {
-          var gy = pad.top + (plotH / 4) * i;
-          ctx.beginPath(); ctx.moveTo(pad.left, gy); ctx.lineTo(W - pad.right, gy); ctx.stroke();
-          ctx.fillStyle = '#6c7086'; ctx.font = '10px monospace'; ctx.textAlign = 'right';
-          ctx.fillText(fmtNum(maxVal * (1 - i / 4)), pad.left - 5, gy + 4);
-        }
-        // Axes labels
-        ctx.fillStyle = '#6c7086'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
-        var labelStep = Math.max(1, Math.floor(dashTrend.length / 6));
-        var timeLabels = [];
-        for (i = 0; i < dashTrend.length; i += labelStep) {
-          var t = new Date(dashTrend[i].ts);
-          timeLabels.push({ idx: i, label: t.getHours() + ':' + String(t.getMinutes()).padStart(2,'0') + ':' + String(t.getSeconds()).padStart(2,'0') });
-        }
-        timeLabels.forEach(function (tl) {
-          var lx = pad.left + (tl.idx / (dashTrend.length - 1)) * plotW;
-          ctx.fillText(tl.label, lx, H - 5);
-        });
-        function drawLine(data, color, offset) {
-          ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
-          var startIdx = 0;
-          for (i = 0; i < dashTrend.length; i++) {
-            var val = data[i];
-            if (val === undefined || val === null) continue;
-            if (!startIdx) { startIdx = 1; ctx.moveTo(pad.left, pad.top + plotH - (val / maxVal) * plotH); continue; }
-            var lx = pad.left + (i / (dashTrend.length - 1)) * plotW;
-            var ly = pad.top + plotH - (val / maxVal) * plotH;
-            ctx.lineTo(lx, ly);
-          }
+
+        // Background subtle gradient
+        var bg = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+        bg.addColorStop(0, 'rgba(166, 227, 161, 0.02)');
+        bg.addColorStop(1, 'rgba(137, 180, 250, 0.02)');
+        ctx.fillStyle = bg;
+        ctx.fillRect(pad.left, pad.top, plotW, plotH);
+
+        // Horizontal grid lines + Y-axis labels
+        ctx.strokeStyle = 'rgba(108, 112, 134, 0.18)';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#6c7086';
+        ctx.font = '10px "Cascadia Code", monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        var yLabels = 4;
+        for (i = 0; i <= yLabels; i++) {
+          var yVal = (maxVal * i) / yLabels;
+          var y = pad.top + plotH - (i / yLabels) * plotH;
+          ctx.beginPath();
+          ctx.moveTo(pad.left, y);
+          ctx.lineTo(pad.right !== undefined ? W - pad.right : W - 18, y);
           ctx.stroke();
-          // Fill under
-          ctx.lineTo(W - pad.right, pad.top + plotH); ctx.lineTo(pad.left, pad.top + plotH); ctx.closePath();
-          ctx.fillStyle = color.replace(')', ',0.15)').replace('rgb', 'rgba');
-          if (ctx.fillStyle === color) ctx.fillStyle = color.slice(0, 7) + '26';
+          ctx.fillText(fmtNum(yVal) + ' pps', pad.left - 6, y);
+        }
+
+        // Vertical "now" line at the rightmost sample
+        var nowX = xAt(dashTrend.length - 1);
+        ctx.strokeStyle = 'rgba(166, 227, 161, 0.5)';
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(nowX, pad.top);
+        ctx.lineTo(nowX, pad.top + plotH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // X-axis: smart time labels (max ~6)
+        ctx.fillStyle = '#6c7086';
+        ctx.font = '10px "Cascadia Code", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        var timeCount = Math.min(6, dashTrend.length);
+        for (i = 0; i < timeCount; i++) {
+          var idx = Math.floor((dashTrend.length - 1) * (i / (timeCount - 1 || 1)));
+          var d = new Date(dashTrend[idx].ts);
+          var lbl = String(d.getHours()).padStart(2,'0') + ':' +
+                    String(d.getMinutes()).padStart(2,'0') + ':' +
+                    String(d.getSeconds()).padStart(2,'0');
+          ctx.fillText(lbl, xAt(idx), pad.top + plotH + 6);
+        }
+
+        // Build smooth paths
+        var inS = smoothPath(inData);
+        var outS = smoothPath(outData);
+
+        // Animate the path drawing by clipping to a horizontal reveal
+        if (progress < 1) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(pad.left, pad.top, plotW * progress, plotH);
+          ctx.clip();
+        }
+
+        function drawSeries(s, baseColor, fillAlpha) {
+          if (!s) return;
+          // Filled area
+          var fill = new Path2D(s.path);
+          fill.lineTo(s.last.x, pad.top + plotH);
+          fill.lineTo(xAt(0), pad.top + plotH);
+          fill.closePath();
+          var grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + plotH);
+          grad.addColorStop(0, baseColor + 'cc');
+          grad.addColorStop(1, baseColor + '00');
+          ctx.fillStyle = grad;
+          ctx.fill(fill);
+
+          // Glow under-line (broad)
+          ctx.save();
+          ctx.shadowColor = baseColor;
+          ctx.shadowBlur = 8;
+          ctx.strokeStyle = baseColor;
+          ctx.lineWidth = 1.5;
+          ctx.lineJoin = 'round';
+          ctx.lineCap = 'round';
+          ctx.stroke(s.path);
+          ctx.restore();
+          // Crisp top line
+          ctx.strokeStyle = baseColor;
+          ctx.lineWidth = 2;
+          ctx.lineJoin = 'round';
+          ctx.lineCap = 'round';
+          ctx.stroke(s.path);
+
+          // Latest point dot
+          ctx.save();
+          ctx.shadowColor = baseColor;
+          ctx.shadowBlur = 10;
+          ctx.fillStyle = baseColor;
+          ctx.beginPath();
+          ctx.arc(s.last.x, s.last.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          // Halo
+          ctx.fillStyle = baseColor + '30';
+          ctx.beginPath();
+          ctx.arc(s.last.x, s.last.y, 8, 0, Math.PI * 2);
           ctx.fill();
         }
-        var inData = [], outData = [];
-        for (i = 0; i < dashTrend.length; i++) { inData.push(dashTrend[i].inPkts || 0); outData.push(dashTrend[i].outPkts || 0); }
-        drawLine(outData, '#89b4fa', 0);
-        drawLine(inData, '#a6e3a1', 1);
-        // Legend
-        ctx.font = '10px monospace'; ctx.textAlign = 'left';
-        ctx.fillStyle = '#a6e3a1'; ctx.fillRect(pad.left, pad.top - 14, 10, 10); ctx.fillText('In', pad.left + 14, pad.top - 5);
-        ctx.fillStyle = '#89b4fa'; ctx.fillRect(pad.left + 50, pad.top - 14, 10, 10); ctx.fillText('Out', pad.left + 64, pad.top - 5);
+
+        drawSeries(outS, '#89b4fa', 0.3);
+        drawSeries(inS,  '#a6e3a1', 0.3);
+
+        if (progress < 1) ctx.restore();
+
+        // Stats overlay (top-right): current in/out rate
+        var curIn = inData[inData.length - 1] || 0;
+        var curOut = outData[outData.length - 1] || 0;
+        var ox = W - pad.right - 4;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.font = '600 11px "Cascadia Code", monospace';
+        ctx.fillStyle = '#a6e3a1';
+        ctx.fillText('▼ ' + fmtNum(curIn) + ' pps', ox, pad.top + 2);
+        ctx.fillStyle = '#89b4fa';
+        ctx.fillText('▲ ' + fmtNum(curOut) + ' pps', ox, pad.top + 18);
+
         if (frame < frames) { frame++; requestAnimationFrame(function () { doDraw(frame); }); }
       }
       doDraw(0);
     }
 
+    // ─── Trend chart tooltip ───
+    (function setupTrendTooltip() {
+      var canvas = document.getElementById('dashTrendChart');
+      var tooltip = document.getElementById('dashTrendTooltip');
+      if (!canvas || !tooltip) return;
+      var pad = { top: 18, right: 18, bottom: 30, left: 52 };
+      canvas.addEventListener('mousemove', function (e) {
+        if (dashTrend.length < 2) { tooltip.style.opacity = 0; return; }
+        var rect = canvas.getBoundingClientRect();
+        var mx = e.clientX - rect.left;
+        var my = e.clientY - rect.top;
+        var cssW = rect.width, cssH = rect.height;
+        var plotW = cssW - pad.left - pad.right;
+        if (mx < pad.left || mx > cssW - pad.right || my < pad.top || my > cssH - pad.bottom) {
+          tooltip.style.opacity = 0;
+          return;
+        }
+        var ratio = (mx - pad.left) / plotW;
+        var idx = Math.round(ratio * (dashTrend.length - 1));
+        idx = Math.max(0, Math.min(dashTrend.length - 1, idx));
+        var d = dashTrend[idx];
+        var time = new Date(d.ts);
+        var ts = String(time.getHours()).padStart(2,'0') + ':' +
+                 String(time.getMinutes()).padStart(2,'0') + ':' +
+                 String(time.getSeconds()).padStart(2,'0');
+        var inVal = d.inPkts || 0, outVal = d.outPkts || 0;
+        tooltip.innerHTML =
+          '<div class="tt-time">' + ts + '</div>' +
+          '<div class="tt-row"><span class="tt-dot" style="background:#a6e3a1"></span><span>入站</span><span class="tt-val">' + fmtNum(inVal) + ' pps</span></div>' +
+          '<div class="tt-row"><span class="tt-dot" style="background:#89b4fa"></span><span>出站</span><span class="tt-val">' + fmtNum(outVal) + ' pps</span></div>';
+        // Position tooltip relative to canvas parent
+        var tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+        var left = mx + 14;
+        if (left + tw > cssW - 4) left = mx - tw - 14;
+        var top = my - th - 8;
+        if (top < 0) top = my + 14;
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+        tooltip.style.opacity = 1;
+      });
+      canvas.addEventListener('mouseleave', function () { tooltip.style.opacity = 0; });
+    })();
+
     function renderDash(res) {
       var data = res.data || { system: [], custom: [] };
       var stats = aggregateRules(data);
       var lang = i18n[currentLang];
-      // KPI row
+      var noData = '<div class="dash-empty"><i class="bx bx-data"></i>' + (lang.dashNoData || 'No data') + '</div>';
+      var colors = ['#0d6efd','#198754','#dc3545','#ffc107','#6f42c1','#fd7e14','#20c997','#d63384'];
+      function rankClass(i) { return i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-n'; }
+      function rankHtml(i) { return '<span class="rank ' + rankClass(i) + '">' + (i + 1) + '</span>'; }
+      // KPI row (icon + value layout)
       $('#dashKpiRow').html(
-        '<div class="col-md-3 mb-2"><div class="card dash-card"><div class="card-body text-center"><div class="dash-kpi-label">' + (lang.dashTotalRules || 'Total Rules') + '</div><div class="dash-kpi">' + stats.totalRules + '</div></div></div></div>' +
-        '<div class="col-md-3 mb-2"><div class="card dash-card"><div class="card-body text-center"><div class="dash-kpi-label">' + (lang.dashTotalChains || 'Chains') + '</div><div class="dash-kpi">' + stats.totalChains + '</div></div></div></div>' +
-        '<div class="col-md-3 mb-2"><div class="card dash-card"><div class="card-body text-center"><div class="dash-kpi-label">' + (lang.dashTotalPkts || 'Packets') + '</div><div class="dash-kpi">' + fmtNum(stats.totalPkts) + ' <span class="dash-kpi-unit">pkt</span></div></div></div></div>' +
-        '<div class="col-md-3 mb-2"><div class="card dash-card"><div class="card-body text-center"><div class="dash-kpi-label">' + (lang.dashTotalBytes || 'Bytes') + '</div><div class="dash-kpi">' + fmtNum(stats.totalBytes) + ' <span class="dash-kpi-unit">B</span></div></div></div></div>'
+        '<div class="col-md-3 mb-2"><div class="card dash-card"><div class="card-body"><div class="dash-kpi-row"><div><div class="dash-kpi-label">' + (lang.dashTotalRules || 'Rules') + '</div><div class="dash-kpi">' + stats.totalRules + '</div></div><div class="dash-kpi-icon dash-kpi-icon-primary"><i class="bx bx-shield-quarter"></i></div></div></div></div></div>' +
+        '<div class="col-md-3 mb-2"><div class="card dash-card"><div class="card-body"><div class="dash-kpi-row"><div><div class="dash-kpi-label">' + (lang.dashTotalChains || 'Chains') + '</div><div class="dash-kpi">' + stats.totalChains + '</div></div><div class="dash-kpi-icon dash-kpi-icon-success"><i class="bx bx-link"></i></div></div></div></div></div>' +
+        '<div class="col-md-3 mb-2"><div class="card dash-card"><div class="card-body"><div class="dash-kpi-row"><div><div class="dash-kpi-label">' + (lang.dashTotalPkts || 'Packets') + '</div><div class="dash-kpi">' + fmtNum(stats.totalPkts) + ' <span class="dash-kpi-unit">pkt</span></div></div><div class="dash-kpi-icon dash-kpi-icon-info"><i class="bx bx-package"></i></div></div></div></div></div>' +
+        '<div class="col-md-3 mb-2"><div class="card dash-card"><div class="card-body"><div class="dash-kpi-row"><div><div class="dash-kpi-label">' + (lang.dashTotalBytes || 'Bytes') + '</div><div class="dash-kpi">' + fmtNum(stats.totalBytes) + ' <span class="dash-kpi-unit">B</span></div></div><div class="dash-kpi-icon dash-kpi-icon-warning"><i class="bx bx-data"></i></div></div></div></div></div>'
       );
+      // Trend label
+      $('#dashTrendLabel').text(lang.dashTrendLabel || 'Traffic Trend (5s interval)');
       // Trend data (compute rate from cumulative counters)
       if (prevCumulative) {
         var dt = (Date.now() - prevCumulative.ts) / 1000;
@@ -756,7 +1034,6 @@
           if (dashTrend.length > TREND_MAX) dashTrend.shift();
         }
       } else {
-        // Seed with zero on first sample
         dashTrend.push({ ts: Date.now(), inPkts: 0, outPkts: 0 });
       }
       prevCumulative = { ts: Date.now(), inPkts: stats.inPkts, outPkts: stats.outPkts };
@@ -770,58 +1047,52 @@
         portList.push({ port: p, inPkts: stats.portsIn[p] || 0, outPkts: stats.portsOut[p] || 0, total: (stats.portsIn[p] || 0) + (stats.portsOut[p] || 0) });
       });
       portList.sort(function (a, b) { return b.total - a.total; });
-      var pioHtml = '<table class="table table-sm dash-top-table mb-0"><thead><tr><th>Port</th><th class="num">In (pkts)</th><th class="num">Out (pkts)</th><th class="num">Total</th></tr></thead><tbody>';
+      var pioHtml = '<table class="table table-sm dash-top-table mb-0"><thead><tr><th>Port</th><th class="num">' + (lang.dashPortIn || 'In (pkts)') + '</th><th class="num">' + (lang.dashPortOut || 'Out (pkts)') + '</th><th class="num">' + (lang.dashPortTotal || 'Total') + '</th></tr></thead><tbody>';
       portList.slice(0, 10).forEach(function (p) {
-        var name = KNOWN_PORTS[p.port] ? '<span class="text-muted">(' + KNOWN_PORTS[p.port] + ')</span>' : '';
-        pioHtml += '<tr><td>' + p.port + ' ' + name + '</td><td class="num" style="color:#a6e3a1">' + fmtNum(p.inPkts) + '</td><td class="num" style="color:#89b4fa">' + fmtNum(p.outPkts) + '</td><td class="num">' + fmtNum(p.total) + '</td></tr>';
+        var name = KNOWN_PORTS[p.port] ? '<span class="dash-port-name">' + KNOWN_PORTS[p.port] + '</span>' : '';
+        pioHtml += '<tr><td><strong>' + p.port + '</strong>' + name + '</td><td class="num" style="color:#a6e3a1;font-weight:600">' + fmtNum(p.inPkts) + '</td><td class="num" style="color:#89b4fa;font-weight:600">' + fmtNum(p.outPkts) + '</td><td class="num"><strong>' + fmtNum(p.total) + '</strong></td></tr>';
       });
       pioHtml += '</tbody></table>';
-      if (!portList.length) pioHtml = '<div class="text-muted" style="font-size:.75rem">' + (lang.dashNoData || 'No data') + '</div>';
-      $('#dashPortInOut .card-body').append('<div>' + pioHtml + '</div>');
+      $('#dashPortInOut').append('<div>' + (portList.length ? pioHtml : noData) + '</div>');
       // Protocol distribution (donut)
       var protItems = topN(stats.protocols, 6);
       var protTotal = protItems.reduce(function (s, i) { return s + i.val; }, 0);
-      var colors = ['#0d6efd','#198754','#dc3545','#ffc107','#6f42c1','#fd7e14','#20c997','#d63384'];
       var protGrad = donutGradient(protItems, protTotal, colors);
-      var protHtml = '<div class="dash-donut" style="background:' + protGrad + '"><div class="dash-donut-center">' + protTotal + '</div></div><div class="mt-2 dash-donut-legend text-center">';
-      protItems.forEach(function (p, i) { protHtml += '<span class="me-2"><span class="dot" style="background:' + colors[i % colors.length] + '"></span>' + p.key + ' (' + p.val + ')</span>'; });
+      var protHtml = '<div class="dash-donut" style="background:' + protGrad + '"><div class="dash-donut-center">' + fmtNum(protTotal) + '<small>' + (lang.dashPkt || 'pkt') + '</small></div></div><div class="dash-donut-legend">';
+      protItems.forEach(function (p, i) { protHtml += '<span class="item"><span class="dot" style="background:' + colors[i % colors.length] + '"></span>' + p.key + ' · ' + fmtNum(p.val) + '</span>'; });
       protHtml += '</div>';
-      if (!protItems.length) protHtml = '<div class="text-muted" style="font-size:.75rem">' + (lang.dashNoData || 'No data') + '</div>';
-      $('#dashProtocolDist .card-body').append('<div>' + protHtml + '</div>');
+      $('#dashProtocolDist').append('<div>' + (protItems.length ? protHtml : noData) + '</div>');
       // Top source IPs
       var srcItems = topN(stats.srcIPs, 8);
-      var srcHtml = '<table class="table table-sm dash-top-table mb-0"><thead><tr><th>#</th><th>Source IP</th><th class="num">Packets</th></tr></thead><tbody>';
-      srcItems.forEach(function (s, i) { srcHtml += '<tr><td>' + (i + 1) + '</td><td>' + s.key + '</td><td class="num">' + fmtNum(s.val) + '</td></tr>'; });
+      var srcHtml = '<table class="table table-sm dash-top-table mb-0"><thead><tr><th style="width:40px">#</th><th>Source IP</th><th class="num">Packets</th></tr></thead><tbody>';
+      srcItems.forEach(function (s, i) { srcHtml += '<tr><td>' + rankHtml(i) + '</td><td><code style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.05rem .375rem;border-radius:3px">' + s.key + '</code></td><td class="num"><strong>' + fmtNum(s.val) + '</strong></td></tr>'; });
       srcHtml += '</tbody></table>';
-      if (!srcItems.length) srcHtml = '<div class="text-muted" style="font-size:.75rem">' + (lang.dashNoData || 'No data') + '</div>';
-      $('#dashTopSrc .card-body').append('<div>' + srcHtml + '</div>');
+      $('#dashTopSrc').append('<div>' + (srcItems.length ? srcHtml : noData) + '</div>');
       // Top destination IPs
       var dstItems = topN(stats.dstIPs, 8);
-      var dstHtml = '<table class="table table-sm dash-top-table mb-0"><thead><tr><th>#</th><th>Destination IP</th><th class="num">Packets</th></tr></thead><tbody>';
-      dstItems.forEach(function (s, i) { dstHtml += '<tr><td>' + (i + 1) + '</td><td>' + s.key + '</td><td class="num">' + fmtNum(s.val) + '</td></tr>'; });
+      var dstHtml = '<table class="table table-sm dash-top-table mb-0"><thead><tr><th style="width:40px">#</th><th>Destination IP</th><th class="num">Packets</th></tr></thead><tbody>';
+      dstItems.forEach(function (s, i) { dstHtml += '<tr><td>' + rankHtml(i) + '</td><td><code style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.05rem .375rem;border-radius:3px">' + s.key + '</code></td><td class="num"><strong>' + fmtNum(s.val) + '</strong></td></tr>'; });
       dstHtml += '</tbody></table>';
-      if (!dstItems.length) dstHtml = '<div class="text-muted" style="font-size:.75rem">' + (lang.dashNoData || 'No data') + '</div>';
-      $('#dashTopDst .card-body').append('<div>' + dstHtml + '</div>');
+      $('#dashTopDst').append('<div>' + (dstItems.length ? dstHtml : noData) + '</div>');
       // Target distribution (donut)
       var tgtItems = topN(stats.targets, 6);
       var tgtTotal = tgtItems.reduce(function (s, i) { return s + i.val; }, 0);
       var tgtGrad = donutGradient(tgtItems, tgtTotal, colors);
-      var tgtHtml = '<div class="dash-donut" style="background:' + tgtGrad + '"><div class="dash-donut-center">' + fmtNum(tgtTotal) + '</div></div><div class="mt-2 dash-donut-legend text-center">';
-      tgtItems.forEach(function (t, i) { tgtHtml += '<span class="me-2"><span class="dot" style="background:' + colors[i % colors.length] + '"></span>' + t.key + ' (' + fmtNum(t.val) + ')</span>'; });
+      var tgtHtml = '<div class="dash-donut" style="background:' + tgtGrad + '"><div class="dash-donut-center">' + fmtNum(tgtTotal) + '<small>' + (lang.dashPkt || 'pkt') + '</small></div></div><div class="dash-donut-legend">';
+      tgtItems.forEach(function (t, i) { tgtHtml += '<span class="item"><span class="dot" style="background:' + colors[i % colors.length] + '"></span>' + t.key + ' · ' + fmtNum(t.val) + '</span>'; });
       tgtHtml += '</div>';
-      if (!tgtItems.length) tgtHtml = '<div class="text-muted" style="font-size:.75rem">' + (lang.dashNoData || 'No data') + '</div>';
-      $('#dashTargetDist .card-body').append('<div>' + tgtHtml + '</div>');
+      $('#dashTargetDist').append('<div>' + (tgtItems.length ? tgtHtml : noData) + '</div>');
       // Top ports (legacy)
       var portItems = topN(stats.ports, 8);
-      var portHtml = '<table class="table table-sm dash-top-table mb-0"><thead><tr><th>#</th><th>Port</th><th class="num">Packets</th></tr></thead><tbody>';
+      var portHtml = '<table class="table table-sm dash-top-table mb-0"><thead><tr><th style="width:40px">#</th><th>Port</th><th class="num">Packets</th></tr></thead><tbody>';
       portItems.forEach(function (p, i) {
-        portHtml += '<tr><td>' + (i + 1) + '</td><td>' + p.key + ' ' + (KNOWN_PORTS[p.key] ? '<span class="text-muted">(' + KNOWN_PORTS[p.key] + ')</span>' : '') + '</td><td class="num">' + fmtNum(p.val) + '</td></tr>';
+        var name = KNOWN_PORTS[p.key] ? '<span class="dash-port-name">' + KNOWN_PORTS[p.key] + '</span>' : '';
+        portHtml += '<tr><td>' + rankHtml(i) + '</td><td><strong>' + p.key + '</strong>' + name + '</td><td class="num"><strong>' + fmtNum(p.val) + '</strong></td></tr>';
       });
       portHtml += '</tbody></table>';
-      if (!portItems.length) portHtml = '<div class="text-muted" style="font-size:.75rem">' + (lang.dashNoData || 'No data') + '</div>';
-      $('#dashTopPorts .card-body').append('<div>' + portHtml + '</div>');
+      $('#dashTopPorts').append('<div>' + (portItems.length ? portHtml : noData) + '</div>');
       // Timestamp
-      $('#dashUpdated').text((lang.dashUpdated || 'Updated') + ': ' + new Date().toLocaleTimeString());
+      $('#dashUpdated').html('<span class="dot-pulse"></span>' + (lang.dashUpdated || 'Updated') + ': ' + new Date().toLocaleTimeString());
     }
 
     let dashLoading = false;
@@ -833,7 +1104,7 @@
       $.post('/listRule', { table: tn, chain: '', protocol: protocol }, function (res) {
         dashLoading = false;
         if (res.code === 0) {
-          $('#dashKpiRow,#dashPortInOut .card-body > div,#dashProtocolDist .card-body > div,#dashTopSrc .card-body > div,#dashTopDst .card-body > div,#dashTargetDist .card-body > div,#dashTopPorts .card-body > div').empty();
+          $('#dashKpiRow,#dashPortInOut,#dashProtocolDist,#dashTopSrc,#dashTopDst,#dashTargetDist,#dashTopPorts').empty();
           renderDash(res);
           logger.debug('Dashboard 更新', tn);
         }
@@ -956,6 +1227,47 @@
       logger.info('System info refreshed');
     });
 
+    // ─── Shell Terminal ───
+    let term = null, wsShell = null, termFit = null;
+
+    function connectShell() {
+      if (wsShell) { try { wsShell.close(); } catch(e) {} wsShell = null; }
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      wsShell = new WebSocket(proto + '//' + window.location.host + '/shell');
+      wsShell.binaryType = 'arraybuffer';
+      wsShell.onopen = function () { term.clear(); term.write('\x1b[32mShell connected\x1b[0m\r\n'); term.focus(); sendResize(); logger.info('Shell 已連線'); };
+      wsShell.onmessage = function (evt) { term.write(new Uint8Array(evt.data)); };
+      wsShell.onclose = function () { term.write('\r\n\x1b[31mShell disconnected\x1b[0m\r\n'); wsShell = null; logger.warn('Shell 已斷線'); };
+      wsShell.onerror = function () { term.write('\r\n\x1b[31mWebSocket error\x1b[0m\r\n'); logger.error('Shell WebSocket 錯誤'); };
+    }
+
+    function initTerminal() {
+      if (term) return;
+      if (typeof Terminal === 'undefined') { setTimeout(initTerminal, 500); return; }
+      term = new Terminal({ cursorBlink: true, cursorStyle: 'block', fontSize: 14, fontFamily: 'Menlo, Monaco, "Courier New", monospace', theme: { background: '#1e1e2e', foreground: '#cdd6f4', cursor: '#f5e0dc' } });
+      termFit = new FitAddon.FitAddon();
+      term.loadAddon(termFit);
+      term.open(document.getElementById('terminal'));
+      termFit.fit();
+      term.onData(function (data) { if (wsShell && wsShell.readyState === WebSocket.OPEN) wsShell.send(data); });
+      connectShell();
+    }
+
+    function sendResize() {
+      if (!wsShell || wsShell.readyState !== WebSocket.OPEN || !termFit) return;
+      const dims = termFit.proposeDimensions();
+      if (dims) wsShell.send(JSON.stringify({ type: 'resize', cols: dims.cols, rows: dims.rows }));
+    }
+
+    function destroyTerminal() {
+      if (wsShell) { try { wsShell.close(); } catch(e) {} wsShell = null; }
+      if (term) { term.dispose(); term = null; termFit = null; }
+    }
+
+    $(window).on('resize', function () {
+      if (termFit && $('#shellView').is(':visible')) { termFit.fit(); sendResize(); }
+    });
+
     function currentCommandBinary() {
       if (currentPlatform === "macos") return "pfctl";
       if (currentPlatform === "windows") return "powershell";
@@ -1015,6 +1327,8 @@
       // ─── Dashboard view toggle & timer ───
       function switchView(mode) {
         if (mode === 'dashboard') {
+          destroyTerminal();
+          $('#shellView').hide();
           $('#dashboardView').show();
           $('#tablesView').hide();
           $('#systemView').hide();
@@ -1026,7 +1340,23 @@
           if (dashTimer) clearInterval(dashTimer);
           dashTimer = setInterval(loadDash, 5000);
           logger.info('切換至 Dashboard');
+        } else if (mode === 'shell') {
+          $('#dashboardView').hide();
+          $('#tablesView').hide();
+          $('#systemView').hide();
+          $('#shellView').show();
+          $('.action-buttons').hide();
+          $('#menuShell').addClass('active');
+          $('#menuDash').removeClass('active');
+          $('#menuTables').removeClass('active');
+          $('#menuSys').removeClass('active');
+          if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
+          initTerminal();
+          setTimeout(function () { if (termFit) { termFit.fit(); sendResize(); } }, 100);
+          logger.info('切換至 Shell');
         } else if (mode === 'system') {
+          destroyTerminal();
+          $('#shellView').hide();
           $('#dashboardView').hide();
           $('#tablesView').hide();
           $('#systemView').show();
@@ -1038,6 +1368,8 @@
           loadSystemInfo();
           logger.info('切換至 System');
         } else {
+          destroyTerminal();
+          $('#shellView').hide();
           $('#dashboardView').hide();
           $('#tablesView').show();
           $('#systemView').hide();
@@ -1052,6 +1384,7 @@
       $('#menuDashLink').on('click', function (e) { e.preventDefault(); switchView('dashboard'); });
       $('#menuTablesLink').on('click', function (e) { e.preventDefault(); switchView('tables'); });
       $('#menuSysLink').on('click', function (e) { e.preventDefault(); switchView('system'); });
+      $('#menuShellLink').on('click', function (e) { e.preventDefault(); switchView('shell'); });
       $('#menuDocLink').on('click', function (e) {
         e.preventDefault();
         var docMap = { linux: "iptables-command-reference", macos: "pfctl-command-reference", windows: "windows-firewall-command-reference" };
@@ -1338,11 +1671,13 @@
           });
         });
       });
-      $("#language-toggle").click(function () {
-        var idx = langOrder.indexOf(currentLang);
-        var next = langOrder[(idx + 1) % langOrder.length];
-        logger.debug('切換語言', next);
-        setLanguage(next);
+      $("#languageDropdownMenu").on("click", ".dropdown-item", function (e) {
+        e.preventDefault();
+        var lang = $(this).data("lang");
+        if (lang && lang !== currentLang) {
+          logger.info('切換語言', lang);
+          setLanguage(lang);
+        }
       });
     });
 

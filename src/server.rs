@@ -1,4 +1,5 @@
 use crate::firewall::FirewallCmd;
+use crate::shell;
 use crate::system;
 use crate::utils;
 use axum::body::Body;
@@ -127,17 +128,13 @@ async fn auth_middleware(
 
 // ---- API Handlers ----
 
-async fn handle_version(
-    State(state): State<Arc<AppState>>,
-    Form(form): Form<ProtocolForm>,
-) -> Json<Value> {
-    let ipc = match pick_firewall(&state, form.protocol.as_deref()) {
-        Ok(ipc) => ipc,
-        Err(e) => return utils::output(Some(&e), None),
-    };
-    match ipc.version().await {
-        Ok(v) => utils::output(None, Some(Value::String(v))),
-        Err(e) => utils::output(Some(&e), None),
+async fn handle_version(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match &state.ipv4 {
+        Some(ipc) => match ipc.version().await {
+            Ok(v) => utils::output(None, Some(Value::String(v))),
+            Err(e) => utils::output(Some(&e), None),
+        },
+        None => utils::output(Some("firewall not available"), None),
     }
 }
 
@@ -434,8 +431,9 @@ pub fn build_router(state: Arc<AppState>) -> Router {
     let auth_layer = middleware::from_fn_with_state(state.clone(), auth_middleware);
 
     Router::new()
-        .route("/version", post(handle_version))
+        .route("/version", get(handle_version))
         .route("/listRule", post(handle_list_rule))
+        .route("/shell", get(shell::handle_ws_shell))
         .route("/listExec", post(handle_list_exec))
         .route("/flushRule", post(handle_flush_rule))
         .route("/deleteRule", post(handle_delete_rule))

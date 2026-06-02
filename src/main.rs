@@ -2,6 +2,7 @@ mod firewall;
 mod iptables;
 mod pfctl;
 mod server;
+mod shell;
 mod system;
 mod utils;
 mod windows;
