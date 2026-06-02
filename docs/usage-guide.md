@@ -48,8 +48,8 @@ docker run -d \
 ```bash
 git clone &lt;repository-url&gt;
 cd 89.MiCopa-firewall-admin
-make release   # 生成 target/release/iptables-man
-sudo ./target/release/iptables-man -a :10001 -u admin -p admin
+make release   # 生成 target/release/firewall-man
+sudo ./target/release/firewall-man -a :10001 -u admin -p admin
 ```
 
 後臺運行可配合 `nohup`/`systemd`/`supervisor` 等工具。

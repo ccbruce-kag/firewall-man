@@ -12,6 +12,6 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-COPY --from=builder /app/iptables-man .
+COPY --from=builder /app/firewall-man .
 
-ENTRYPOINT ["/app/iptables-man"]
+ENTRYPOINT ["/app/firewall-man"]

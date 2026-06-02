@@ -12,4 +12,4 @@ target/
 Cargo.lock
 
 # Build output
-iptables-man
+firewall-man

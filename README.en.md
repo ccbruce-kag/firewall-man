@@ -26,16 +26,16 @@ A Rust-based cross-platform firewall web management tool supporting **Linux (ipt
 cargo build --release
 
 # Run (requires root / sudo privileges)
-sudo ./target/release/iptables-man
+sudo ./target/release/firewall-man
 
 # Custom listen address and credentials
-./iptables-man -a :8080 -u myuser -p mypass
+./firewall-man -a :8080 -u myuser -p mypass
 
 # Using environment variables
 export IPT_WEB_USERNAME=admin
 export IPT_WEB_PASSWORD=secret
 export IPT_WEB_ADDRESS=:10001
-./iptables-man
+./firewall-man
 ```
 
 ### Windows
@@ -45,7 +45,7 @@ export IPT_WEB_ADDRESS=:10001
 cargo build --release
 
 # Run (must run as Administrator)
-.\target\release\iptables-man.exe
+.\target\release\firewall-man.exe
 ```
 
 After starting, open your browser and visit `http://<host-ip>:10001`.
@@ -66,8 +66,8 @@ After starting, open your browser and visit `http://<host-ip>:10001`.
 ## Docker
 
 ```bash
-docker build -t micopa/iptables-man:0.1.0 .
-docker run -d --network host --privileged micopa/iptables-man:0.1.0
+docker build -t micopa/firewall-man:0.1.0 .
+docker run -d --network host --privileged micopa/firewall-man:0.1.0
 ```
 
 > Note: Requires `--privileged` or `CAP_NET_ADMIN` capability, otherwise firewall commands will be rejected.
@@ -193,13 +193,13 @@ docker run -d --network host --privileged micopa/iptables-man:0.1.0
 cargo build --release
 
 # Run (Linux / macOS requires root / sudo)
-sudo ./target/release/iptables-man
+sudo ./target/release/firewall-man
 
 # Windows: run as Administrator
-.\target\release\iptables-man.exe
+.\target\release\firewall-man.exe
 
 # Custom listen address and credentials
-./iptables-man -a :8080 -u myuser -p mypass
+./firewall-man -a :8080 -u myuser -p mypass
 
 # Test
 cargo test
@@ -208,7 +208,7 @@ cargo test
 cargo clippy
 
 # Docker image (Linux only)
-docker build -t micopa/iptables-man:0.1.0 .
+docker build -t micopa/firewall-man:0.1.0 .
 ```
 
 > **Note**: macOS requires `sudo` for pfctl operations; Windows requires Administrator privileges for PowerShell NetSecurity cmdlets.

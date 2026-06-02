@@ -48,8 +48,8 @@ docker run -d \
 ```bash
 git clone <repository-url>
 cd 89.MiCopa-firewall-admin
-cargo build --release   # target/release/iptables-man を生成
-sudo ./target/release/iptables-man -a :10001 -u admin -p admin
+cargo build --release   # target/release/firewall-man を生成
+sudo ./target/release/firewall-man -a :10001 -u admin -p admin
 ```
 
 バックグラウンド実行には `nohup`/`systemd`/`supervisor` などを使用してください。

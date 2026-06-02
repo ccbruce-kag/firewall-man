@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-# first.sh — MiCopa iptables-man 一次性安裝編譯腳本 (Ubuntu)
+# first.sh — MiCopa firewall-man 一次性安裝編譯腳本 (Ubuntu)
 # ============================================================
 # 用法:
 #   chmod +x first.sh && sudo ./first.sh
@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "========================================"
-echo " MiCopa iptables-man 安裝腳本"
+echo " MiCopa firewall-man 安裝腳本"
 echo " 目標目錄: $SCRIPT_DIR"
 echo "========================================"
 echo ""
@@ -54,24 +54,24 @@ make release
 echo "[✓] 編譯成功！"
 echo ""
 echo "========================================"
-echo " 編譯產物: $SCRIPT_DIR/iptables-man"
+echo " 編譯產物: $SCRIPT_DIR/firewall-man"
 echo ""
 echo " 啟動方式（root 權限）："
 echo ""
 echo "   # 直接執行"
-echo "   sudo ./iptables-man"
+echo "   sudo ./firewall-man"
 echo ""
 echo "   # 或使用 cargo run"
 echo "   sudo cargo run"
 echo ""
 echo "   # 指定自訂位址與帳密"
-echo "   sudo ./iptables-man -a :8080 -u admin -p mypass"
+echo "   sudo ./firewall-man -a :8080 -u admin -p mypass"
 echo ""
 echo "   環境變數方式："
 echo "   export IPT_WEB_USERNAME=admin"
 echo "   export IPT_WEB_PASSWORD=secret"
 echo "   export IPT_WEB_ADDRESS=:10001"
-echo "   sudo -E ./iptables-man"
+echo "   sudo -E ./firewall-man"
 echo ""
 echo " 開啟瀏覽器訪問: http://<主機IP>:10001"
 echo "========================================"

@@ -26,16 +26,16 @@
 cargo build --release
 
 # 執行（需 root / sudo 權限）
-sudo ./target/release/iptables-man
+sudo ./target/release/firewall-man
 
 # 自訂監聽位址與認證
-./iptables-man -a :8080 -u myuser -p mypass
+./firewall-man -a :8080 -u myuser -p mypass
 
 # 使用環境變數
 export IPT_WEB_USERNAME=admin
 export IPT_WEB_PASSWORD=secret
 export IPT_WEB_ADDRESS=:10001
-./iptables-man
+./firewall-man
 ```
 
 ### Windows
@@ -45,7 +45,7 @@ export IPT_WEB_ADDRESS=:10001
 cargo build --release
 
 # 執行（需以系統管理員執行）
-.\target\release\iptables-man.exe
+.\target\release\firewall-man.exe
 ```
 
 啟動後開啟瀏覽器訪問 `http://<主機IP>:10001`。
@@ -66,8 +66,8 @@ cargo build --release
 ## Docker
 
 ```bash
-docker build -t micopa/iptables-man:0.1.0 .
-docker run -d --network host --privileged micopa/iptables-man:0.1.0
+docker build -t micopa/firewall-man:0.1.0 .
+docker run -d --network host --privileged micopa/firewall-man:0.1.0
 ```
 
 > 注意：需使用 `--privileged` 或以 `CAP_NET_ADMIN` 執行，否則防火牆命令將被拒絕。

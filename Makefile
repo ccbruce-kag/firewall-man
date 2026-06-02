@@ -1,4 +1,4 @@
-BIN_FILE = iptables-man
+BIN_FILE = firewall-man
 
 release:
 	cargo build --release
@@ -8,7 +8,7 @@ run:
 	cargo run
 
 images:
-	docker build -t micopa/iptables-man:0.1.0 .
+	docker build -t micopa/firewall-man:0.1.0 .
 
 clean:
 	cargo clean

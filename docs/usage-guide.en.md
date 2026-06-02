@@ -48,8 +48,8 @@ docker run -d \
 ```bash
 git clone <repository-url>
 cd 89.MiCopa-firewall-admin
-cargo build --release   # produces target/release/iptables-man
-sudo ./target/release/iptables-man -a :10001 -u admin -p admin
+cargo build --release   # produces target/release/firewall-man
+sudo ./target/release/firewall-man -a :10001 -u admin -p admin
 ```
 
 Use `nohup`/`systemd`/`supervisor` to run in the background.

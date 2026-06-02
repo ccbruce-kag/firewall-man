@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-# compile-musl.sh — 以 musl 目標編譯 iptables-man (靜態連結)
+# compile-musl.sh — 以 musl 目標編譯 firewall-man (靜態連結)
 # ============================================================
 # 用法:
 #   chmod +x compile-musl.sh && ./compile-musl.sh
@@ -13,14 +13,14 @@ set -euo pipefail
 #   - musl-gcc (或 Docker 環境)
 #
 # 產出:
-#   ./iptables-man  (靜態連結的 musl 二進位檔)
+#   ./firewall-man  (靜態連結的 musl 二進位檔)
 # ============================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "========================================"
-echo " compile-musl.sh — 靜態編譯 iptables-man"
+echo " compile-musl.sh — 靜態編譯 firewall-man"
 echo "========================================"
 
 # ── 1. 確保 musl target 已安裝 ──────────────────────────────
@@ -34,13 +34,13 @@ echo "[...] 編譯中 (cargo build --release --target x86_64-unknown-linux-musl)
 cargo build --release --target x86_64-unknown-linux-musl
 
 # ── 3. 複製執行檔到專案根目錄 ─────────────────────────────
-echo "[...] 複製執行檔到 $SCRIPT_DIR/iptables-man ..."
-cp "target/x86_64-unknown-linux-musl/release/iptables-man" "$SCRIPT_DIR/iptables-man"
+echo "[...] 複製執行檔到 $SCRIPT_DIR/firewall-man ..."
+cp "target/x86_64-unknown-linux-musl/release/firewall-man" "$SCRIPT_DIR/firewall-man"
 
 echo "[✓] 完成！"
 echo ""
-echo " 執行檔: $SCRIPT_DIR/iptables-man"
-file "$SCRIPT_DIR/iptables-man"
+echo " 執行檔: $SCRIPT_DIR/firewall-man"
+file "$SCRIPT_DIR/firewall-man"
 echo ""
 echo " 啟動方式:"
-echo "   sudo ./iptables-man"
+echo "   sudo ./firewall-man"
