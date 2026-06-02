@@ -529,6 +529,8 @@
           const h = opts.area[1] || 'auto';
           $('.modal-dialog').css({ maxWidth: w, width: w });
         }
+        debugger;
+        opts.success && opts.success($('#commonModalBody'));
         _showModal();
       },
       close() { _hideModal(); },
@@ -2306,9 +2308,9 @@
             '</div>' +
             '<div class="rule-editor-section">' +
               '<div class="row g-2">' +
-                '<div class="col-md-3 rule-editor-field"><label>鏈 <code>-A</code></label><select class="form-select field-a-chain"><option value="">-</option><option value="PREROUTING">PREROUTING</option><option value="POSTROUTING">POSTROUTING</option><option value="INPUT">INPUT</option><option value="FORWARD">FORWARD</option><option value="OUTPUT">OUTPUT</option></select></div>' +
                 '<div class="col-md-3 rule-editor-field"><label>鏈 <code>-R</code></label><select class="form-select field-r-chain"><option value="">-</option>' + rChainOpts.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('') + '</select></div>' +
                 '<div class="col-md-3 rule-editor-field"><label>序號 <code>-R</code></label><input type="number" class="form-control field-r-num" value="1" min="1"></div>' +
+                '<div class="col-md-3 rule-editor-field"><label>鏈 <code>-A</code></label><select class="form-select field-a-chain"><option value="">-</option><option value="PREROUTING">PREROUTING</option><option value="POSTROUTING">POSTROUTING</option><option value="INPUT">INPUT</option><option value="FORWARD">FORWARD</option><option value="OUTPUT">OUTPUT</option></select></div>' +
               '</div>' +
               '<div class="row g-2">' +
                 '<div class="col-md-3 rule-editor-field"><label>協定 <code>-p</code></label><select class="form-select field-protocol"><option value="">-</option><option value="tcp">tcp</option><option value="udp">udp</option><option value="icmp">icmp</option><option value="all">all</option></select></div>' +
@@ -2339,6 +2341,7 @@
             '</div>' +
           '</div>';
 
+        console.log('產出按鈕被按下');
         layer.open({
           title: title, area: ['700px', 'auto'],
           content: html,
@@ -2391,6 +2394,10 @@
               var cmd = buildCmd(p);
               if (prefixToks.length) cmd = prefixToks.join(' ') + ' ' + cmd;
               cmd = cmd.trim();
+              console.log('syncFld 欄位值:', JSON.stringify(p));
+              console.log('prefixToks:', prefixToks);
+              console.log('buildCmd:', buildCmd(p));
+              console.log('最終 cmd:', cmd);
               $l.find('.rule-preview-input').val(cmd);
               $l.find('.rule-full-cmd').val((prefix ? prefix + ' ' : '') + cmd);
             }
@@ -2420,7 +2427,20 @@
               if (p.aChain) { $l.find('.field-a-chain').val(p.aChain); }
             }
 
-            $l.find('.rule-gen-btn').on('click', syncFld);
+            console.log('設定產出按鈕事件');
+            $l.find('.rule-gen-btn').on('click', function() {
+              console.log('產出按鈕被按下');
+              syncFld();
+              var previewVal = $l.find('.rule-preview-input').val();
+              var fullCmdVal = $l.find('.rule-full-cmd').val();
+              console.log('預覽框:', previewVal);
+              console.log('產出命令:', fullCmdVal);
+              if (!previewVal && !fullCmdVal) {
+                console.warn('產出結果為空，請確認下方欄位有填入值');
+              } else {
+                console.info('產出成功，已填入 rule-preview-input');
+              }
+            });
             $l.find('.rule-parse-btn').on('click', doParse);
 
             $l.find('.rule-copy-btn').on('click', function() {
