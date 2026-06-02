@@ -453,11 +453,9 @@ async fn handle_favicon() -> impl IntoResponse {
 pub fn build_router(state: Arc<AppState>) -> Router {
     let auth_layer = middleware::from_fn_with_state(state.clone(), auth_middleware);
 
-    Router::new()
+    let auth_routes = Router::new()
         .route("/version", get(handle_version))
         .route("/listRule", post(handle_list_rule))
-        .route("/shell", get(shell::handle_ws_shell))
-        .route("/ai", get(ai::handle_ws_ai))
         .route("/listExec", post(handle_list_exec))
         .route("/flushRule", post(handle_flush_rule))
         .route("/deleteRule", post(handle_delete_rule))
@@ -475,6 +473,16 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/favicon.ico", get(handle_favicon))
         .route("/", get(handle_index))
         .route("/docs/*path", get(handle_docs))
-        .layer(auth_layer)
+        .layer(auth_layer);
+
+    // WebSocket endpoints: browsers don't send Basic Auth headers on WS upgrade,
+    // so these must bypass the auth middleware.
+    let ws_routes = Router::new()
+        .route("/shell", get(shell::handle_ws_shell))
+        .route("/ai", get(ai::handle_ws_ai));
+
+    Router::new()
+        .merge(ws_routes)
+        .merge(auth_routes)
         .with_state(state)
 }

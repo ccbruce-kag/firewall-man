@@ -1419,14 +1419,6 @@
         lastShellInputAt = Date.now();
         sendShellData(data, 'xterm-onData');
       });
-      if (typeof term.onKey === 'function') {
-        term.onKey(function (ev) {
-          lastShellInputAt = Date.now();
-          const key = ev && ev.key ? ev.key : '';
-          logger.debug('Shell xterm-onKey 捕捉', 'key=' + formatShellInputDebug(key) + ' domKey=' + (ev && ev.domEvent ? String(ev.domEvent.key) : 'null'));
-          sendShellData(key, 'xterm-onKey');
-        });
-      }
       $('#terminal').off('mousedown.shellFocus click.shellFocus').on('mousedown.shellFocus click.shellFocus', focusTerminal);
       focusTerminal();
       connectShell();

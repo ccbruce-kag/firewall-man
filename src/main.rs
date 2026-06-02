@@ -128,7 +128,7 @@ fn main() {
 
                 let addr: std::net::SocketAddr = address
                     .parse()
-                    .unwrap_or_else(|_| ([0, 0, 0, 0], 10001).into());
+                    .unwrap_or_else(|_| ([0, 0, 0, 0], 10002).into());
 
                 info!("listen address: {}", addr);
                 info!(
@@ -162,7 +162,7 @@ fn main() {
 
                 let addr: std::net::SocketAddr = address
                     .parse()
-                    .unwrap_or_else(|_| ([0, 0, 0, 0], 10001).into());
+                    .unwrap_or_else(|_| ([0, 0, 0, 0], 10002).into());
 
                 info!("listen address: {}", addr);
                 info!(
@@ -196,7 +196,7 @@ fn main() {
 
                 let addr: std::net::SocketAddr = address
                     .parse()
-                    .unwrap_or_else(|_| ([0, 0, 0, 0], 10001).into());
+                    .unwrap_or_else(|_| ([0, 0, 0, 0], 10002).into());
 
                 info!("listen address: {}", addr);
                 info!(
