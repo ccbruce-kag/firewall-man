@@ -20,9 +20,9 @@
     .kpi-card { cursor: default; }
     .protocol-switch { text-align: center; margin-bottom: 1rem; }
     .protocol-switch label { margin: 0 .75rem; cursor: pointer; }
-    .action-buttons { position: fixed; z-index: 999; right: 0; top: 20%; padding-right: .5rem; }
+    .action-buttons { /*position: fixed; z-index: 999; right: 0; top: 20%; padding-right: .5rem;*/ }
     .action-buttons .btn { margin-bottom: .5rem; width: 130px; text-align: left; font-size: .75rem; }
-    #table-body { padding-right: 145px; }
+    #table-body { padding-right: 7px; }
     .doc-dropdown-menu { min-width: 320px; padding: .75rem 1rem; font-size: .8125rem; }
     .doc-dropdown-menu .doc-section { margin-bottom: .5rem; }
     .doc-dropdown-menu .doc-section-title { font-weight: 600; font-size: .6875rem; color: var(--bs-secondary-color); margin-bottom: .25rem; text-transform: uppercase; letter-spacing: .03em; }
@@ -150,6 +150,17 @@
     #shellView { position: relative; z-index: 1; }
     #terminal, #terminal .xterm { height: 100%; width: 100%; }
     #terminal .xterm-helper-textarea { z-index: 10; }
+    /* ─── Rule Editor ─── */
+    .rule-editor-preview { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: .8125rem; resize: vertical; min-height: 52px; }
+    .rule-editor-field { margin-bottom: .5rem; }
+    .rule-editor-field label { font-size: .6875rem; font-weight: 600; color: var(--bs-secondary-color); margin-bottom: .125rem; text-transform: uppercase; letter-spacing: .03em; display: flex; align-items: center; gap: .25rem; }
+    .rule-editor-field label code { font-size: .6875rem; background: var(--bs-tertiary-bg); padding: 0 .3rem; border-radius: 3px; }
+    .rule-editor-field select, .rule-editor-field input { font-size: .8125rem; font-family: 'Cascadia Code', monospace; }
+    .rule-editor-ctstate { display: flex; flex-wrap: wrap; gap: .375rem; padding: .375rem .5rem; background: var(--bs-tertiary-bg); border-radius: var(--bs-border-radius); }
+    .rule-editor-ctstate label { font-size: .75rem; font-weight: 400; text-transform: none; letter-spacing: 0; display: inline-flex; align-items: center; gap: .25rem; cursor: pointer; margin: 0; }
+    .rule-editor-ctstate input { width: auto; }
+    .rule-editor-section { border-top: 1px solid var(--bs-border-color); padding-top: .75rem; margin-top: .5rem; }
+    .rule-editor-section:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
   </style>
 </head>
 <body>
@@ -300,7 +311,7 @@
             </div>
 
             <div id="tablesView">
-              <div class="row">
+              <div class="row" style="padding-right:13px">
                 <div class="col-12">
                   <ul class="nav nav-tabs nav-fill mb-3 iptables-table" id="tableTabs" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -318,21 +329,23 @@
                   </ul>
                 </div>
               </div>
-
-              <div id="table-body"></div>
-
-              <div class="action-buttons" id="actionButtons">
-              <button id="clear-all-rule" class="btn btn-outline-danger btn-sm"><i class="bx bx-trash me-1"></i>清空所有表規則</button><br>
-              <button id="clear-current-table-rule" class="btn btn-outline-warning btn-sm"><i class="bx bx-trash me-1"></i>清空當前表規則</button><br>
-              <button id="clear-all-empty-chain" class="btn btn-outline-secondary btn-sm"><i class="bx bx-x-circle me-1"></i>清空自定義空鏈</button><br>
-              <button id="clear-all-metrics" class="btn btn-outline-info btn-sm"><i class="bx bx-reset me-1"></i>清零所有表計數</button><br>
-              <button id="clear-current-table-metrics" class="btn btn-outline-info btn-sm"><i class="bx bx-reset me-1"></i>清零當前表計數</button><br>
-              <button id="self-iptables" class="btn btn-outline-primary btn-sm"><i class="bx bx-list-ul me-1"></i>查看當前表規則</button><br>
-              <button id="exec-iptables" class="btn btn-outline-dark btn-sm"><i class="bx bx-terminal me-1"></i>執行命令</button><br>
-              <button id="export-all-rule" class="btn btn-outline-success btn-sm"><i class="bx bx-export me-1"></i>導出規則</button><br>
-              <button id="import-all-rule" class="btn btn-outline-success btn-sm"><i class="bx bx-import me-1"></i>導入規則</button><br>
-              <button id="open-iptables-doc" class="btn btn-outline-primary btn-sm"><i class="bx bx-book me-1"></i>命令文件</button>
-            </div>
+              <div style="display: table; width: 100%; table-layout: fixed; position: relative;">
+                <div style="display:table-row">
+                  <div id="table-body" style="display: table-column; vertical-align: top;"></div>
+                  <div class="action-buttons" id="actionButtons" style="display: table-column; width: 145px; padding-left: 1rem; position: absolute; top: 0; right: 0;">
+                    <button id="clear-all-rule" class="btn btn-outline-danger btn-sm"><i class="bx bx-trash me-1"></i>清空所有表規則</button><br>
+                    <button id="clear-current-table-rule" class="btn btn-outline-warning btn-sm"><i class="bx bx-trash me-1"></i>清空當前表規則</button><br>
+                    <button id="clear-all-empty-chain" class="btn btn-outline-secondary btn-sm"><i class="bx bx-x-circle me-1"></i>清空自定義空鏈</button><br>
+                    <button id="clear-all-metrics" class="btn btn-outline-info btn-sm"><i class="bx bx-reset me-1"></i>清零所有表計數</button><br>
+                    <button id="clear-current-table-metrics" class="btn btn-outline-info btn-sm"><i class="bx bx-reset me-1"></i>清零當前表計數</button><br>
+                    <button id="self-iptables" class="btn btn-outline-primary btn-sm"><i class="bx bx-list-ul me-1"></i>查看當前表規則</button><br>
+                    <button id="exec-iptables" class="btn btn-outline-dark btn-sm"><i class="bx bx-terminal me-1"></i>執行命令</button><br>
+                    <button id="export-all-rule" class="btn btn-outline-success btn-sm"><i class="bx bx-export me-1"></i>導出規則</button><br>
+                    <button id="import-all-rule" class="btn btn-outline-success btn-sm"><i class="bx bx-import me-1"></i>導入規則</button><br>
+                    <button id="open-iptables-doc" class="btn btn-outline-primary btn-sm"><i class="bx bx-book me-1"></i>命令文件</button>
+                  </div>
+                </div>
+              </div>
             </div><!-- /tablesView -->
 
             <!-- AI View -->
@@ -1913,20 +1926,36 @@
       $(document).on("click", ".chain-insert", function () {
         const table = $(this).data("table"), c = $(this).data("chain");
         const prefix = chainCommandPrefix(table, c, "-I");
-        execView(i18n[currentLang].insertRuleTitle, prefix, i18n[currentLang].rulePlaceholder, "", function (val) {
-          const cmd = chainExecArgsStr(table, c, "-I", val);
-          logger.info('插入規則', c + '@' + table, prefix + ' ' + val);
-          ipt.exec(cmd, function () { loadListRule(table, c, false); layer.msg(i18n[currentLang].insertSuccess); logger.debug('插入規則完成'); });
-        });
+        if (currentPlatform === "linux") {
+          ruleEditor({ title: i18n[currentLang].insertRuleTitle, prefix: prefix, val: "", confirmCb: function(val) {
+            const cmd = chainExecArgsStr(table, c, "-I", val);
+            logger.info('插入規則', c + '@' + table, prefix + ' ' + val);
+            ipt.exec(cmd, function () { loadListRule(table, c, false); layer.msg(i18n[currentLang].insertSuccess); logger.debug('插入規則完成'); });
+          }});
+        } else {
+          execView(i18n[currentLang].insertRuleTitle, prefix, i18n[currentLang].rulePlaceholder, "", function (val) {
+            const cmd = chainExecArgsStr(table, c, "-I", val);
+            logger.info('插入規則', c + '@' + table, prefix + ' ' + val);
+            ipt.exec(cmd, function () { loadListRule(table, c, false); layer.msg(i18n[currentLang].insertSuccess); logger.debug('插入規則完成'); });
+          });
+        }
       });
       $(document).on("click", ".chain-append", function () {
         const table = $(this).data("table"), c = $(this).data("chain");
         const prefix = chainCommandPrefix(table, c, "-A");
-        execView(i18n[currentLang].appendRuleTitle, prefix, i18n[currentLang].rulePlaceholder, "", function (val) {
-          const cmd = chainExecArgsStr(table, c, "-A", val);
-          logger.info('追加規則', c + '@' + table, prefix + ' ' + val);
-          ipt.exec(cmd, function () { loadListRule(table, c, false); layer.msg(i18n[currentLang].appendSuccess); logger.debug('追加規則完成'); });
-        });
+        if (currentPlatform === "linux") {
+          ruleEditor({ title: i18n[currentLang].appendRuleTitle, prefix: prefix, val: "", confirmCb: function(val) {
+            const cmd = chainExecArgsStr(table, c, "-A", val);
+            logger.info('追加規則', c + '@' + table, prefix + ' ' + val);
+            ipt.exec(cmd, function () { loadListRule(table, c, false); layer.msg(i18n[currentLang].appendSuccess); logger.debug('追加規則完成'); });
+          }});
+        } else {
+          execView(i18n[currentLang].appendRuleTitle, prefix, i18n[currentLang].rulePlaceholder, "", function (val) {
+            const cmd = chainExecArgsStr(table, c, "-A", val);
+            logger.info('追加規則', c + '@' + table, prefix + ' ' + val);
+            ipt.exec(cmd, function () { loadListRule(table, c, false); layer.msg(i18n[currentLang].appendSuccess); logger.debug('追加規則完成'); });
+          });
+        }
       });
       $(document).on("click", ".chain-flush", function () {
         const t = $(this).data("table"), c = $(this).data("chain");
@@ -1957,11 +1986,19 @@
         ipt.getRuleInfo(t, c, id, function (info) {
           info = info.replace("-A ", "-R ").replace(c, c + " " + id + " ");
           const editTitle = currentLang === "zh" ? `修改 ${t}表, ${c}鏈, 第${id}條規則` : currentLang === "ja" ? `${t} テーブル, ${c} チェイン, ルール #${id} を編集` : `Edit ${t} table, ${c} chain, rule #${id}`;
+        if (currentPlatform === "linux") {
+          ruleEditor({ title: editTitle, prefix: currentCommandBinary() + " -t " + t, val: info, confirmCb: function(val) {
+            const cmd = "-t " + t + " " + val;
+            logger.info('修改規則', c + '@' + t + '#' + id, currentCommandBinary() + ' ' + cmd);
+            ipt.exec(cmd, function () { loadListRule(t, c); layer.msg(i18n[currentLang].updateSuccess); logger.debug('修改規則完成'); });
+          }});
+        } else {
           execView(editTitle, currentCommandBinary() + " -t " + t, "", info, function (val) {
             const cmd = currentPlatform !== "linux" ? val : "-t " + t + " " + val;
             logger.info('修改規則', c + '@' + t + '#' + id, currentCommandBinary() + ' ' + cmd);
             ipt.exec(cmd, function () { loadListRule(t, c); layer.msg(i18n[currentLang].updateSuccess); logger.debug('修改規則完成'); });
           });
+        }
         });
       });
       $(document).on("click", ".delete-rule", function () {
@@ -2187,6 +2224,217 @@
         btn: [lang.confirm, lang.cancel],
         btn1(idx, layero) { confirmCb($(layero).find("input").val()); _hideModal(); },
         btn2() { _hideModal(); }
+      });
+    }
+
+    // ─── Rule Editor (iptables GUI form) ───
+    function ruleEditor(opts) {
+      const lang = i18n[currentLang];
+      const { title, prefix, val, confirmCb } = opts;
+
+      function parseRuleTxt(txt) {
+        const f = { target: '', protocol: '', source: '', destination: '', inIf: '', outIf: '', match: '', dport: '', sport: '', ctstate: [], icmpType: '', rChain: '', rNum: '' };
+        if (!txt) return f;
+        const toks = txt.split(/\s+/);
+        for (let i = 0; i < toks.length; i++) {
+          const t = toks[i];
+          if (t === '-R') { f.rChain = toks[i + 1] || ''; f.rNum = toks[i + 2] || '1'; i += 2; continue; }
+          if (t === '-I' || t === '-A') { while (i + 1 < toks.length && !toks[i + 1].startsWith('-')) i++; continue; }
+          if (t === '-p' || t === '--protocol') { f.protocol = toks[++i] || ''; continue; }
+          if (t === '-s' || t === '--source') { f.source = toks[++i] || ''; continue; }
+          if (t === '-d' || t === '--destination') { f.destination = toks[++i] || ''; continue; }
+          if (t === '-j' || t === '--jump') { f.target = toks[++i] || ''; continue; }
+          if (t === '-i' || t === '--in-interface') { f.inIf = toks[++i] || ''; continue; }
+          if (t === '-o' || t === '--out-interface') { f.outIf = toks[++i] || ''; continue; }
+          if (t === '-m' || t === '--match') { f.match = toks[++i] || ''; continue; }
+          if (t === '--dport') { f.dport = toks[++i] || ''; continue; }
+          if (t === '--sport') { f.sport = toks[++i] || ''; continue; }
+          if (t === '--ctstate' || t === '--state') { while (i + 1 < toks.length && !toks[i + 1].startsWith('-')) f.ctstate.push(toks[++i]); continue; }
+          if (t === '--icmp-type') { f.icmpType = toks[++i] || ''; continue; }
+        }
+        return f;
+      }
+
+      function buildCmd(f) {
+        const p = [];
+        if (f.protocol) p.push('-p', f.protocol);
+        if (f.source) p.push('-s', f.source);
+        if (f.destination) p.push('-d', f.destination);
+        if (f.match) p.push('-m', f.match);
+        if (f.dport) p.push('--dport', f.dport);
+        if (f.sport) p.push('--sport', f.sport);
+        if (f.inIf) p.push('-i', f.inIf);
+        if (f.outIf) p.push('-o', f.outIf);
+        if (f.ctstate && f.ctstate.length) p.push('--ctstate', f.ctstate.join(','));
+        if (f.icmpType) p.push('--icmp-type', f.icmpType);
+        if (f.target) p.push('-j', f.target);
+        return p.join(' ');
+      }
+
+      const fields = parseRuleTxt(val || '');
+      const defIfOpts = '<option value="">-</option>';
+      const ctStates = ['NEW','ESTABLISHED','RELATED','INVALID','SNAT','DNAT'];
+      const rChainOpts = ['INPUT','FORWARD','OUTPUT','DOCKER','DOCKER-BRIDGE','DOCKER-CT','DOCKER-FORWARD','DOCKER-INTERNAL','DOCKER-USER',
+        'ufw-after-forward','ufw-after-input','ufw-after-logging-forward','ufw-after-logging-input','ufw-after-logging-output','ufw-after-output',
+        'ufw-before-forward','ufw-before-input','ufw-before-logging-forward','ufw-before-logging-input','ufw-before-logging-output','ufw-before-output',
+        'ufw-logging-allow','ufw-logging-deny','ufw-not-local','ufw-reject-forward','ufw-reject-input','ufw-reject-output',
+        'ufw-skip-to-policy-forward','ufw-skip-to-policy-input','ufw-skip-to-policy-output',
+        'ufw-track-forward','ufw-track-input','ufw-track-output',
+        'ufw-user-forward','ufw-user-input','ufw-user-limit','ufw-user-limit-accept',
+        'ufw-user-logging-forward','ufw-user-logging-input','ufw-user-logging-output','ufw-user-output'];
+
+      const origVal = val || '';
+
+      const html =
+        '<div style="min-width:560px">' +
+          '<div class="rule-editor-section">' +
+            '<label class="form-label fw-semibold">' + prefix + '</label>' +
+            '<textarea class="form-control rule-editor-preview rule-preview-input" rows="2" style="font-family:monospace">' + (val||'').replace(/"/g,'&quot;') + '</textarea>' +
+            '<div class="d-flex justify-content-end mt-1"><button class="btn btn-outline-info btn-sm rule-parse-btn">🔍 Parsing</button></div>' +
+          '</div>' +
+          '<div class="rule-editor-section">' +
+            '<div class="row g-2">' +
+              '<div class="col-md-6 rule-editor-field"><label>鏈 <code>-R</code></label><select class="form-select field-r-chain"><option value="">-</option>' + rChainOpts.map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('') + '</select></div>' +
+              '<div class="col-md-3 rule-editor-field"><label>序號 <code>-R</code></label><input type="number" class="form-control field-r-num" value="1" min="1"></div>' +
+            '</div>' +
+            '<div class="row g-2">' +
+              '<div class="col-md-3 rule-editor-field"><label>協定 <code>-p</code></label><select class="form-select field-protocol"><option value="">-</option><option value="tcp">tcp</option><option value="udp">udp</option><option value="icmp">icmp</option><option value="all">all</option></select></div>' +
+              '<div class="col-md-3 rule-editor-field"><label>來源 <code>-s</code></label><input type="text" class="form-control field-source" placeholder="0.0.0.0/0" value="' + fields.source.replace(/"/g,'&quot;') + '"></div>' +
+              '<div class="col-md-3 rule-editor-field"><label>目的 <code>-d</code></label><input type="text" class="form-control field-dest" placeholder="172.18.0.2/32" value="' + fields.destination.replace(/"/g,'&quot;') + '"></div>' +
+              '<div class="col-md-3 rule-editor-field"><label>目標 <code>-j</code></label><select class="form-select field-target"><option value="">-</option><option value="ACCEPT">ACCEPT</option><option value="DROP">DROP</option><option value="REJECT">REJECT</option><option value="RETURN">RETURN</option><option value="LOG">LOG</option><option value="MASQUERADE">MASQUERADE</option><option value="DNAT">DNAT</option><option value="SNAT">SNAT</option><option value="REDIRECT">REDIRECT</option></select></div>' +
+            '</div>' +
+            '<div class="row g-2">' +
+              '<div class="col-md-3 rule-editor-field"><label>入介面 <code>-i</code></label><select class="form-select field-in-if">' + defIfOpts + '</select></div>' +
+              '<div class="col-md-3 rule-editor-field"><label>出介面 <code>-o</code></label><select class="form-select field-out-if">' + defIfOpts + '</select></div>' +
+              '<div class="col-md-3 rule-editor-field"><label>比對模組 <code>-m</code></label><select class="form-select field-match"><option value="">-</option><option value="tcp">tcp</option><option value="udp">udp</option><option value="icmp">icmp</option><option value="state">state</option><option value="conntrack">conntrack</option><option value="multiport">multiport</option><option value="mac">mac</option><option value="limit">limit</option><option value="comment">comment</option><option value="addrtype">addrtype</option></select></div>' +
+              '<div class="col-md-3 rule-editor-field"><label>目的埠 <code>--dport</code></label><input type="text" class="form-control field-dport" placeholder="22,80,443" value="' + fields.dport.replace(/"/g,'&quot;') + '"></div>' +
+            '</div>' +
+            '<div class="row g-2">' +
+              '<div class="col-md-6 rule-editor-field"><label>連線狀態 <code>--ctstate</code></label><div class="rule-editor-ctstate">' +
+                ctStates.map(function(s){ return '<label><input type="checkbox" class="field-ctstate" value="' + s + '"' + (fields.ctstate.indexOf(s)>=0?' checked':'') + '> ' + s + '</label>'; }).join('') +
+              '</div></div>' +
+              '<div class="col-md-3 rule-editor-field"><label>ICMP 類型 <code>--icmp-type</code></label><input type="text" class="form-control field-icmp-type" placeholder="echo-request" value="' + fields.icmpType.replace(/"/g,'&quot;') + '"></div>' +
+              '<div class="col-md-3 rule-editor-field"><label>來源埠 <code>--sport</code></label><input type="text" class="form-control field-sport" placeholder="1024:65535" value="' + fields.sport.replace(/"/g,'&quot;') + '"></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="rule-editor-section">' +
+            '<div class="d-flex align-items-center gap-2 mb-1">' +
+              '<label class="form-label fw-semibold mb-0" style="font-size:.75rem">產出命令</label>' +
+              '<button class="btn btn-outline-secondary btn-sm rule-copy-btn" title="複製命令">📋 複製</button>' +
+            '</div>' +
+            '<textarea class="form-control rule-full-cmd" rows="2" readonly style="font-family:monospace;font-size:.8125rem;resize:none;cursor:text;user-select:text;background:var(--bs-tertiary-bg);color:var(--bs-body-color)" onclick="this.select()"></textarea>' +
+          '</div>' +
+        '</div>';
+
+      layer.open({
+        title: title, area: ['700px', 'auto'],
+        content: html,
+        btn: [lang.confirm, lang.cancel],
+        success: function(layero) {
+          var $l = $(layero);
+          if (fields.protocol) $l.find('.field-protocol').val(fields.protocol);
+          if (fields.target) $l.find('.field-target').val(fields.target);
+          if (fields.match) $l.find('.field-match').val(fields.match);
+          if (fields.inIf) $l.find('.field-in-if').val(fields.inIf);
+          if (fields.outIf) $l.find('.field-out-if').val(fields.outIf);
+
+          $.get('/interfaces', function(r) {
+            if (r.code === 0 && r.data) {
+              var opts = '<option value="">-</option>';
+              r.data.forEach(function(v) { opts += '<option value="' + $('<span>').text(v).html() + '">' + $('<span>').text(v).html() + '</option>'; });
+              $l.find('.field-in-if').html(opts).val(fields.inIf || '');
+              $l.find('.field-out-if').html(opts).val(fields.outIf || '');
+            }
+          }, 'json');
+
+          // Initialize R chain/num fields from val prefix (e.g. "-R INPUT 3")
+          (function() {
+            var initChain = '', initNum = '1';
+            if (val) {
+              var toks = val.split(/\s+/);
+              if (toks[0] === '-R' && toks[1]) { initChain = toks[1]; initNum = toks[2] || '1'; }
+            }
+            if (initChain) $l.find('.field-r-chain').val(initChain);
+            $l.find('.field-r-num').val(initNum);
+          })();
+
+          function rebuildRToks() {
+            var chain = $l.find('.field-r-chain').val();
+            var num = $l.find('.field-r-num').val() || '1';
+            return chain ? ['-R', chain, num] : [];
+          }
+
+          function syncFld() {
+            var p = {
+              protocol: $l.find('.field-protocol').val(),
+              source: $l.find('.field-source').val(),
+              destination: $l.find('.field-dest').val(),
+              target: $l.find('.field-target').val(),
+              match: $l.find('.field-match').val(),
+              inIf: $l.find('.field-in-if').val(),
+              outIf: $l.find('.field-out-if').val(),
+              dport: $l.find('.field-dport').val(),
+              sport: $l.find('.field-sport').val(),
+              ctstate: [],
+              icmpType: $l.find('.field-icmp-type').val()
+            };
+            $l.find('.field-ctstate:checked').each(function(){ p.ctstate.push($(this).val()); });
+            var prefixToks = rebuildRToks();
+            var cmd = buildCmd(p);
+            if (prefixToks.length) cmd = prefixToks.join(' ') + ' ' + cmd;
+            cmd = cmd.trim();
+            $l.find('.rule-preview-input').val(cmd);
+            $l.find('.rule-full-cmd').val((prefix ? prefix + ' ' : '') + cmd);
+          }
+
+          var timer;
+          $l.find('.field-r-chain,.field-r-num').on('change', syncFld);
+          $l.find('.field-protocol,.field-target,.field-match,.field-in-if,.field-out-if').on('change', syncFld);
+          $l.find('.field-source,.field-dest,.field-dport,.field-sport,.field-icmp-type').on('input', syncFld);
+          $l.find('.field-ctstate').on('change', syncFld);
+
+          function doParse() {
+            var txt = $l.find('.rule-preview-input').val() || '';
+            var p = parseRuleTxt(txt);
+            $l.find('.field-protocol').val(p.protocol);
+            $l.find('.field-source').val(p.source);
+            $l.find('.field-dest').val(p.destination);
+            $l.find('.field-target').val(p.target);
+            $l.find('.field-match').val(p.match);
+            $l.find('.field-in-if').val(p.inIf);
+            $l.find('.field-out-if').val(p.outIf);
+            $l.find('.field-dport').val(p.dport);
+            $l.find('.field-sport').val(p.sport);
+            $l.find('.field-icmp-type').val(p.icmpType);
+            $l.find('.field-ctstate').prop('checked', false);
+            (p.ctstate||[]).forEach(function(s){ $l.find('.field-ctstate[value="'+s+'"]').prop('checked',true); });
+            if (p.rChain) { $l.find('.field-r-chain').val(p.rChain); $l.find('.field-r-num').val(p.rNum || '1'); }
+          }
+
+          $l.find('.rule-parse-btn').on('click', doParse);
+
+          $l.find('.rule-copy-btn').on('click', function() {
+            var txt = $l.find('.rule-full-cmd').val();
+            if (!txt) return;
+            copyText($, txt);
+            layer.msg('已複製', { icon: 1, time: 1200 });
+          });
+
+          $l.find('.rule-preview-input').on('input', function(){
+            clearTimeout(timer);
+            timer = setTimeout(doParse, 300);
+          });
+
+          syncFld();
+        },
+        btn1: function(idx, layero) {
+          confirmCb($(layero).find('.rule-preview-input').val() || '');
+          _hideModal();
+        },
+        btn2: function(idx, layero) {
+          $(layero).find('.rule-preview-input').val(origVal);
+          _hideModal();
+        }
       });
     }
 

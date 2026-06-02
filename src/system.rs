@@ -164,6 +164,19 @@ pub async fn get_system_info(platform: &str) -> Value {
     Value::Object(info)
 }
 
+pub async fn get_interfaces(platform: &str) -> Value {
+    let output = match platform {
+        "macos" => run("ifconfig", &["-l"]).await.unwrap_or_default(),
+        "windows" => run("powershell", &["-Command", "Get-NetAdapter | Select-Object -ExpandProperty Name"]).await.unwrap_or_default(),
+        _ => run("ls", &["/sys/class/net"]).await.unwrap_or_default(),
+    };
+    let names: Vec<Value> = output.split_whitespace()
+        .filter(|s| !s.is_empty())
+        .map(|s| Value::String(s.trim().to_string()))
+        .collect();
+    Value::Array(names)
+}
+
 pub async fn get_processes(platform: &str) -> Value {
     let output = match platform {
         "macos" => run("ps", &["aux", "-r"]).await,

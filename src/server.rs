@@ -422,6 +422,11 @@ async fn handle_platform(State(state): State<Arc<AppState>>) -> Json<Value> {
     utils::output(None, Some(Value::String(state.platform.clone())))
 }
 
+async fn handle_interfaces(State(state): State<Arc<AppState>>) -> Json<Value> {
+    let interfaces = system::get_interfaces(&state.platform).await;
+    utils::output(None, Some(interfaces))
+}
+
 #[derive(Deserialize)]
 pub struct LogForm {
     pub level: Option<String>,
@@ -469,6 +474,7 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/system/processes", get(handle_system_processes))
         .route("/web/*path", get(handle_web_assets))
         .route("/platform", get(handle_platform))
+        .route("/interfaces", get(handle_interfaces))
         .route("/log", post(handle_log))
         .route("/favicon.ico", get(handle_favicon))
         .route("/", get(handle_index))
