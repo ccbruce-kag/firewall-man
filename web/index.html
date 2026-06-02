@@ -122,6 +122,37 @@
     .sys-proc-table th .sort-icon { font-size: .625rem; margin-left: .25rem; opacity: .4; }
     .sys-proc-table th.active .sort-icon { opacity: 1; color: var(--bs-primary); }
     .sys-proc-table td, .sys-proc-table th { padding: .2rem .4rem; }
+    /* AI Chat */
+    .ai-chat-scroll { flex: 1 1 auto; overflow-y: auto; background: var(--bs-body-bg); }
+    .ai-msg { display: flex; gap: .625rem; margin-bottom: 1rem; align-items: flex-start; }
+    .ai-msg-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.125rem; color: #fff; flex-shrink: 0; }
+    .ai-msg-user .ai-msg-avatar { background: linear-gradient(135deg, #0d6efd, #6f42c1); }
+    .ai-msg-ai .ai-msg-avatar { background: linear-gradient(135deg, #198754, #20c997); }
+    .ai-msg-system .ai-msg-avatar { background: linear-gradient(135deg, #6c7086, #45475a); }
+    .ai-msg-bubble { flex: 1; min-width: 0; background: var(--bs-tertiary-bg); border-radius: 10px; padding: .625rem .875rem; font-size: .8125rem; line-height: 1.55; }
+    .ai-msg-user .ai-msg-bubble { background: rgba(13, 110, 253, .12); }
+    .ai-msg-ai .ai-msg-bubble { background: var(--bs-tertiary-bg); }
+    .ai-msg-name { font-size: .6875rem; font-weight: 600; color: var(--bs-secondary-color); margin-bottom: .125rem; }
+    .ai-msg-content { word-wrap: break-word; }
+    .ai-msg-content p:last-child { margin-bottom: 0; }
+    .ai-msg-content p { margin-bottom: .5rem; }
+    .ai-msg-content pre { background: #181825; color: #cdd6f4; border-radius: 6px; padding: .625rem .75rem; margin: .5rem 0; font-family: 'Cascadia Code', monospace; font-size: .75rem; overflow-x: auto; position: relative; }
+    .ai-msg-content code { background: var(--bs-body-bg); padding: .05rem .375rem; border-radius: 3px; font-size: .8125em; font-family: 'Cascadia Code', monospace; }
+    .ai-msg-content pre code { background: transparent; padding: 0; color: inherit; }
+    .ai-code-actions { position: absolute; top: .25rem; right: .25rem; display: flex; gap: .25rem; }
+    .ai-code-actions .btn { font-size: .625rem; padding: .05rem .4rem; background: rgba(205, 214, 244, .15); border: 1px solid rgba(205, 214, 244, .2); color: #cdd6f4; }
+    .ai-code-actions .btn:hover { background: rgba(205, 214, 244, .3); }
+    .ai-msg-typing { display: inline-flex; gap: .25rem; padding: .25rem 0; }
+    .ai-msg-typing span { width: 6px; height: 6px; border-radius: 50%; background: var(--bs-secondary-color); animation: ai-typing 1.2s infinite; }
+    .ai-msg-typing span:nth-child(2) { animation-delay: .15s; }
+    .ai-msg-typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes ai-typing { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+    .ai-input-bar { border-top: 1px solid var(--bs-border-color); background: var(--bs-card-bg, var(--bs-body-bg)); }
+    #aiInput:focus { box-shadow: none; border-color: var(--bs-primary); }
+    .ai-stream-text { white-space: pre-wrap; font-family: 'Cascadia Code', monospace; font-size: .75rem; }
+    #shellView { position: relative; z-index: 1; }
+    #terminal, #terminal .xterm { height: 100%; width: 100%; }
+    #terminal .xterm-helper-textarea { z-index: 10; }
   </style>
 </head>
 <body>
@@ -133,7 +164,7 @@
             <span class="app-brand-logo demo">
               <svg width="25" viewBox="0 0 25 42" version="1.1"><defs><path d="M13.7918663,0.358365126 L3.39788168,7.44174259 C0.566865006,9.69408886 -0.379795268,12.4788597 0.557900856,15.7960551 C0.68998853,16.2305145 1.09562888,17.7872135 3.12357076,19.2293357 C3.8146334,19.7207684 5.32369333,20.3834223 7.65075054,21.2172976 L7.59773219,21.2525164 L2.63468769,24.5493413 C0.445452254,26.3002124 0.0884951797,28.5083815 1.56381646,31.1738486 C2.83770406,32.8170431 5.20850219,33.2640127 7.09180128,32.5391577 C8.347334,32.0559211 11.4559176,30.0011079 16.4175519,26.3747182 C18.0338572,24.4997857 18.6973423,22.4544883 18.4080071,20.2388261 C17.963753,17.5346866 16.1776345,15.5799961 13.0496516,14.3747546 L10.9194936,13.4715819 L18.6192054,7.984237 L13.7918663,0.358365126 Z" id="path-1"></path><path d="M5.47320593,6.00457225 C4.05321814,8.216144 4.36334763,10.0722806 6.40359441,11.5729822 C8.61520715,12.571656 10.0999176,13.2171421 10.8577257,13.5094407 L15.5088241,14.433041 L18.6192054,7.984237 C15.5364148,3.11535317 13.9273018,0.573395879 13.7918663,0.358365126 C13.5790555,0.511491653 10.8061687,2.3935607 5.47320593,6.00457225Z" id="path-3"></path><path d="M7.50063644,21.2294429 L12.3234468,23.3159332 C14.1688022,24.7579751 14.397098,26.4880487 13.008334,28.506154 C11.6195701,30.5242593 10.3099883,31.790241 9.07958868,32.3040991 C5.78142938,33.4346997 4.13234973,34 4.13234973,34 C4.13234973,34 2.75489982,33.0538207 2.37032616e-14,31.1614621 C-0.55822714,27.8186216 -0.55822714,26.0572515 -4.05231404e-15,25.8773518 C0.83734071,25.6075023 2.77988457,22.8248993 3.3049379,22.52991 C3.65497346,22.3332504 5.05353963,21.8997614 7.50063644,21.2294429Z" id="path-4"></path><path d="M20.6,7.13333333 L25.6,13.8 C26.2627417,14.6836556 26.0836556,15.9372583 25.2,16.6 C24.8538077,16.8596443 24.4327404,17 24,17 L14,17 C12.8954305,17 12,16.1045695 12,15 C12,14.5672596 12.1403557,14.1461923 12.4,13.8 L17.4,7.13333333 C18.0627417,6.24967773 19.3163444,6.07059163 20.2,6.73333333 C20.3516113,6.84704183 20.4862915,6.981722 20.6,7.13333333Z" id="path-5"></path></defs><g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g transform="translate(-27,-15)"><g transform="translate(27,15)"><g transform="translate(0,8)"><mask id="mask-2" fill="white"><use href="#path-1"></use></mask><use fill="currentColor" href="#path-1"></use><g mask="url(#mask-2)"><use fill="currentColor" href="#path-3"></use><use fill-opacity="0.2" fill="#FFF" href="#path-3"></use></g><g mask="url(#mask-2)"><use fill="currentColor" href="#path-4"></use><use fill-opacity="0.2" fill="#FFF" href="#path-4"></use></g></g><g transform="translate(19,11) rotate(-300) translate(-19,-11)"><use fill="currentColor" href="#path-5"></use><use fill-opacity="0.2" fill="#FFF" href="#path-5"></use></g></g></g></g></svg>
             </span>
-            <span class="app-brand-text demo menu-text fw-bold ms-2">MiCopa FW</span>
+            <span class="app-brand-text demo menu-text fw-bold ms-2">Firewall-Man</span>
           </a>
         </div>
         <div class="menu-divider mt-0"></div>
@@ -161,6 +192,12 @@
             <a href="#" class="menu-link" id="menuShellLink">
               <i class="menu-icon tf-icons bx bx-terminal"></i>
               <div class="text-truncate" id="menuShellLabel">Shell</div>
+            </a>
+          </li>
+          <li class="menu-item" id="menuAI">
+            <a href="#" class="menu-link" id="menuAILink">
+              <i class="menu-icon tf-icons bx bx-bot"></i>
+              <div class="text-truncate" id="menuAILabel">AI 助手</div>
             </a>
           </li>
           <li class="menu-divider my-2"></li>
@@ -301,9 +338,31 @@
             </div>
             </div><!-- /tablesView -->
 
+            <!-- AI View -->
+            <div id="aiView" style="display:none">
+              <div class="card dash-card">
+                <div class="card-header"><i class="bx bx-bot"></i><span id="aiHeaderLabel">AI 助手 (opencode)</span><span class="ms-auto"><span id="aiStatusBadge" class="badge bg-secondary">閒置</span></span></div>
+                <div class="card-body p-0 d-flex flex-column" style="height:calc(100vh - 280px);min-height:400px">
+                  <div id="aiChatScroll" class="ai-chat-scroll p-3">
+                    <div class="ai-msg ai-msg-system">
+                      <div class="ai-msg-avatar"><i class="bx bx-bot"></i></div>
+                      <div class="ai-msg-bubble">
+                        <div class="ai-msg-name">AI 助手</div>
+                        <div class="ai-msg-content">輸入你的需求，我會產生對應的防火牆命令。例如：<br>· 封鎖所有來自 192.168.1.0/24 的流量<br>· 允許 SSH (port 22) 從任何地方連入<br>· 列出目前所有 DROP 規則</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ai-input-bar p-3 d-flex gap-2 align-items-end">
+                    <textarea id="aiInput" class="form-control" rows="2" placeholder="輸入需求..." style="resize:none;font-size:.875rem"></textarea>
+                    <button id="aiSendBtn" class="btn btn-primary"><i class="bx bx-send me-1"></i><span id="aiSendLabel">送出</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Shell View -->
             <div id="shellView" style="display:none;height:calc(100vh - 220px);">
-              <div id="terminal" style="height:100%;width:100%;"></div>
+              <div id="terminal" tabindex="0" style="height:100%;width:100%;"></div>
             </div>
 
             <!-- System View -->
@@ -406,6 +465,8 @@
   <script src="/web/sneat/assets/js/main.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 
   <script>
     // ─── layer polyfill (layui.layer → Bootstrap) ───
@@ -530,7 +591,9 @@
         sysDisk: "磁碟", sysMount: "掛載點", sysFilesystem: "檔案系統", sysUsePct: "使用率",
         sysProcess: "處理程序", sysPID: "PID", sysName: "名稱", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "狀態",
         sysRefresh: "重新整理", sysSortBy: "排序",
-        shellLabel: "Shell",
+        shellLabel: "Shell", aiLabel: "AI 助手", aiSend: "送出", aiInputPlaceholder: "輸入需求...",
+        aiStatusIdle: "閒置", aiStatusRunning: "執行中", aiStatusDone: "完成", aiStatusError: "錯誤",
+        aiCopy: "複製", aiExecute: "執行", aiExecuted: "已執行", aiCopyOk: "已複製", aiConfirmExec: "確認執行此命令？",
       },
       en: {
         title: "{cmd} Web Console", docAssistTitle: "Quick Help", chainLabel: "Chain", defaultPolicy: "Default policy",
@@ -561,7 +624,9 @@
         sysDisk: "Disk", sysMount: "Mount", sysFilesystem: "Filesystem", sysUsePct: "Use%",
         sysProcess: "Processes", sysPID: "PID", sysName: "Name", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "State",
         sysRefresh: "Refresh", sysSortBy: "Sort",
-        shellLabel: "Shell",
+        shellLabel: "Shell", aiLabel: "AI Assistant", aiSend: "Send", aiInputPlaceholder: "Enter your request...",
+        aiStatusIdle: "Idle", aiStatusRunning: "Running", aiStatusDone: "Done", aiStatusError: "Error",
+        aiCopy: "Copy", aiExecute: "Execute", aiExecuted: "Executed", aiCopyOk: "Copied", aiConfirmExec: "Confirm to execute this command?",
       },
       ja: {
         title: "{cmd} 管理コンソール", docAssistTitle: "クイックヘルプ", chainLabel: "チェイン", defaultPolicy: "デフォルトポリシー",
@@ -591,7 +656,9 @@
         sysDisk: "ディスク", sysMount: "マウント", sysFilesystem: "ファイルシステム", sysUsePct: "使用率",
         sysProcess: "プロセス", sysPID: "PID", sysName: "名前", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "状態",
         sysRefresh: "更新", sysSortBy: "並び替え",
-        shellLabel: "Shell",
+        shellLabel: "Shell", aiLabel: "AI アシスタント", aiSend: "送信", aiInputPlaceholder: "リクエストを入力...",
+        aiStatusIdle: "アイドル", aiStatusRunning: "実行中", aiStatusDone: "完了", aiStatusError: "エラー",
+        aiCopy: "コピー", aiExecute: "実行", aiExecuted: "実行済み", aiCopyOk: "コピーしました", aiConfirmExec: "このコマンドを実行しますか？",
       }
     };
 
@@ -611,7 +678,10 @@
       $('#menuTablesLabel').text(lng.tablesLabel || 'Tables');
       $('#menuSysLabel').text(lng.systemLabel || 'System');
       $('#menuShellLabel').text(lng.shellLabel || 'Shell');
+      $('#menuAILabel').text(lng.aiLabel || 'AI Assistant');
       $('#menuDocLabel').text(lng.docLabel || 'Command Reference');
+      if (lng.aiSend) $('#aiSendLabel').text(lng.aiSend);
+      if (lng.aiInputPlaceholder) $('#aiInput').attr('placeholder', lng.aiInputPlaceholder);
       const labels = [
         ["#clear-all-rule", "clearAllRule"], ["#clear-current-table-rule", "clearCurrentRule"],
         ["#clear-all-empty-chain", "clearEmptyChain"], ["#clear-all-metrics", "clearAllMetrics"],
@@ -635,6 +705,13 @@
     // ─── Logger ───
     let logCount = 0;
     const LOG_LEVELS = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 };
+    const consoleMethods = { DEBUG: 'debug', INFO: 'info', WARN: 'warn', ERROR: 'error' };
+    const consoleStyles = {
+      DEBUG: 'color:#6c7086',
+      INFO:  'color:#89b4fa;font-weight:600',
+      WARN:  'color:#f9e2af;font-weight:600',
+      ERROR: 'color:#f38ba8;font-weight:600',
+    };
     const logger = {
       _append(level, msg, cmd) {
         logCount++;
@@ -649,6 +726,25 @@
         document.getElementById('logBadge').textContent = logCount;
         const c = document.getElementById('logContainer');
         if (c.classList.contains('open')) c.scrollTop = c.scrollHeight;
+        // Mirror to browser developer console
+        if (typeof console !== 'undefined') {
+          const tag = '%c[' + cls + '][' + time + ']';
+          const style = consoleStyles[cls] || '';
+          const args = [tag, style, msg];
+          if (cmd) args.push('→ ' + cmd);
+          const fn = console[consoleMethods[cls]] || console.log;
+          fn.apply(console, args);
+        }
+        // Mirror to server-side Rust console via /log endpoint (fire-and-forget)
+        try {
+          if (typeof fetch !== 'undefined') {
+            const body = new URLSearchParams();
+            body.set('level', cls.toLowerCase());
+            body.set('msg', String(msg));
+            if (cmd) body.set('cmd', String(cmd));
+            fetch('/log', { method: 'POST', body: body, keepalive: true }).catch(function () {});
+          }
+        } catch (e) { /* silently ignore */ }
       },
       debug(msg, cmd) { this._append(LOG_LEVELS.DEBUG, msg, cmd); },
       info(msg, cmd) { this._append(LOG_LEVELS.INFO, msg, cmd); },
@@ -658,6 +754,7 @@
         document.getElementById('logContent').innerHTML = '';
         logCount = 0;
         document.getElementById('logBadge').textContent = '0';
+        if (typeof console !== 'undefined' && console.clear) console.clear();
       }
     };
 
@@ -1229,13 +1326,87 @@
 
     // ─── Shell Terminal ───
     let term = null, wsShell = null, termFit = null;
+    let lastShellInputAt = 0;
+
+    function focusTerminal() {
+      if (!term || !$('#shellView').is(':visible')) return;
+      try { term.focus(); } catch (e) {}
+      setTimeout(function () { try { term.focus(); } catch (e) {} }, 0);
+    }
+
+    function formatShellInputDebug(data) {
+      return Array.from(data || '').map(function (ch) {
+        const code = ch.charCodeAt(0);
+        if (ch === '\r') return '<CR>';
+        if (ch === '\n') return '<LF>';
+        if (ch === '\t') return '<TAB>';
+        if (code === 0x1b) return '<ESC>';
+        if (code === 0x7f) return '<BACKSPACE>';
+        if (code >= 0x00 && code <= 0x1f) return '<CTRL-0x' + code.toString(16).padStart(2, '0') + '>';
+        if (code >= 0x20 && code <= 0x7e) return ch;
+        return '<U+' + code.toString(16).toUpperCase().padStart(4, '0') + '>';
+      }).join('');
+    }
+
+    function sendShellData(data, source) {
+      if (data === null || data === undefined || data === '') {
+        logger.warn('Shell 前端鍵盤資料為空', (source || 'unknown') + ' data=' + String(data));
+        return;
+      }
+      if (!wsShell || wsShell.readyState !== WebSocket.OPEN) {
+        logger.warn('Shell 前端鍵盤未送出：WebSocket 未連線', (source || 'unknown') + ' ' + formatShellInputDebug(data));
+        return;
+      }
+      logger.debug('Shell 前端送出鍵盤', (source || 'unknown') + ' len=' + data.length + ' data=' + formatShellInputDebug(data));
+      wsShell.send(new TextEncoder().encode(data));
+    }
+
+    function shellKeyToData(e) {
+      if (e.defaultPrevented && !$('#shellView').is(':visible')) return '';
+      if (e.key === 'Enter') return '\r';
+      if (e.key === 'Backspace') return '\x7f';
+      if (e.key === 'Tab') return '\t';
+      if (e.key === 'Escape') return '\x1b';
+      if (e.key === 'ArrowUp') return '\x1b[A';
+      if (e.key === 'ArrowDown') return '\x1b[B';
+      if (e.key === 'ArrowRight') return '\x1b[C';
+      if (e.key === 'ArrowLeft') return '\x1b[D';
+      if (e.key === 'Home') return '\x1b[H';
+      if (e.key === 'End') return '\x1b[F';
+      if (e.key === 'Delete') return '\x1b[3~';
+      if (e.key === 'PageUp') return '\x1b[5~';
+      if (e.key === 'PageDown') return '\x1b[6~';
+      if (e.ctrlKey && !e.altKey && !e.metaKey && e.key && e.key.length === 1) {
+        const ch = e.key.toUpperCase().charCodeAt(0);
+        if (ch >= 64 && ch <= 95) return String.fromCharCode(ch - 64);
+      }
+      if (!e.ctrlKey && !e.metaKey && e.key && e.key.length === 1) return e.key;
+      return '';
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (!term || !$('#shellView').is(':visible')) return;
+      const active = document.activeElement;
+      const activeTag = active && active.tagName ? active.tagName.toLowerCase() : '';
+      const inTerminalTextarea = active && active.classList && active.classList.contains('xterm-helper-textarea');
+      if ((activeTag === 'input' || activeTag === 'textarea' || (active && active.isContentEditable)) && !inTerminalTextarea) return;
+      const data = shellKeyToData(e);
+      logger.debug('Shell keydown 捕捉', 'key=' + String(e.key) + ' code=' + String(e.code) + ' ctrl=' + !!e.ctrlKey + ' meta=' + !!e.metaKey + ' alt=' + !!e.altKey + ' active=' + activeTag + ' xtermTextarea=' + !!inTerminalTextarea + ' data=' + formatShellInputDebug(data));
+      if (!data) return;
+      const eventTime = Date.now();
+      setTimeout(function () {
+        if (lastShellInputAt < eventTime) sendShellData(data, 'keydown-fallback');
+      }, 0);
+      if (!inTerminalTextarea) e.preventDefault();
+      focusTerminal();
+    }, true);
 
     function connectShell() {
       if (wsShell) { try { wsShell.close(); } catch(e) {} wsShell = null; }
       const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       wsShell = new WebSocket(proto + '//' + window.location.host + '/shell');
       wsShell.binaryType = 'arraybuffer';
-      wsShell.onopen = function () { term.clear(); term.write('\x1b[32mShell connected\x1b[0m\r\n'); term.focus(); sendResize(); logger.info('Shell 已連線'); };
+      wsShell.onopen = function () { term.clear(); term.write('\x1b[32mShell connected\x1b[0m\r\n'); focusTerminal(); sendResize(); logger.info('Shell 已連線'); };
       wsShell.onmessage = function (evt) { term.write(new Uint8Array(evt.data)); };
       wsShell.onclose = function () { term.write('\r\n\x1b[31mShell disconnected\x1b[0m\r\n'); wsShell = null; logger.warn('Shell 已斷線'); };
       wsShell.onerror = function () { term.write('\r\n\x1b[31mWebSocket error\x1b[0m\r\n'); logger.error('Shell WebSocket 錯誤'); };
@@ -1249,7 +1420,20 @@
       term.loadAddon(termFit);
       term.open(document.getElementById('terminal'));
       termFit.fit();
-      term.onData(function (data) { if (wsShell && wsShell.readyState === WebSocket.OPEN) wsShell.send(data); });
+      term.onData(function (data) {
+        lastShellInputAt = Date.now();
+        sendShellData(data, 'xterm-onData');
+      });
+      if (typeof term.onKey === 'function') {
+        term.onKey(function (ev) {
+          lastShellInputAt = Date.now();
+          const key = ev && ev.key ? ev.key : '';
+          logger.debug('Shell xterm-onKey 捕捉', 'key=' + formatShellInputDebug(key) + ' domKey=' + (ev && ev.domEvent ? String(ev.domEvent.key) : 'null'));
+          sendShellData(key, 'xterm-onKey');
+        });
+      }
+      $('#terminal').off('mousedown.shellFocus click.shellFocus').on('mousedown.shellFocus click.shellFocus', focusTerminal);
+      focusTerminal();
       connectShell();
     }
 
@@ -1267,6 +1451,188 @@
     $(window).on('resize', function () {
       if (termFit && $('#shellView').is(':visible')) { termFit.fit(); sendResize(); }
     });
+
+    // ─── AI Assistant ───
+    let wsAI = null;
+    let aiRunning = false;
+    let aiCurrentText = '';
+    let aiCurrentBubble = null;
+    let aiAccumBuf = '';
+    let prompt = '';
+
+    function setAIStatus(status) {
+      const badge = $('#aiStatusBadge');
+      const lang = i18n[currentLang];
+      badge.removeClass('bg-secondary bg-primary bg-success bg-danger');
+      if (status === 'running') {
+        badge.text(lang.aiStatusRunning || 'Running').addClass('bg-primary');
+      } else if (status === 'done') {
+        badge.text(lang.aiStatusDone || 'Done').addClass('bg-success');
+      } else if (status === 'error') {
+        badge.text(lang.aiStatusError || 'Error').addClass('bg-danger');
+      } else {
+        badge.text(lang.aiStatusIdle || 'Idle').addClass('bg-secondary');
+      }
+    }
+
+    function mdToHtml(text) {
+      if (typeof marked === 'undefined') {
+        return $('<div>').text(text).html();
+      }
+      try {
+        marked.setOptions({ breaks: true, gfm: true });
+        const raw = marked.parse(text);
+        if (typeof DOMPurify !== 'undefined') {
+          return DOMPurify.sanitize(raw);
+        }
+        return raw;
+      } catch (e) {
+        return $('<div>').text(text).html();
+      }
+    }
+
+    function enhanceCodeBlocks(scope) {
+      const lang = i18n[currentLang];
+      scope.find('pre > code').each(function () {
+        const $pre = $(this).parent();
+        if ($pre.find('.ai-code-actions').length) return;
+        const $bar = $('<div class="ai-code-actions">');
+        const $copy = $('<button type="button" class="btn">').html('<i class="bx bx-copy"></i> ' + (lang.aiCopy || 'Copy'));
+        $copy.on('click', function () {
+          const text = $(this).closest('pre').find('code').text();
+          copyText($, text);
+          layer.msg(lang.aiCopyOk || 'Copied', { icon: 1 });
+        });
+        const $exec = $('<button type="button" class="btn">').html('<i class="bx bx-play"></i> ' + (lang.aiExecute || 'Execute'));
+        $exec.on('click', function () {
+          const text = $(this).closest('pre').find('code').text().trim();
+          if (!text) return;
+          layer.confirm(lang.aiConfirmExec || 'Confirm to execute?', function () {
+            $.post('/exec', { args: text, protocol: 'ipv4' }, function (r) {
+              if (r.code === 0) {
+                layer.msg(lang.aiExecuted || 'Executed', { icon: 1 });
+              } else {
+                layer.alert(r.msg);
+              }
+            }, 'json');
+          });
+        });
+        $bar.append($copy).append($exec);
+        $pre.append($bar);
+      });
+    }
+
+    function appendAIMsg(role, htmlContent) {
+      const lang = i18n[currentLang];
+      const nameMap = { user: (currentLang === 'zh' ? '你' : currentLang === 'ja' ? 'あなた' : 'You'), ai: 'opencode', system: 'system' };
+      const $msg = $('<div class="ai-msg ai-msg-' + role + '">');
+      const icon = role === 'user' ? 'bx-user' : role === 'system' ? 'bx-info-circle' : 'bx-bot';
+      $msg.append('<div class="ai-msg-avatar"><i class="bx ' + icon + '"></i></div>');
+      const $bubble = $('<div class="ai-msg-bubble">');
+      $bubble.append('<div class="ai-msg-name">' + (nameMap[role] || role) + '</div>');
+      const $content = $('<div class="ai-msg-content">');
+      if (typeof htmlContent === 'string') {
+        $content.html(htmlContent);
+      } else {
+        $content.append(htmlContent);
+      }
+      $bubble.append($content);
+      $msg.append($bubble);
+      $('#aiChatScroll').append($msg);
+      if (role === 'ai') enhanceCodeBlocks($content);
+      $('#aiChatScroll').scrollTop($('#aiChatScroll')[0].scrollHeight);
+      return $bubble;
+    }
+
+    function createStreamingAIMsg() {
+      const $bubble = appendAIMsg('ai', '');
+      const $content = $bubble.find('.ai-msg-content');
+      $content.html('<span class="ai-msg-typing"><span></span><span></span><span></span></span>');
+      return $bubble;
+    }
+
+    function connectAI() {
+      if (wsAI) { try { wsAI.close(); } catch (e) {} wsAI = null; }
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const url = proto + '//' + window.location.host + '/ai';
+      try {
+        wsAI = new WebSocket(url);
+      } catch (e) {
+        appendAIMsg('system', '<span class="text-danger">WebSocket 建立失敗</span>');
+        aiRunning = false;
+        setAIStatus('error');
+        $('#aiSendBtn').prop('disabled', false);
+        return;
+      }
+      wsAI.onopen = function () {
+        aiAccumBuf = '';
+        aiCurrentText = '';
+        aiCurrentBubble = createStreamingAIMsg();
+        setAIStatus('running');
+        wsAI.send(prompt);
+      };
+      wsAI.onmessage = function (evt) {
+        if (typeof evt.data !== 'string') return;
+        if (evt.data.startsWith('OUT:')) {
+          aiAccumBuf += evt.data.slice(4) + '\n';
+        } else if (evt.data.startsWith('ERR:')) {
+          aiAccumBuf += evt.data.slice(4) + '\n';
+        } else if (evt.data.startsWith('DONE:')) {
+          aiRunning = false;
+          setAIStatus('done');
+          $('#aiSendBtn').prop('disabled', false);
+          // Render accumulated content as markdown
+          const $content = aiCurrentBubble.find('.ai-msg-content');
+          if (aiAccumBuf.trim()) {
+            $content.html(mdToHtml(aiAccumBuf));
+            enhanceCodeBlocks($content);
+          } else {
+            $content.html('<span class="text-muted">（無輸出）</span>');
+          }
+          $('#aiChatScroll').scrollTop($('#aiChatScroll')[0].scrollHeight);
+          wsAI.close();
+          wsAI = null;
+        } else if (evt.data.startsWith('ERROR:')) {
+          aiRunning = false;
+          setAIStatus('error');
+          const $content = aiCurrentBubble.find('.ai-msg-content');
+          $content.html('<span class="text-danger">' + $('<div>').text(evt.data.slice(6)).html() + '</span>');
+          $('#aiSendBtn').prop('disabled', false);
+          wsAI.close();
+          wsAI = null;
+        }
+      };
+      wsAI.onerror = function () {
+        aiRunning = false;
+        setAIStatus('error');
+        if (aiCurrentBubble) {
+          const $content = aiCurrentBubble.find('.ai-msg-content');
+          $content.html('<span class="text-danger">WebSocket 連線錯誤</span>');
+        }
+        $('#aiSendBtn').prop('disabled', false);
+      };
+      wsAI.onclose = function () {
+        if (aiRunning) {
+          aiRunning = false;
+          setAIStatus('idle');
+          $('#aiSendBtn').prop('disabled', false);
+        }
+      };
+    }
+
+    function sendAIPrompt() {
+      if (aiRunning) return;
+      const text = $('#aiInput').val().trim();
+      if (!text) return;
+      prompt = text;
+      $('#aiInput').val('');
+      appendAIMsg('user', $('<div>').text(text).html());
+      aiRunning = true;
+      setAIStatus('running');
+      $('#aiSendBtn').prop('disabled', true);
+      logger.info('送出 AI prompt', text);
+      connectAI();
+    }
 
     function currentCommandBinary() {
       if (currentPlatform === "macos") return "pfctl";
@@ -1328,7 +1694,9 @@
       function switchView(mode) {
         if (mode === 'dashboard') {
           destroyTerminal();
+          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
           $('#shellView').hide();
+          $('#aiView').hide();
           $('#dashboardView').show();
           $('#tablesView').hide();
           $('#systemView').hide();
@@ -1336,11 +1704,15 @@
           $('#menuDash').addClass('active');
           $('#menuTables').removeClass('active');
           $('#menuSys').removeClass('active');
+          $('#menuShell').removeClass('active');
+          $('#menuAI').removeClass('active');
           loadDash();
           if (dashTimer) clearInterval(dashTimer);
           dashTimer = setInterval(loadDash, 5000);
           logger.info('切換至 Dashboard');
         } else if (mode === 'shell') {
+          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
+          $('#aiView').hide();
           $('#dashboardView').hide();
           $('#tablesView').hide();
           $('#systemView').hide();
@@ -1350,13 +1722,33 @@
           $('#menuDash').removeClass('active');
           $('#menuTables').removeClass('active');
           $('#menuSys').removeClass('active');
+          $('#menuAI').removeClass('active');
           if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
           initTerminal();
-          setTimeout(function () { if (termFit) { termFit.fit(); sendResize(); } }, 100);
+          setTimeout(function () { if (termFit) { termFit.fit(); sendResize(); } focusTerminal(); }, 100);
           logger.info('切換至 Shell');
+        } else if (mode === 'ai') {
+          destroyTerminal();
+          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
+          $('#shellView').hide();
+          $('#dashboardView').hide();
+          $('#tablesView').hide();
+          $('#systemView').hide();
+          $('#aiView').show();
+          $('.action-buttons').hide();
+          $('#menuAI').addClass('active');
+          $('#menuDash').removeClass('active');
+          $('#menuTables').removeClass('active');
+          $('#menuSys').removeClass('active');
+          $('#menuShell').removeClass('active');
+          if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
+          setTimeout(function () { $('#aiInput').focus(); }, 100);
+          logger.info('切換至 AI 助手');
         } else if (mode === 'system') {
           destroyTerminal();
+          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
           $('#shellView').hide();
+          $('#aiView').hide();
           $('#dashboardView').hide();
           $('#tablesView').hide();
           $('#systemView').show();
@@ -1364,12 +1756,16 @@
           $('#menuSys').addClass('active');
           $('#menuDash').removeClass('active');
           $('#menuTables').removeClass('active');
+          $('#menuShell').removeClass('active');
+          $('#menuAI').removeClass('active');
           if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
           loadSystemInfo();
           logger.info('切換至 System');
         } else {
           destroyTerminal();
+          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
           $('#shellView').hide();
+          $('#aiView').hide();
           $('#dashboardView').hide();
           $('#tablesView').show();
           $('#systemView').hide();
@@ -1377,6 +1773,8 @@
           $('#menuTables').addClass('active');
           $('#menuDash').removeClass('active');
           $('#menuSys').removeClass('active');
+          $('#menuShell').removeClass('active');
+          $('#menuAI').removeClass('active');
           if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
           logger.info('切換至 Tables');
         }
@@ -1385,6 +1783,7 @@
       $('#menuTablesLink').on('click', function (e) { e.preventDefault(); switchView('tables'); });
       $('#menuSysLink').on('click', function (e) { e.preventDefault(); switchView('system'); });
       $('#menuShellLink').on('click', function (e) { e.preventDefault(); switchView('shell'); });
+      $('#menuAILink').on('click', function (e) { e.preventDefault(); switchView('ai'); });
       $('#menuDocLink').on('click', function (e) {
         e.preventDefault();
         var docMap = { linux: "iptables-command-reference", macos: "pfctl-command-reference", windows: "windows-firewall-command-reference" };
@@ -1677,6 +2076,13 @@
         if (lang && lang !== currentLang) {
           logger.info('切換語言', lang);
           setLanguage(lang);
+        }
+      });
+      $("#aiSendBtn").on("click", function (e) { e.preventDefault(); sendAIPrompt(); });
+      $("#aiInput").on("keydown", function (e) {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+          e.preventDefault();
+          sendAIPrompt();
         }
       });
     });

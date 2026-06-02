@@ -1,3 +1,4 @@
+mod ai;
 mod firewall;
 mod iptables;
 mod pfctl;
@@ -43,7 +44,7 @@ fn main() {
 
     let mut username = String::from("admin");
     let mut password = String::from("admin");
-    let mut address = String::from(":10001");
+    let mut address = String::from(":10002");
 
     let mut i = 1;
     while i < args.len() {

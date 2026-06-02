@@ -1,3 +1,4 @@
+use crate::ai;
 use crate::firewall::FirewallCmd;
 use crate::shell;
 use crate::system;
@@ -421,6 +422,28 @@ async fn handle_platform(State(state): State<Arc<AppState>>) -> Json<Value> {
     utils::output(None, Some(Value::String(state.platform.clone())))
 }
 
+#[derive(Deserialize)]
+pub struct LogForm {
+    pub level: Option<String>,
+    pub msg: Option<String>,
+    pub cmd: Option<String>,
+}
+
+async fn handle_log(Form(form): Form<LogForm>) -> Json<Value> {
+    let level = form.level.as_deref().unwrap_or("info").to_ascii_lowercase();
+    let msg = form.msg.as_deref().unwrap_or("");
+    let cmd = form.cmd.as_deref().unwrap_or("");
+    let target = if cmd.is_empty() { msg.to_string() } else { format!("{msg} → {cmd}") };
+    match level.as_str() {
+        "debug" => tracing::debug!(target: "frontend", "{}", target),
+        "info"  => tracing::info!(target: "frontend",  "{}", target),
+        "warn"  => tracing::warn!(target: "frontend",  "{}", target),
+        "error" => tracing::error!(target: "frontend", "{}", target),
+        _       => tracing::info!(target: "frontend",  "{}", target),
+    }
+    utils::output(None, None)
+}
+
 async fn handle_favicon() -> impl IntoResponse {
     StatusCode::OK
 }
@@ -434,6 +457,7 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/version", get(handle_version))
         .route("/listRule", post(handle_list_rule))
         .route("/shell", get(shell::handle_ws_shell))
+        .route("/ai", get(ai::handle_ws_ai))
         .route("/listExec", post(handle_list_exec))
         .route("/flushRule", post(handle_flush_rule))
         .route("/deleteRule", post(handle_delete_rule))
@@ -447,6 +471,7 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/system/processes", get(handle_system_processes))
         .route("/web/*path", get(handle_web_assets))
         .route("/platform", get(handle_platform))
+        .route("/log", post(handle_log))
         .route("/favicon.ico", get(handle_favicon))
         .route("/", get(handle_index))
         .route("/docs/*path", get(handle_docs))
