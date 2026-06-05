@@ -1958,7 +1958,11 @@
       juniperSelectedPorts[port] = !juniperSelectedPorts[port];
       updateJuniperPortSelection();
     });
-    $(document).on('change', '.juniper-port-select', function () {
+    $(document).on('click', '.juniper-port-select', function (e) {
+      e.stopPropagation();
+    });
+    $(document).on('change', '.juniper-port-select', function (e) {
+      e.stopPropagation();
       juniperSelectedPorts[$(this).data('port')] = $(this).is(':checked');
       updateJuniperPortSelection();
     });
@@ -2775,7 +2779,7 @@
           layer.open({ title: t + " · " + c, content: `<pre class="modal-pre">${res.data || ''}</pre>`, btn: [i18n[currentLang].btnOk], area: ["auto", "400px"] });
         });
       });
-      $(document).on("click", "tbody>tr>td:first-child", function () {
+      $(document).on("click", ".rule-table tbody>tr>td:first-child", function () {
         const btn = $(this).parent().find(".delete-rule");
         const t = btn.data("table"), c = btn.data("chain"), id = btn.data("id");
         logger.debug('編輯規則請求', c + '@' + t + '#' + id);
