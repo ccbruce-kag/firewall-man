@@ -153,15 +153,25 @@
     @media (max-width: 767.98px) { .juniper-port-grid { grid-template-columns:repeat(6, 34px); } }
     .haproxy-form label { font-size:.75rem; font-weight:600; color:var(--bs-secondary-color); }
     .haproxy-preview { font-family:'Cascadia Code','Fira Code',monospace; font-size:.8125rem; background:#181825; color:#cdd6f4; border-radius:6px; padding:.75rem; white-space:pre; min-height:260px; max-height:460px; overflow:auto; }
-    .haproxy-table { font-size:.8125rem; min-width:1100px; table-layout:fixed; }
+    .haproxy-table { font-size:.8125rem; min-width:980px; table-layout:fixed; }
     .haproxy-table th { white-space:nowrap; font-size:.75rem; color:var(--bs-secondary-color); }
-    .haproxy-table th:nth-child(1), .haproxy-table td:nth-child(1) { width:28%; min-width:280px; }
-    .haproxy-table th:nth-child(2), .haproxy-table td:nth-child(2) { width:38%; min-width:380px; }
-    .haproxy-table th:nth-child(3), .haproxy-table td:nth-child(3) { width:14%; min-width:160px; }
-    .haproxy-table th:nth-child(4), .haproxy-table td:nth-child(4) { width:12%; min-width:90px; text-align:center; }
-    .haproxy-table th:nth-child(5), .haproxy-table td:nth-child(5) { width:10%; min-width:70px; text-align:center; }
+    .haproxy-table th:nth-child(1), .haproxy-table td:nth-child(1) { width:27%; min-width:240px; }
+    .haproxy-table th:nth-child(2), .haproxy-table td:nth-child(2) { width:29%; min-width:250px; }
+    .haproxy-table th:nth-child(3), .haproxy-table td:nth-child(3) { width:13%; min-width:120px; }
+    .haproxy-table th:nth-child(4), .haproxy-table td:nth-child(4) { width:13%; min-width:110px; text-align:center; }
+    .haproxy-table th:nth-child(5), .haproxy-table td:nth-child(5) { width:18%; min-width:160px; text-align:center; }
     .haproxy-preview-actions { display:flex; justify-content:flex-end; gap:.5rem; padding-top:.75rem; }
     .haproxy-status-value { font-size:1rem; font-weight:600; line-height:1.25; }
+    .haproxy-status-switch { display:inline-flex; align-items:center; justify-content:center; gap:.45rem; min-width:96px; margin:0; padding:.2rem .5rem; border-radius:7px; background:rgba(25,135,84,.08); color:#157347; font-size:.75rem; font-weight:700; }
+    .haproxy-status-switch.is-off { background:rgba(108,117,125,.10); color:#6c757d; }
+    .haproxy-status-switch.is-busy { opacity:.62; pointer-events:none; }
+    .haproxy-status-switch .form-check-input { width:2.35rem; height:1.2rem; margin:0; cursor:pointer; flex:0 0 auto; }
+    .haproxy-status-switch .form-check-label { margin:0; min-width:28px; cursor:pointer; color:inherit; }
+    .haproxy-status-switch.is-static { min-width:82px; padding:.12rem .35rem; pointer-events:none; }
+    .haproxy-status-switch.is-static .form-check-input { width:2rem; height:1rem; pointer-events:none; opacity:1; }
+    .haproxy-status-switch.is-static .form-check-label { font-size:.7rem; min-width:24px; }
+    .haproxy-saved-server { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.15rem 0; }
+    .haproxy-saved-server-main { white-space:nowrap; }
     #toastContainer { z-index: 20000; }
     .haproxy-toast { min-width:340px; max-width:420px; background:#fff; color:#2b2c40; opacity:1 !important; border:1px solid rgba(25,135,84,.22); border-left:6px solid #198754; box-shadow:0 .85rem 2.25rem rgba(20,24,40,.28); border-radius:8px; overflow:hidden; }
     .haproxy-toast.is-disabled { border-left-color:#fd7e14; }
@@ -596,6 +606,11 @@
                     <i class="bx bx-data me-1"></i><span id="haproxySqlTabLabel">SQL Server 負載平衡</span>
                   </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="haproxy-test-tab" data-bs-toggle="tab" data-bs-target="#haproxyTestPane" type="button" role="tab">
+                    <i class="bx bx-plug me-1"></i><span id="haproxyTestTabLabel">連線測試</span>
+                  </button>
+                </li>
               </ul>
 
               <div class="tab-content p-0">
@@ -654,7 +669,7 @@
                           </div>
                           <div class="table-responsive">
                             <table class="table table-sm haproxy-table mb-0" id="haproxyWebServers">
-                              <thead><tr><th>Name</th><th>IP</th><th>Port</th><th>Status</th><th></th></tr></thead>
+                              <thead><tr><th>Name</th><th>IP</th><th>Port</th><th>Status</th><th>操作</th></tr></thead>
                               <tbody></tbody>
                             </table>
                           </div>
@@ -715,7 +730,7 @@
                           </div>
                           <div class="table-responsive">
                             <table class="table table-sm haproxy-table mb-0" id="haproxySqlServers">
-                              <thead><tr><th>Name</th><th>IP</th><th>Port</th><th>Status</th><th></th></tr></thead>
+                              <thead><tr><th>Name</th><th>IP</th><th>Port</th><th>Status</th><th>操作</th></tr></thead>
                               <tbody></tbody>
                             </table>
                           </div>
@@ -734,6 +749,57 @@
                             <button class="btn btn-outline-primary haproxy-validate-preview" data-target="#haproxySqlPreview"><i class="bx bx-check-shield me-1"></i><span class="haproxyValidateLabel">驗證設定</span></button>
                             <button class="btn btn-success haproxy-apply-preview" data-kind="sql" data-target="#haproxySqlPreview"><i class="bx bx-check me-1"></i><span class="haproxyApplyLabel">驗證並套用</span></button>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="tab-pane fade" id="haproxyTestPane" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-lg-6">
+                      <div class="card">
+                        <div class="card-header py-2"><strong style="font-size:.8125rem">Web 測試</strong></div>
+                        <div class="card-body haproxy-form">
+                          <div class="row g-3">
+                            <div class="col-md-8">
+                              <label class="form-label" for="haproxyTestWebUrl">URL</label>
+                              <input type="text" class="form-control font-monospace" id="haproxyTestWebUrl" value="http://10.20.100.241">
+                            </div>
+                            <div class="col-md-4">
+                              <label class="form-label" for="haproxyTestWebCount">測試次數</label>
+                              <input type="number" class="form-control font-monospace" id="haproxyTestWebCount" min="1" max="50" value="5">
+                            </div>
+                          </div>
+                          <button class="btn btn-primary w-100 mt-3" id="haproxyRunWebTest"><i class="bx bx-play me-1"></i>執行 Web 測試</button>
+                          <div class="table-responsive mt-3" id="haproxyWebTestResult"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-lg-6">
+                      <div class="card">
+                        <div class="card-header py-2"><strong style="font-size:.8125rem">SQL/TCP 測試</strong></div>
+                        <div class="card-body haproxy-form">
+                          <div class="row g-3">
+                            <div class="col-md-5">
+                              <label class="form-label" for="haproxyTestSqlHost">Host</label>
+                              <input type="text" class="form-control font-monospace" id="haproxyTestSqlHost" value="10.20.100.241">
+                            </div>
+                            <div class="col-md-3">
+                              <label class="form-label" for="haproxyTestSqlPort">Port</label>
+                              <input type="number" class="form-control font-monospace" id="haproxyTestSqlPort" min="1" max="65535" value="1433">
+                            </div>
+                            <div class="col-md-2">
+                              <label class="form-label" for="haproxyTestSqlCount">次數</label>
+                              <input type="number" class="form-control font-monospace" id="haproxyTestSqlCount" min="1" max="50" value="5">
+                            </div>
+                            <div class="col-md-2">
+                              <label class="form-label" for="haproxyTestSqlTimeout">Timeout</label>
+                              <input type="number" class="form-control font-monospace" id="haproxyTestSqlTimeout" min="1" max="30" value="3">
+                            </div>
+                          </div>
+                          <button class="btn btn-primary w-100 mt-3" id="haproxyRunSqlTest"><i class="bx bx-play me-1"></i>執行 TCP 測試</button>
+                          <div class="table-responsive mt-3" id="haproxySqlTestResult"></div>
                         </div>
                       </div>
                     </div>
@@ -1005,7 +1071,7 @@
         juniperNoPortSelected: "請至少選取一個 Port", juniperAccessOneVlan: "Access 模式只能選擇一個 VLAN",
         juniperMgmtPortWarning: "注意：ge-0/0/23 是 Firewall-Man 管理連線 Port，修改或停用可能造成 Juniper 失聯。",
         juniperConfirmApply: "確認下發這些 JunOS 指令？", juniperApplied: "Juniper 設定已套用", juniperDeleted: "已刪除 VLAN",
-        haproxyLabel: "HAProxy 管理", haproxyStatus: "HAProxy 狀態", haproxyWeb: "Web 負載平衡", haproxySql: "SQL Server 負載平衡",
+        haproxyLabel: "HAProxy 管理", haproxyStatus: "HAProxy 狀態", haproxyWeb: "Web 負載平衡", haproxySql: "SQL Server 負載平衡", haproxyTest: "連線測試",
         haproxyReload: "Reload HAProxy", haproxyRestart: "Restart HAProxy", haproxyInstalled: "是否已安裝", haproxyService: "Service 狀態",
         haproxyConfigPath: "設定檔路徑", haproxyConfigValid: "設定檔驗證", haproxyVersion: "版本", haproxyGenerate: "產生設定預覽",
         haproxyValidate: "驗證設定", haproxyApply: "驗證並套用", haproxyAddServer: "新增 Server", haproxyPreview: "HAProxy Config Preview",
@@ -1061,7 +1127,7 @@
         juniperNoPortSelected: "Select at least one port", juniperAccessOneVlan: "Access mode requires exactly one VLAN",
         juniperMgmtPortWarning: "Warning: ge-0/0/23 is the Firewall-Man management port. Changing or disabling it may disconnect Juniper.",
         juniperConfirmApply: "Apply these JunOS commands?", juniperApplied: "Juniper setting applied", juniperDeleted: "VLAN deleted",
-        haproxyLabel: "HAProxy Management", haproxyStatus: "HAProxy Status", haproxyWeb: "Web Load Balance", haproxySql: "SQL Server Load Balance",
+        haproxyLabel: "HAProxy Management", haproxyStatus: "HAProxy Status", haproxyWeb: "Web Load Balance", haproxySql: "SQL Server Load Balance", haproxyTest: "Connection Test",
         haproxyReload: "Reload HAProxy", haproxyRestart: "Restart HAProxy", haproxyInstalled: "Installed", haproxyService: "Service Status",
         haproxyConfigPath: "Config Path", haproxyConfigValid: "Config Valid", haproxyVersion: "Version", haproxyGenerate: "Generate Preview",
         haproxyValidate: "Validate Config", haproxyApply: "Validate & Apply", haproxyAddServer: "Add Server", haproxyPreview: "HAProxy Config Preview",
@@ -1116,7 +1182,7 @@
         juniperNoPortSelected: "Port を1つ以上選択してください", juniperAccessOneVlan: "Access モードでは VLAN を1つだけ選択してください",
         juniperMgmtPortWarning: "注意: ge-0/0/23 は Firewall-Man 管理 Port です。変更または無効化すると Juniper に接続できなくなる可能性があります。",
         juniperConfirmApply: "これらの JunOS コマンドを適用しますか？", juniperApplied: "Juniper 設定を適用しました", juniperDeleted: "VLAN を削除しました",
-        haproxyLabel: "HAProxy 管理", haproxyStatus: "HAProxy 状態", haproxyWeb: "Web ロードバランス", haproxySql: "SQL Server ロードバランス",
+        haproxyLabel: "HAProxy 管理", haproxyStatus: "HAProxy 状態", haproxyWeb: "Web ロードバランス", haproxySql: "SQL Server ロードバランス", haproxyTest: "接続テスト",
         haproxyReload: "HAProxy Reload", haproxyRestart: "HAProxy Restart", haproxyInstalled: "インストール済み", haproxyService: "Service 状態",
         haproxyConfigPath: "設定ファイル", haproxyConfigValid: "設定検証", haproxyVersion: "バージョン", haproxyGenerate: "設定プレビュー生成",
         haproxyValidate: "設定を検証", haproxyApply: "検証して適用", haproxyAddServer: "Server 追加", haproxyPreview: "HAProxy Config Preview",
@@ -1191,6 +1257,7 @@
       $('#haproxyStatusTabLabel,#haproxyStatusTitle').text(lng.haproxyStatus || 'HAProxy Status');
       $('#haproxyWebTabLabel,#haproxyWebTitle').text(lng.haproxyWeb || 'Web Load Balance');
       $('#haproxySqlTabLabel,#haproxySqlTitle').text(lng.haproxySql || 'SQL Server Load Balance');
+      $('#haproxyTestTabLabel').text(lng.haproxyTest || 'Connection Test');
       $('#haproxyReloadLabel').text(lng.haproxyReload || 'Reload HAProxy');
       $('#haproxyRestartLabel').text(lng.haproxyRestart || 'Restart HAProxy');
       $('.haproxyRefreshLabel').text(lng.juniperRefresh || 'Refresh');
@@ -2362,13 +2429,15 @@
       var name = data.name || '';
       var ip = data.ip || '';
       var port = data.port || '';
-      var checked = data.health_check === false ? '' : ' checked';
+      var health = data.health_check !== false;
+      var healthClass = health ? '' : ' is-off';
+      var healthText = health ? '啟用' : '停用';
       return '<tr>' +
         '<td><input class="form-control form-control-sm font-monospace haproxy-server-name" value="' + escHtml(name) + '"></td>' +
         '<td><input class="form-control form-control-sm font-monospace haproxy-server-ip" value="' + escHtml(ip) + '"></td>' +
         '<td><input type="number" class="form-control form-control-sm font-monospace haproxy-server-port" min="1" max="65535" value="' + escHtml(port) + '"></td>' +
-        '<td><input class="form-check-input haproxy-server-health" type="checkbox"' + checked + '></td>' +
-        '<td><button class="btn btn-sm btn-outline-danger haproxy-remove-server"><i class="bx bx-trash"></i></button></td>' +
+        '<td><label class="form-check form-switch haproxy-status-switch' + healthClass + '"><input class="form-check-input haproxy-server-health-toggle" type="checkbox" data-enabled="' + (health ? '1' : '0') + '"' + (health ? ' checked' : '') + '><span class="form-check-label">' + healthText + '</span></label></td>' +
+        '<td><div class="btn-group btn-group-sm"><button type="button" class="btn btn-outline-primary haproxy-test-backend" data-kind="' + escHtml(prefix || 'web') + '"><i class="bx bx-plug me-1"></i>測試</button><button type="button" class="btn btn-outline-danger haproxy-remove-server"><i class="bx bx-trash me-1"></i>刪除</button></div></td>' +
       '</tr>';
     }
     function ensureHaproxyDefaults() {
@@ -2391,7 +2460,7 @@
           name: row.find('.haproxy-server-name').val().trim(),
           ip: row.find('.haproxy-server-ip').val().trim(),
           port: Number(row.find('.haproxy-server-port').val()),
-          health_check: row.find('.haproxy-server-health').is(':checked')
+          health_check: row.find('.haproxy-server-health-toggle').is(':checked')
         });
       });
       return servers;
@@ -2423,6 +2492,7 @@
           var d = res.data || {};
           var installed = d.installed ? 'Yes' : 'No';
           var valid = d.config_valid ? 'OK' : 'Failed';
+          var refreshedAt = new Date().toLocaleString();
           $('#haproxyStatusBody').html(
             '<div class="row">' +
               '<div class="col-md-3 col-6 mb-3"><div class="sys-card-label">' + (lang.haproxyInstalled || 'Installed') + '</div><div class="haproxy-status-value">' + escHtml(installed) + '</div></div>' +
@@ -2431,6 +2501,7 @@
               '<div class="col-md-3 col-6 mb-3"><div class="sys-card-label">' + (lang.haproxyConfigPath || 'Config Path') + '</div><div class="haproxy-status-value" style="font-size:.875rem">' + escHtml(d.config_path || '') + '</div></div>' +
               '<div class="col-12 mb-2"><div class="sys-card-label">' + (lang.haproxyVersion || 'Version') + '</div><pre class="modal-pre mb-0">' + escHtml(d.version || '') + '</pre></div>' +
               '<div class="col-12"><div class="sys-card-label">Validation</div><pre class="modal-pre mb-0">' + escHtml(d.validation_output || '') + '</pre></div>' +
+              '<div class="col-12 mt-2 text-end text-muted" style="font-size:.75rem">Updated: ' + escHtml(refreshedAt) + '</div>' +
             '</div>'
           );
           logger.debug('HAProxy 狀態已載入', d.service_status || '');
@@ -2438,6 +2509,17 @@
           $('#haproxyStatusBody').html('<div class="text-danger p-2">' + escHtml(juniperAjaxError(xhr, textStatus, errorThrown)) + '</div>');
         });
       });
+    }
+    function refreshHaproxyPage(button) {
+      var btn = button ? $(button) : $();
+      var original = btn.html();
+      if (btn.length) btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>重新整理');
+      logger.info('重新整理 HAProxy 狀態頁');
+      loadHaproxyStatus();
+      loadHaproxySaved();
+      setTimeout(function () {
+        if (btn.length) btn.prop('disabled', false).html(original);
+      }, 900);
     }
     function loadHaproxySaved() {
       detectHaproxyApi(function () {
@@ -2450,23 +2532,33 @@
           }
           var rows = items.map(function (item) {
             var servers = (item.servers || []).map(function (server) {
-              return server.name + ' ' + server.ip + ':' + server.port;
-            }).join('<br>');
-            var checked = item.enabled === false ? '' : ' checked';
-            var statusText = item.enabled === false ? '停用' : '啟用';
+              var serverEnabled = server.health_check !== false;
+              var serverStatusText = serverEnabled ? '啟用' : '停用';
+              var serverStatusClass = serverEnabled ? '' : ' is-off';
+              return '<div class="haproxy-saved-server">' +
+                '<span class="haproxy-saved-server-main">' + escHtml(server.name || '') + ' ' + escHtml(server.ip || '') + ':' + escHtml(server.port || '') + '</span>' +
+                '<label class="form-check form-switch haproxy-status-switch is-static' + serverStatusClass + '">' +
+                  '<input type="checkbox" class="form-check-input" tabindex="-1"' + (serverEnabled ? ' checked' : '') + '>' +
+                  '<span class="form-check-label">' + serverStatusText + '</span>' +
+                '</label>' +
+              '</div>';
+            }).join('');
+            var enabled = item.enabled !== false;
+            var statusText = enabled ? '啟用' : '停用';
+            var statusClass = enabled ? '' : ' is-off';
             return '<tr>' +
               '<td><span class="badge bg-label-primary">' + escHtml(item.lb_type || '') + '</span></td>' +
               '<td class="font-monospace">' + escHtml(item.name || '') + '</td>' +
               '<td class="font-monospace">' + escHtml(item.bind_port || '') + '</td>' +
               '<td class="font-monospace">' + escHtml(item.balance_method || '') + '</td>' +
-              '<td><div class="form-check form-switch mb-0"><input type="checkbox" class="form-check-input haproxy-toggle-lb" data-id="' + escHtml(item.id) + '"' + checked + '><label class="form-check-label small">' + statusText + '</label></div></td>' +
+              '<td><label class="form-check form-switch haproxy-status-switch' + statusClass + '"><input type="checkbox" class="form-check-input haproxy-toggle-lb" data-id="' + escHtml(item.id) + '" data-enabled="' + (enabled ? '1' : '0') + '"' + (enabled ? ' checked' : '') + '><span class="form-check-label">' + statusText + '</span></label></td>' +
               '<td class="font-monospace">' + servers + '</td>' +
               '<td><button type="button" class="btn btn-sm btn-outline-danger haproxy-delete-lb" data-id="' + escHtml(item.id) + '"><i class="bx bx-trash me-1"></i>刪除</button></td>' +
             '</tr>';
           }).join('');
           $('#haproxySavedBody').html(
             '<div class="table-responsive"><table class="table table-sm mb-0">' +
-            '<thead><tr><th>Type</th><th>Name</th><th>Port</th><th>Balance</th><th>Status</th><th>Backend Servers</th><th></th></tr></thead>' +
+            '<thead><tr><th>Type</th><th>Name</th><th>Port</th><th>Balance</th><th>LB Status</th><th>Backend Servers</th><th></th></tr></thead>' +
             '<tbody>' + rows + '</tbody></table></div>'
           );
         }, 'json').fail(function (xhr, textStatus, errorThrown) {
@@ -2556,8 +2648,115 @@
         });
       });
     }
-    $(document).on('click', '#haproxyStatusRefresh', loadHaproxyStatus);
-    $(document).on('click', '#haproxySavedRefresh', loadHaproxySaved);
+    function renderHaproxyWebTestResult(target, res) {
+      var rows = ((res && res.data && res.data.results) || []).map(function (r) {
+        return '<tr>' +
+          '<td>' + escHtml(r.index) + '</td>' +
+          '<td><span class="badge ' + (r.success ? 'bg-label-success' : 'bg-label-danger') + '">' + (r.success ? '成功' : '失敗') + '</span></td>' +
+          '<td class="font-monospace">' + escHtml(r.status || '') + '</td>' +
+          '<td class="font-monospace">' + escHtml(r.response_time_ms || 0) + ' ms</td>' +
+          '<td class="font-monospace text-wrap">' + escHtml(r.body || '') + '</td>' +
+          '<td class="text-danger text-wrap">' + escHtml(r.error || '') + '</td>' +
+        '</tr>';
+      }).join('');
+      $(target).html('<table class="table table-sm mb-0"><thead><tr><th>#</th><th>狀態</th><th>HTTP</th><th>耗時</th><th>Response Body</th><th>Error</th></tr></thead><tbody>' + rows + '</tbody></table>');
+    }
+    function renderHaproxyTcpTestResult(target, res) {
+      var rows = ((res && res.data && res.data.results) || []).map(function (r) {
+        return '<tr>' +
+          '<td>' + escHtml(r.index) + '</td>' +
+          '<td><span class="badge ' + (r.connected ? 'bg-label-success' : 'bg-label-danger') + '">' + (r.connected ? 'Online' : 'Offline') + '</span></td>' +
+          '<td class="font-monospace">' + escHtml(r.host || '') + '</td>' +
+          '<td class="font-monospace">' + escHtml(r.port || '') + '</td>' +
+          '<td class="font-monospace">' + escHtml(r.response_time_ms || 0) + ' ms</td>' +
+          '<td class="text-danger text-wrap">' + escHtml(r.error || '') + '</td>' +
+        '</tr>';
+      }).join('');
+      $(target).html('<table class="table table-sm mb-0"><thead><tr><th>#</th><th>狀態</th><th>Host</th><th>Port</th><th>耗時</th><th>Error</th></tr></thead><tbody>' + rows + '</tbody></table>');
+    }
+    function haproxyWebTestHtml(res) {
+      var box = $('<div></div>');
+      renderHaproxyWebTestResult(box, res);
+      return box.html();
+    }
+    function haproxyTcpTestHtml(res) {
+      var box = $('<div></div>');
+      renderHaproxyTcpTestResult(box, res);
+      return box.html();
+    }
+    function runHaproxyWebTest(data, target, button, opts) {
+      opts = opts || {};
+      var btn = button ? $(button) : $();
+      var original = btn.html();
+      if (btn.length) btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>測試中');
+      if (target) $(target).html('<div class="text-muted p-2">Testing...</div>');
+      detectHaproxyApi(function () {
+        $.ajax({
+          url: haproxyUrl('/test/web'),
+          method: 'POST',
+          contentType: 'application/json',
+          dataType: 'json',
+          data: JSON.stringify(data)
+        }).done(function (res) {
+          if (res.code !== 0) { showHaproxyError(res.msg); return; }
+          if (opts.modal) {
+            layer.open({
+              title: opts.title || 'Web Backend 連線測試',
+              content: '<div class="table-responsive">' + haproxyWebTestHtml(res) + '</div>',
+              area: ['820px', '60vh'],
+              btn: ['OK']
+            });
+          } else {
+            renderHaproxyWebTestResult(target, res);
+          }
+        }).fail(function (xhr, textStatus, errorThrown) {
+          showHaproxyError(juniperAjaxError(xhr, textStatus, errorThrown));
+        }).always(function () {
+          if (btn.length) btn.prop('disabled', false).html(original);
+        });
+      });
+    }
+    function runHaproxyTcpTest(data, target, button, opts) {
+      opts = opts || {};
+      var btn = button ? $(button) : $();
+      var original = btn.html();
+      if (btn.length) btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>測試中');
+      if (target) $(target).html('<div class="text-muted p-2">Testing...</div>');
+      detectHaproxyApi(function () {
+        $.ajax({
+          url: haproxyUrl('/test/sql'),
+          method: 'POST',
+          contentType: 'application/json',
+          dataType: 'json',
+          data: JSON.stringify(data)
+        }).done(function (res) {
+          if (res.code !== 0) { showHaproxyError(res.msg); return; }
+          if (opts.modal) {
+            layer.open({
+              title: opts.title || 'SQL/TCP Backend 連線測試',
+              content: '<div class="table-responsive">' + haproxyTcpTestHtml(res) + '</div>',
+              area: ['820px', '60vh'],
+              btn: ['OK']
+            });
+          } else {
+            renderHaproxyTcpTestResult(target, res);
+          }
+        }).fail(function (xhr, textStatus, errorThrown) {
+          showHaproxyError(juniperAjaxError(xhr, textStatus, errorThrown));
+        }).always(function () {
+          if (btn.length) btn.prop('disabled', false).html(original);
+        });
+      });
+    }
+    $(document).on('click', '#haproxyStatusRefresh', function () { refreshHaproxyPage(this); });
+    $(document).on('click', '#haproxySavedRefresh', function () {
+      var btn = $(this);
+      var original = btn.html();
+      btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>重新整理');
+      logger.info('重新整理 HAProxy 已儲存設定');
+      loadHaproxySaved();
+      setTimeout(function () { btn.prop('disabled', false).html(original); }, 900);
+    });
     $(document).on('click', '#haproxyReloadBtn', function () {
       haproxyPost('/reload', {}, function (res) {
         layer.alert('<pre class="modal-pre">' + escHtml((res.data && res.data.output) || '') + '</pre>', { title: 'HAProxy' });
@@ -2570,6 +2769,20 @@
         loadHaproxyStatus();
       });
     });
+    $(document).on('click', '#haproxyRunWebTest', function () {
+      runHaproxyWebTest({
+        url: $('#haproxyTestWebUrl').val().trim(),
+        count: Number($('#haproxyTestWebCount').val())
+      }, '#haproxyWebTestResult', this);
+    });
+    $(document).on('click', '#haproxyRunSqlTest', function () {
+      runHaproxyTcpTest({
+        host: $('#haproxyTestSqlHost').val().trim(),
+        port: Number($('#haproxyTestSqlPort').val()),
+        count: Number($('#haproxyTestSqlCount').val()),
+        timeout: Number($('#haproxyTestSqlTimeout').val())
+      }, '#haproxySqlTestResult', this);
+    });
     $(document).on('click', '#haproxyWebAddServer', function () {
       $('#haproxyWebServers tbody').append(haproxyServerRow('web', { name: 'web' + ($('#haproxyWebServers tbody tr').length + 1), port: 80 }));
     });
@@ -2577,6 +2790,19 @@
       $('#haproxySqlServers tbody').append(haproxyServerRow('sql', { name: 'sql_node' + ($('#haproxySqlServers tbody tr').length + 1), port: 1433 }));
     });
     $(document).on('click', '.haproxy-remove-server', function () { $(this).closest('tr').remove(); });
+    $(document).on('click', '.haproxy-test-backend', function () {
+      var btn = $(this);
+      var row = btn.closest('tr');
+      var kind = btn.data('kind');
+      var ip = row.find('.haproxy-server-ip').val().trim();
+      var port = Number(row.find('.haproxy-server-port').val());
+      if (kind === 'web') {
+        var path = $('#haproxyWebHealthPath').val().trim() || '/';
+        runHaproxyWebTest({ url: 'http://' + ip + ':' + port + path, count: 1 }, null, this, { modal: true, title: 'Web Backend 連線測試 · ' + ip + ':' + port });
+      } else {
+        runHaproxyTcpTest({ host: ip, port: port, count: 1, timeout: 3 }, null, this, { modal: true, title: 'SQL/TCP Backend 連線測試 · ' + ip + ':' + port });
+      }
+    });
     $(document).on('click', '#haproxyWebGenerate', function () { generateHaproxy('web'); });
     $(document).on('click', '#haproxySqlGenerate', function () { generateHaproxy('sql'); });
     $(document).on('click', '.haproxy-validate-preview', function () {
@@ -2585,17 +2811,28 @@
     $(document).on('click', '.haproxy-apply-preview', function () {
       applyHaproxyConfig($(this).data('kind'), $($(this).data('target')).text());
     });
+    function setHaproxySwitchState(input, enabled) {
+      input.attr('data-enabled', enabled ? '1' : '0').prop('checked', enabled);
+      var wrapper = input.closest('.haproxy-status-switch');
+      wrapper.toggleClass('is-off', !enabled);
+      wrapper.find('.form-check-label').text(enabled ? '啟用' : '停用');
+    }
+    $(document).on('change', '.haproxy-server-health-toggle', function () {
+      var input = $(this);
+      setHaproxySwitchState(input, input.is(':checked'));
+    });
     $(document).on('change', '.haproxy-toggle-lb', function () {
       var toggle = $(this);
       var id = toggle.data('id');
       var enabled = toggle.is(':checked');
-      toggle.prop('disabled', true);
+      toggle.closest('.haproxy-status-switch').addClass('is-busy');
       logger.info('切換 HAProxy 負載平衡狀態', 'id=' + id + ', enabled=' + enabled);
       detectHaproxyApi(function () {
         $.post(haproxyUrl('/lbs/' + encodeURIComponent(id) + '/enabled'), { enabled: enabled ? '1' : '0' }, function (res) {
           logger.debug('HAProxy 狀態切換 API 回應', JSON.stringify(res));
           if (res.code !== 0) {
-            toggle.prop('checked', !enabled).prop('disabled', false);
+            setHaproxySwitchState(toggle, !enabled);
+            toggle.closest('.haproxy-status-switch').removeClass('is-busy');
             showHaproxyError(res.msg);
             return;
           }
@@ -2603,7 +2840,8 @@
           loadHaproxyStatus();
           showHaproxyToast(enabled, 'id=' + id + ', reload=success');
         }, 'json').fail(function (xhr, textStatus, errorThrown) {
-          toggle.prop('checked', !enabled).prop('disabled', false);
+          setHaproxySwitchState(toggle, !enabled);
+          toggle.closest('.haproxy-status-switch').removeClass('is-busy');
           showHaproxyError(juniperAjaxError(xhr, textStatus, errorThrown));
         });
       });

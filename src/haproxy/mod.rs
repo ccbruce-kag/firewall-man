@@ -4,12 +4,16 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
+use tokio::net::TcpStream;
 use tokio::process::Command;
+use tokio::time::timeout;
 use uuid::Uuid;
 
 static NAME_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[A-Za-z][A-Za-z0-9_-]{0,63}$").unwrap());
 static HOST_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,254}$").unwrap());
+static URL_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^https?://[^\s/$.?#].[^\s]*$").unwrap());
 
 #[derive(Clone)]
 pub struct HaproxyClient {
@@ -53,6 +57,38 @@ pub struct HaproxyApplyResult {
     pub backup_path: Option<String>,
     pub validation_output: String,
     pub reload_output: String,
+}
+
+#[derive(Serialize)]
+pub struct HaproxyWebTestResponse {
+    pub success: bool,
+    pub results: Vec<HaproxyWebTestResult>,
+}
+
+#[derive(Serialize)]
+pub struct HaproxyWebTestResult {
+    pub index: u16,
+    pub status: Option<u16>,
+    pub body: String,
+    pub success: bool,
+    pub response_time_ms: u128,
+    pub error: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct HaproxyTcpTestResponse {
+    pub success: bool,
+    pub results: Vec<HaproxyTcpTestResult>,
+}
+
+#[derive(Serialize)]
+pub struct HaproxyTcpTestResult {
+    pub index: u16,
+    pub host: String,
+    pub port: u16,
+    pub connected: bool,
+    pub response_time_ms: u128,
+    pub error: Option<String>,
 }
 
 impl HaproxyClient {
@@ -123,6 +159,44 @@ impl HaproxyClient {
         tokio::fs::read_to_string(&self.config_path)
             .await
             .map_err(|e| format!("read HAProxy config failed: {e}"))
+    }
+
+    pub async fn test_web_url(
+        &self,
+        url: &str,
+        count: u16,
+    ) -> Result<HaproxyWebTestResponse, String> {
+        validate_url(url)?;
+        let count = validate_count(count)?;
+        let mut results = Vec::new();
+        for index in 1..=count {
+            results.push(run_curl_test(index, url, 5).await);
+        }
+        Ok(HaproxyWebTestResponse {
+            success: results.iter().all(|result| result.success),
+            results,
+        })
+    }
+
+    pub async fn test_tcp_target(
+        &self,
+        host: &str,
+        port: u16,
+        count: u16,
+        timeout_secs: u64,
+    ) -> Result<HaproxyTcpTestResponse, String> {
+        validate_host(host)?;
+        validate_port(port, "TCP port")?;
+        let count = validate_count(count)?;
+        let timeout_secs = validate_timeout(timeout_secs)?;
+        let mut results = Vec::new();
+        for index in 1..=count {
+            results.push(run_tcp_test(index, host, port, timeout_secs).await);
+        }
+        Ok(HaproxyTcpTestResponse {
+            success: results.iter().all(|result| result.connected),
+            results,
+        })
     }
 
     pub async fn validate_config_text(&self, config: &str) -> Result<String, String> {
@@ -362,12 +436,45 @@ fn validate_lb(
     }
     for server in servers {
         validate_name(&server.name, "server name")?;
-        if !HOST_RE.is_match(&server.ip) {
-            return Err(format!("invalid server IP/host: {}", server.ip));
-        }
+        validate_host(&server.ip)?;
         validate_port(server.port, "server port")?;
     }
     Ok(())
+}
+
+fn validate_url(value: &str) -> Result<(), String> {
+    if value.len() > 2048 || !URL_RE.is_match(value) {
+        return Err("invalid target URL".to_string());
+    }
+    Ok(())
+}
+
+fn validate_host(value: &str) -> Result<(), String> {
+    if value.trim().is_empty()
+        || value.len() > 255
+        || value.contains('/')
+        || value
+            .chars()
+            .any(|ch| ch.is_control() || ch.is_whitespace())
+        || !HOST_RE.is_match(value)
+    {
+        return Err(format!("invalid host: {value}"));
+    }
+    Ok(())
+}
+
+fn validate_count(count: u16) -> Result<u16, String> {
+    if count == 0 || count > 50 {
+        return Err("test count must be between 1 and 50".to_string());
+    }
+    Ok(count)
+}
+
+fn validate_timeout(timeout_secs: u64) -> Result<u64, String> {
+    if timeout_secs == 0 || timeout_secs > 30 {
+        return Err("timeout must be between 1 and 30 seconds".to_string());
+    }
+    Ok(timeout_secs)
 }
 
 fn validate_name(value: &str, label: &str) -> Result<(), String> {
@@ -406,6 +513,115 @@ fn path_str(path: &Path) -> Result<&str, String> {
 
 fn first_line(text: &str) -> String {
     text.lines().next().unwrap_or("").trim().to_string()
+}
+
+async fn run_curl_test(index: u16, url: &str, timeout_secs: u64) -> HaproxyWebTestResult {
+    let started = Instant::now();
+    let timeout_arg = timeout_secs.to_string();
+    let output = Command::new("curl")
+        .args([
+            "-sS",
+            "-L",
+            "--max-time",
+            &timeout_arg,
+            "-w",
+            "\n__FWM_HTTP_CODE:%{http_code}",
+            url,
+        ])
+        .output()
+        .await;
+    let response_time_ms = started.elapsed().as_millis();
+
+    match output {
+        Ok(output) => {
+            let stdout = String::from_utf8_lossy(&output.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
+            let (body, status) = parse_curl_output(&stdout);
+            let success = output.status.success()
+                && status
+                    .map(|code| (200..400).contains(&code))
+                    .unwrap_or(false);
+            HaproxyWebTestResult {
+                index,
+                status,
+                body: truncate_chars(body.trim(), 200),
+                success,
+                response_time_ms,
+                error: if success {
+                    None
+                } else if stderr.is_empty() {
+                    Some(format!("curl exited with status {}", output.status))
+                } else {
+                    Some(stderr)
+                },
+            }
+        }
+        Err(e) => HaproxyWebTestResult {
+            index,
+            status: None,
+            body: String::new(),
+            success: false,
+            response_time_ms,
+            error: Some(format!("failed to run curl: {e}")),
+        },
+    }
+}
+
+async fn run_tcp_test(
+    index: u16,
+    host: &str,
+    port: u16,
+    timeout_secs: u64,
+) -> HaproxyTcpTestResult {
+    let started = Instant::now();
+    let result = timeout(
+        Duration::from_secs(timeout_secs),
+        TcpStream::connect((host, port)),
+    )
+    .await;
+    let response_time_ms = started.elapsed().as_millis();
+
+    match result {
+        Ok(Ok(_stream)) => HaproxyTcpTestResult {
+            index,
+            host: host.to_string(),
+            port,
+            connected: true,
+            response_time_ms,
+            error: None,
+        },
+        Ok(Err(e)) => HaproxyTcpTestResult {
+            index,
+            host: host.to_string(),
+            port,
+            connected: false,
+            response_time_ms,
+            error: Some(e.to_string()),
+        },
+        Err(_) => HaproxyTcpTestResult {
+            index,
+            host: host.to_string(),
+            port,
+            connected: false,
+            response_time_ms,
+            error: Some(format!("connection timed out after {timeout_secs}s")),
+        },
+    }
+}
+
+fn parse_curl_output(output: &str) -> (&str, Option<u16>) {
+    const MARKER: &str = "\n__FWM_HTTP_CODE:";
+    if let Some(pos) = output.rfind(MARKER) {
+        let body = &output[..pos];
+        let code = output[pos + MARKER.len()..].trim().parse::<u16>().ok();
+        (body, code)
+    } else {
+        (output, None)
+    }
+}
+
+fn truncate_chars(value: &str, max_chars: usize) -> String {
+    value.chars().take(max_chars).collect()
 }
 
 async fn run_command(program: &str, args: &[&str]) -> Result<String, String> {

@@ -132,6 +132,20 @@ pub struct HaproxyEnabledForm {
     pub enabled: Option<String>,
 }
 
+#[derive(Deserialize)]
+pub struct HaproxyWebTestForm {
+    pub url: Option<String>,
+    pub count: Option<Value>,
+}
+
+#[derive(Deserialize)]
+pub struct HaproxySqlTestForm {
+    pub host: Option<String>,
+    pub port: Option<Value>,
+    pub count: Option<Value>,
+    pub timeout: Option<Value>,
+}
+
 fn pick_firewall(state: &AppState, protocol: Option<&str>) -> Result<Arc<dyn FirewallCmd>, String> {
     match protocol.unwrap_or("ipv4") {
         "ipv4" | "ip4" | "4" | "" => state
@@ -193,6 +207,34 @@ fn haproxy_backend_servers(servers: &[HaproxyBackendServerUpdate]) -> Vec<Backen
             health_check: server.health_check,
         })
         .collect()
+}
+
+fn json_u16(value: Option<Value>, default: u16, label: &str) -> Result<u16, String> {
+    match value {
+        None | Some(Value::Null) => Ok(default),
+        Some(Value::Number(num)) => num
+            .as_u64()
+            .filter(|n| *n <= u16::MAX as u64)
+            .map(|n| n as u16)
+            .ok_or_else(|| format!("invalid {label}")),
+        Some(Value::String(text)) => text
+            .trim()
+            .parse::<u16>()
+            .map_err(|_| format!("invalid {label}")),
+        _ => Err(format!("invalid {label}")),
+    }
+}
+
+fn json_u64(value: Option<Value>, default: u64, label: &str) -> Result<u64, String> {
+    match value {
+        None | Some(Value::Null) => Ok(default),
+        Some(Value::Number(num)) => num.as_u64().ok_or_else(|| format!("invalid {label}")),
+        Some(Value::String(text)) => text
+            .trim()
+            .parse::<u64>()
+            .map_err(|_| format!("invalid {label}")),
+        _ => Err(format!("invalid {label}")),
+    }
 }
 
 async fn auth_middleware(State(state): State<Arc<AppState>>, req: Request, next: Next) -> Response {
@@ -786,6 +828,48 @@ async fn handle_haproxy_set_enabled(
     }
 }
 
+async fn handle_haproxy_test_web(
+    State(state): State<Arc<AppState>>,
+    Json(form): Json<HaproxyWebTestForm>,
+) -> Json<Value> {
+    let url = form.url.unwrap_or_default();
+    let count = match json_u16(form.count, 5, "test count") {
+        Ok(value) => value,
+        Err(e) => return utils::output(Some(&e), None),
+    };
+    match state.haproxy.test_web_url(&url, count).await {
+        Ok(data) => utils::output(None, Some(serde_json::to_value(data).unwrap_or_default())),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_haproxy_test_sql(
+    State(state): State<Arc<AppState>>,
+    Json(form): Json<HaproxySqlTestForm>,
+) -> Json<Value> {
+    let host = form.host.unwrap_or_default();
+    let port = match json_u16(form.port, 1433, "TCP port") {
+        Ok(value) => value,
+        Err(e) => return utils::output(Some(&e), None),
+    };
+    let count = match json_u16(form.count, 5, "test count") {
+        Ok(value) => value,
+        Err(e) => return utils::output(Some(&e), None),
+    };
+    let timeout_secs = match json_u64(form.timeout, 3, "timeout") {
+        Ok(value) => value,
+        Err(e) => return utils::output(Some(&e), None),
+    };
+    match state
+        .haproxy
+        .test_tcp_target(&host, port, count, timeout_secs)
+        .await
+    {
+        Ok(data) => utils::output(None, Some(serde_json::to_value(data).unwrap_or_default())),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
 async fn save_and_apply_haproxy(
     state: &AppState,
     update: HaproxyLoadBalancerUpdate,
@@ -943,6 +1027,8 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/haproxy/lbs/:id", delete(handle_haproxy_delete_lb))
         .route("/haproxy/lbs/:id/delete", post(handle_haproxy_delete_lb))
         .route("/haproxy/lbs/:id/enabled", post(handle_haproxy_set_enabled))
+        .route("/haproxy/test/web", post(handle_haproxy_test_web))
+        .route("/haproxy/test/sql", post(handle_haproxy_test_sql))
         .route("/haproxy/web", post(handle_haproxy_web))
         .route("/haproxy/sql", post(handle_haproxy_sql))
         .route("/api/haproxy/status", get(handle_haproxy_status))
@@ -963,6 +1049,8 @@ pub fn build_router(state: Arc<AppState>) -> Router {
             "/api/haproxy/lbs/:id/enabled",
             post(handle_haproxy_set_enabled),
         )
+        .route("/api/haproxy/test/web", post(handle_haproxy_test_web))
+        .route("/api/haproxy/test/sql", post(handle_haproxy_test_sql))
         .route("/api/haproxy/web", post(handle_haproxy_web))
         .route("/api/haproxy/sql", post(handle_haproxy_sql))
         .route("/juniper/info", get(handle_juniper_info))

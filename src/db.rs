@@ -265,44 +265,30 @@ impl AppDb {
             .optional()
             .map_err(|e| format!("lookup HAProxy load balancer failed: {e}"))?;
 
-        let id = if let Some(id) = existing_id {
-            tx.execute(
-                "UPDATE haproxy_load_balancers
-                 SET bind_port = ?1, mode = ?2, balance_method = ?3,
-                     health_check_path = ?4, health_check = ?5, enabled = ?6,
-                     updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
-                 WHERE id = ?7",
-                params![
-                    i64::from(update.bind_port),
-                    update.mode,
-                    update.balance_method,
-                    update.health_check_path,
-                    if update.health_check { 1 } else { 0 },
-                    if update.enabled { 1 } else { 0 },
-                    id
-                ],
-            )
-            .map_err(|e| format!("update HAProxy load balancer failed: {e}"))?;
-            id
-        } else {
-            tx.execute(
-                "INSERT INTO haproxy_load_balancers
-                 (lb_type, enabled, name, bind_port, mode, balance_method, health_check_path, health_check)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-                params![
-                    update.lb_type,
-                    if update.enabled { 1 } else { 0 },
-                    update.name,
-                    i64::from(update.bind_port),
-                    update.mode,
-                    update.balance_method,
-                    update.health_check_path,
-                    if update.health_check { 1 } else { 0 }
-                ],
-            )
-            .map_err(|e| format!("insert HAProxy load balancer failed: {e}"))?;
-            tx.last_insert_rowid()
-        };
+        if existing_id.is_some() {
+            return Err(format!(
+                "HAProxy {} load balancer frontend name already exists: {}",
+                update.lb_type, update.name
+            ));
+        }
+
+        tx.execute(
+            "INSERT INTO haproxy_load_balancers
+             (lb_type, enabled, name, bind_port, mode, balance_method, health_check_path, health_check)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![
+                update.lb_type,
+                if update.enabled { 1 } else { 0 },
+                update.name,
+                i64::from(update.bind_port),
+                update.mode,
+                update.balance_method,
+                update.health_check_path,
+                if update.health_check { 1 } else { 0 }
+            ],
+        )
+        .map_err(|e| format!("insert HAProxy load balancer failed: {e}"))?;
+        let id = tx.last_insert_rowid();
 
         tx.execute(
             "DELETE FROM haproxy_backend_servers WHERE lb_id = ?1",

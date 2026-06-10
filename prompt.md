@@ -289,3 +289,169 @@ backend ...
 
 然後先提出修改計畫，再開始實作。
 第一版先以「可產生設定檔、可預覽、可驗證、可 reload」為主，不需要先做資料庫永久儲存。
+
+
+## 2026/06/10
+請協助我在 HAProxy 管理功能中新增「連線測試」功能，用來測試 Web 負載平衡與 SQL Server 負載平衡是否正常。
+
+目前已有頁面：
+1. HAProxy 狀態
+2. Web 負載平衡
+3. SQL Server 負載平衡
+
+請新增：
+4. 連線測試
+
+或在 Web / SQL 分頁內各自新增「測試連線」按鈕。
+
+一、Web 負載平衡測試
+
+用途：
+測試 HAProxy Web frontend 是否可正常回應，並可觀察是否有分配到不同 backend。
+
+輸入欄位：
+- Target URL，例如 http://10.20.100.241
+- 測試次數，例如 5 次
+
+後端行為：
+使用 curl 測試多次：
+
+curl -s -o - http://10.20.100.241
+
+或：
+
+curl -s -w "%{http_code}" http://10.20.100.241
+
+回傳：
+- 第幾次測試
+- HTTP Status Code
+- Response Body 前 200 字
+- 是否成功
+- 錯誤訊息
+
+範例回傳：
+1. 200 WEB01
+2. 200 WEB02
+3. 200 WEB01
+4. 200 WEB02
+
+前端顯示：
+- 測試結果表格
+- 成功 / 失敗狀態
+- 若回應內容不同，可顯示負載分配結果
+
+建議 API：
+POST /api/haproxy/test/web
+
+Request:
+{
+  "url": "http://10.20.100.241",
+  "count": 5
+}
+
+Response:
+{
+  "success": true,
+  "results": [
+    { "index": 1, "status": 200, "body": "WEB01" },
+    { "index": 2, "status": 200, "body": "WEB02" }
+  ]
+}
+
+二、SQL Server 負載平衡測試
+
+用途：
+SQL Server 是 TCP 協定，不能用瀏覽器直接測試。
+第一版先做 TCP Port 連通性測試即可。
+
+輸入欄位：
+- Host，例如 10.20.100.241
+- Port，例如 1433
+- 測試次數，例如 5 次
+- Timeout 秒數，例如 3 秒
+
+後端行為：
+使用 nc 測 TCP 連線：
+
+nc -zv -w 3 10.20.100.241 1433
+
+或使用 bash TCP：
+
+timeout 3 bash -c '</dev/tcp/10.20.100.241/1433'
+
+回傳：
+- 第幾次測試
+- Host
+- Port
+- 是否連線成功
+- 錯誤訊息
+
+建議 API：
+POST /api/haproxy/test/sql
+
+Request:
+{
+  "host": "10.20.100.241",
+  "port": 1433,
+  "count": 5,
+  "timeout": 3
+}
+
+Response:
+{
+  "success": true,
+  "results": [
+    { "index": 1, "host": "10.20.100.241", "port": 1433, "connected": true },
+    { "index": 2, "host": "10.20.100.241", "port": 1433, "connected": true }
+  ]
+}
+
+三、Backend Server 健康檢查測試
+
+在 Web 負載平衡與 SQL Server 負載平衡頁面中，針對每一個 backend server 增加「測試」按鈕。
+
+Web Backend 測試：
+curl http://{ip}:{port}{health_check_path}
+
+SQL Backend 測試：
+nc -zv -w 3 {ip} {port}
+
+前端顯示：
+- Online
+- Offline
+- Response time
+- Error message
+
+四、UI需求
+
+請在 HAProxy 管理頁中新增一個分頁：
+
+「連線測試」
+
+分成兩個區塊：
+
+1. Web 測試
+2. SQL/TCP 測試
+
+Web 測試欄位：
+- URL
+- 測試次數
+- 執行測試按鈕
+
+SQL/TCP 測試欄位：
+- Host
+- Port
+- 測試次數
+- Timeout
+- 執行測試按鈕
+
+五、注意事項
+
+1. Web 測試用 curl。
+2. SQL 測試不要用瀏覽器，因為 SQL Server 是 TCP/TDS 協定，不是 HTTP。
+3. SQL 第一版只需要確認 TCP 連線成功即可，不需要真的登入 SQL Server。
+4. 所有測試指令都要做 timeout，避免頁面卡住。
+5. 後端執行 shell command 時要做參數驗證，避免 command injection。
+6. URL、host、port、count、timeout 都要驗證。
+7. 請沿用目前 Firewall-Man UI 風格。
+8. 請先提出修改計畫，再開始實作。
