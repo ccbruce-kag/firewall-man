@@ -48,8 +48,8 @@ docker run -d \
 ```bash
 git clone <repository-url>
 cd 89.Miitai-firewall-admin
-cd backend && cargo build --release   # produces backend/target/release/firewall-man
-sudo ./firewall-man -a :10001 -u admin -p admin
+cd backend && cargo build --release   # produces backend/target/release/kyklos
+sudo ./kyklos -a :10001 -u admin -p admin
 ```
 
 Use `nohup`/`systemd`/`supervisor` to run in the background.

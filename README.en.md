@@ -1,4 +1,7 @@
-# Miitai Firewall Admin Console
+# Kyklos
+Kyklos (Greek: Κύκλος) means “circle” or “cycle”, and in modern tech branding it is often interpreted as continuous flow, loop, and interconnected systems.
+
+In the context of network servers and infrastructure, “Kyklos” can be applied as a conceptual architecture name for systems built around cyclic data flow, redundancy, and distributed networking.
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -29,16 +32,16 @@ A Rust-based cross-platform firewall web management tool supporting **Linux (ipt
 cd backend && cargo build --release
 
 # Run (requires root / sudo privileges)
-sudo ./firewall-man
+sudo ./kyklos
 
 # Custom listen address and credentials
-./firewall-man -a :8080 -u myuser -p mypass
+./kyklos -a :8080 -u myuser -p mypass
 
 # Using environment variables
 export IPT_WEB_USERNAME=admin
 export IPT_WEB_PASSWORD=secret
 export IPT_WEB_ADDRESS=:10001
-./firewall-man
+./kyklos
 ```
 
 ### Windows
@@ -48,7 +51,7 @@ export IPT_WEB_ADDRESS=:10001
 cd backend && cargo build --release
 
 # Run (must run as Administrator)
-.\firewall-man.exe
+.\kyklos.exe
 ```
 
 After starting, open your browser and visit `http://<host-ip>:10001`.
@@ -69,8 +72,8 @@ After starting, open your browser and visit `http://<host-ip>:10001`.
 ## Docker
 
 ```bash
-docker build -t Miitai/firewall-man:0.1.0 .
-docker run -d --network host --privileged Miitai/firewall-man:0.1.0
+docker build -t Miitai/kyklos:0.1.0 .
+docker run -d --network host --privileged Miitai/kyklos:0.1.0
 ```
 
 > Note: Requires `--privileged` or `CAP_NET_ADMIN` capability, otherwise firewall commands will be rejected.
@@ -196,13 +199,13 @@ docker run -d --network host --privileged Miitai/firewall-man:0.1.0
 make release
 
 # Run (Linux / macOS requires root / sudo)
-sudo ./firewall-man
+sudo ./kyklos
 
 # Windows: run as Administrator
-.\firewall-man.exe
+.\kyklos.exe
 
 # Custom listen address and credentials
-./firewall-man -a :8080 -u myuser -p mypass
+./kyklos -a :8080 -u myuser -p mypass
 
 # Test
 make test
@@ -211,7 +214,7 @@ make test
 make check
 
 # Docker image (Linux only)
-docker build -t Miitai/firewall-man:0.1.0 .
+docker build -t Miitai/kyklos:0.1.0 .
 ```
 
 > **Note**: macOS requires `sudo` for pfctl operations; Windows requires Administrator privileges for PowerShell NetSecurity cmdlets.

@@ -1,4 +1,4 @@
-BIN_FILE = firewall-man
+BIN_FILE = kyklos
 
 release: frontend-build
 	cd backend && cargo build --release
@@ -8,7 +8,7 @@ run:
 	cd backend && cargo run
 
 images:
-	docker build -t Miitai/firewall-man:0.1.0 .
+	docker build -t Miitai/kyklos:0.1.0 .
 
 clean:
 	cd backend && cargo clean

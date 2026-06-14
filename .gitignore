@@ -12,5 +12,5 @@ target/
 backend/Cargo.lock
 
 # Build output
-firewall-man
+kyklos
 .private

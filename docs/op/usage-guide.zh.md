@@ -48,8 +48,8 @@ docker run -d \
 ```bash
 git clone &lt;repository-url&gt;
 cd 89.Miitai-firewall-admin
-make release   # 生成 ./firewall-man
-sudo ./firewall-man -a :10001 -u admin -p admin
+make release   # 生成 ./kyklos
+sudo ./kyklos -a :10001 -u admin -p admin
 ```
 
 後臺運行可配合 `nohup`/`systemd`/`supervisor` 等工具。

@@ -1,5 +1,5 @@
 [package]
-name = "firewall-man"
+name = "kyklos"
 version = "0.1.0"
 edition = "2021"
 description = "iptables Web 管理平臺 - Rust 實作"

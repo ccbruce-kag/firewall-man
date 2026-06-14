@@ -14,6 +14,6 @@ RUN apk add --no-cache \
 
 WORKDIR /app
 
-COPY --from=builder /app/firewall-man .
+COPY --from=builder /app/kyklos .
 
-ENTRYPOINT ["/app/firewall-man"]
+ENTRYPOINT ["/app/kyklos"]

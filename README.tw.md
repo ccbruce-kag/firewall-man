@@ -32,16 +32,16 @@
 cd backend && cargo build --release
 
 # 執行（需 root / sudo 權限）
-sudo ./firewall-man
+sudo ./kyklos
 
 # 自訂監聽位址與認證
-./firewall-man -a :8080 -u myuser -p mypass
+./kyklos -a :8080 -u myuser -p mypass
 
 # 使用環境變數
 export IPT_WEB_USERNAME=admin
 export IPT_WEB_PASSWORD=secret
 export IPT_WEB_ADDRESS=:10001
-./firewall-man
+./kyklos
 ```
 
 ### Windows
@@ -51,7 +51,7 @@ export IPT_WEB_ADDRESS=:10001
 cd backend && cargo build --release
 
 # 執行（需以系統管理員執行）
-.\firewall-man.exe
+.\kyklos.exe
 ```
 
 啟動後開啟瀏覽器訪問 `http://<主機IP>:10001`。
@@ -72,8 +72,8 @@ cd backend && cargo build --release
 ## Docker
 
 ```bash
-docker build -t Miitai/firewall-man:0.1.0 .
-docker run -d --network host --privileged Miitai/firewall-man:0.1.0
+docker build -t Miitai/kyklos:0.1.0 .
+docker run -d --network host --privileged Miitai/kyklos:0.1.0
 ```
 
 > 注意：需使用 `--privileged` 或以 `CAP_NET_ADMIN` 執行，否則防火牆命令將被拒絕。

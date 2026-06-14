@@ -48,8 +48,8 @@ docker run -d \
 ```bash
 git clone <repository-url>
 cd 89.Miitai-firewall-admin
-cd backend && cargo build --release   # backend/target/release/firewall-man を生成
-sudo ./firewall-man -a :10001 -u admin -p admin
+cd backend && cargo build --release   # backend/target/release/kyklos を生成
+sudo ./kyklos -a :10001 -u admin -p admin
 ```
 
 バックグラウンド実行には `nohup`/`systemd`/`supervisor` などを使用してください。
