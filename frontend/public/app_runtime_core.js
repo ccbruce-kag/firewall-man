@@ -58,7 +58,7 @@
         firewallMan: function() { $('.action-buttons').show(); loadListRule(currentTableName()); },
       };
       var viewMenuMap = {
-        dashboard: 'menuDash', workflow: 'menuWorkflow', netArch: 'menuNetArch', erdDiagram: 'menuErdDiagram',
+        dashboard: 'menuDash', workflow: 'menuWorkflow', netArch: 'menuNetArch', erdDiagram: 'menuErdDiagram', wireframe: 'menuWireframe',
         role: 'menuRole', unit: 'menuUnit', user: 'menuUser', dictionary: 'menuDictionary', systemSetting: 'menuSystemSetting',
         firewallMan: 'menuFirewallMan', juniper: 'menuJuniper',
         haproxy: 'menuHaproxy', nginx: 'menuNginx', netplan: 'menuNetplan',
@@ -76,7 +76,7 @@
       });
       $('#logClear').on('click', function () { logger.clear(); });
       function inactiveAllLeaf() {
-        $('#menuDash,#menuWorkflow,#menuNetArch,#menuErdDiagram,#menuRole,#menuUnit,#menuUser,#menuDictionary,#menuSystemSetting,#menuFirewallMan,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuPcap,#menuSnmp,#menuSys,#menuTools,#menuShell,#menuWidgets,#menuLogViewer,#menuCrontab,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
+        $('#menuDash,#menuWorkflow,#menuNetArch,#menuErdDiagram,#menuWireframe,#menuRole,#menuUnit,#menuUser,#menuDictionary,#menuSystemSetting,#menuFirewallMan,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuPcap,#menuSnmp,#menuSys,#menuTools,#menuShell,#menuWidgets,#menuLogViewer,#menuCrontab,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
       }
       function hideAllViews() {
         hideAllWorkViews();
@@ -109,6 +109,7 @@
             menuWorkflowLink: 'workflow',
             menuNetArchLink: 'netArch',
             menuErdDiagramLink: 'erdDiagram',
+            menuWireframeLink: 'wireframe',
             menuRoleLink: 'role',
             menuUnitLink: 'unit',
             menuUserLink: 'user',

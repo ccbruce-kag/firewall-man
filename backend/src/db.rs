@@ -1,6 +1,7 @@
 use crate::apps::apiman::{
-    ApiManNode, ApiManNodeInput, ApiManRequest, ApiManRequestInput, ApiManWorkspace,
-    ApiManWorkspaceInput,
+    ApiManNode, ApiManNodeInput, ApiManReport, ApiManReportInput, ApiManRequest,
+    ApiManRequestInput, ApiManVariableInput, ApiManWireframe, ApiManWireframeInput,
+    ApiManWorkspace, ApiManWorkspaceInput,
 };
 use crate::apps::dbman::{DbConnection, DbConnectionInput, ErdDiagram, ErdDiagramInput};
 use crate::apps::network::{NetworkArchitecture, NetworkArchitectureInput};
@@ -623,6 +624,23 @@ impl AppDb {
                 updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
                 FOREIGN KEY (workspace_id) REFERENCES apiman_workspaces(id) ON DELETE CASCADE,
                 UNIQUE(workspace_id, key)
+            );
+            CREATE TABLE IF NOT EXISTS apiman_wireframes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT NOT NULL DEFAULT '',
+                scene_json TEXT NOT NULL DEFAULT '{}',
+                viewport_json TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+            CREATE TABLE IF NOT EXISTS apiman_reports (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT NOT NULL DEFAULT '',
+                report_xml TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
             );
             CREATE TABLE IF NOT EXISTS cron_jobs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -3646,6 +3664,262 @@ impl AppDb {
         let affected = conn
             .execute("DELETE FROM system_settings WHERE id = ?1", params![id])
             .map_err(|e| format!("delete setting failed: {e}"))?;
+        Ok(affected > 0)
+    }
+}
+
+// ---- ApiMan Wireframes ----
+
+fn map_wireframe_row(row: &rusqlite::Row) -> rusqlite::Result<ApiManWireframe> {
+    Ok(ApiManWireframe {
+        id: row.get(0)?,
+        name: row.get(1)?,
+        description: row.get(2)?,
+        scene_json: row.get(3)?,
+        viewport_json: row.get(4)?,
+        created_at: row.get(5)?,
+        updated_at: row.get(6)?,
+    })
+}
+
+fn validate_wireframe_input(input: &ApiManWireframeInput) -> Result<(), String> {
+    let name = input.name.trim();
+    if name.is_empty() || name.len() > 128 {
+        return Err("wireframe name is required and must be 128 characters or less".to_string());
+    }
+    let scene = input.scene_json.trim();
+    if scene.is_empty() {
+        return Err("wireframe scene_json is required".to_string());
+    }
+    if scene != "{}" {
+        let _: serde_json::Value = serde_json::from_str(scene)
+            .map_err(|e| format!("scene_json is invalid JSON: {e}"))?;
+    }
+    if let Some(vp) = input.viewport_json.as_deref() {
+        if !vp.trim().is_empty() {
+            let _: serde_json::Value = serde_json::from_str(vp.trim())
+                .map_err(|e| format!("viewport_json is invalid JSON: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+impl AppDb {
+    pub fn list_wireframes(&self) -> Result<Vec<ApiManWireframe>, String> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, name, description, scene_json, viewport_json, created_at, updated_at
+                 FROM apiman_wireframes ORDER BY updated_at DESC, id DESC",
+            )
+            .map_err(|e| format!("prepare wireframe list failed: {e}"))?;
+        let rows = stmt
+            .query_map([], map_wireframe_row)
+            .map_err(|e| format!("query wireframes failed: {e}"))?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row.map_err(|e| format!("read wireframe row failed: {e}"))?);
+        }
+        Ok(items)
+    }
+
+    pub fn wireframe(&self, id: i64) -> Result<Option<ApiManWireframe>, String> {
+        let conn = self.connect()?;
+        conn.query_row(
+            "SELECT id, name, description, scene_json, viewport_json, created_at, updated_at
+             FROM apiman_wireframes WHERE id = ?1",
+            params![id],
+            map_wireframe_row,
+        )
+        .optional()
+        .map_err(|e| format!("load wireframe failed: {e}"))
+    }
+
+    pub fn create_wireframe(&self, input: ApiManWireframeInput) -> Result<ApiManWireframe, String> {
+        validate_wireframe_input(&input)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM apiman_wireframes WHERE name = ?1",
+                params![input.name.trim()],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup wireframe name failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("wireframe name already exists: {}", input.name.trim()));
+        }
+        conn.execute(
+            "INSERT INTO apiman_wireframes (name, description, scene_json, viewport_json)
+             VALUES (?1, ?2, ?3, ?4)",
+            params![
+                input.name.trim(),
+                input.description.unwrap_or_default().trim(),
+                input.scene_json.trim(),
+                input.viewport_json,
+            ],
+        )
+        .map_err(|e| format!("insert wireframe failed: {e}"))?;
+        let id = conn.last_insert_rowid();
+        self.wireframe(id)?
+            .ok_or_else(|| "created wireframe not found".to_string())
+    }
+
+    pub fn update_wireframe(&self, id: i64, input: ApiManWireframeInput) -> Result<Option<ApiManWireframe>, String> {
+        validate_wireframe_input(&input)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM apiman_wireframes WHERE name = ?1 AND id != ?2",
+                params![input.name.trim(), id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup wireframe name failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("wireframe name already exists: {}", input.name.trim()));
+        }
+        let affected = conn
+            .execute(
+                "UPDATE apiman_wireframes SET name = ?1, description = ?2, scene_json = ?3,
+                     viewport_json = ?4, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?5",
+                params![
+                    input.name.trim(),
+                    input.description.unwrap_or_default().trim(),
+                    input.scene_json.trim(),
+                    input.viewport_json,
+                    id,
+                ],
+            )
+            .map_err(|e| format!("update wireframe failed: {e}"))?;
+        if affected == 0 { return Ok(None); }
+        self.wireframe(id)
+    }
+
+    pub fn delete_wireframe(&self, id: i64) -> Result<bool, String> {
+        let conn = self.connect()?;
+        let affected = conn
+            .execute("DELETE FROM apiman_wireframes WHERE id = ?1", params![id])
+            .map_err(|e| format!("delete wireframe failed: {e}"))?;
+        Ok(affected > 0)
+    }
+}
+
+// ---- ApiMan Reports ----
+
+fn map_report_row(row: &rusqlite::Row) -> rusqlite::Result<ApiManReport> {
+    Ok(ApiManReport {
+        id: row.get(0)?,
+        name: row.get(1)?,
+        description: row.get(2)?,
+        report_xml: row.get(3)?,
+        created_at: row.get(4)?,
+        updated_at: row.get(5)?,
+    })
+}
+
+impl AppDb {
+    pub fn list_reports(&self) -> Result<Vec<ApiManReport>, String> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, name, description, report_xml, created_at, updated_at
+                 FROM apiman_reports ORDER BY updated_at DESC, id DESC",
+            )
+            .map_err(|e| format!("prepare report list failed: {e}"))?;
+        let rows = stmt
+            .query_map([], map_report_row)
+            .map_err(|e| format!("query reports failed: {e}"))?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row.map_err(|e| format!("read report row failed: {e}"))?);
+        }
+        Ok(items)
+    }
+
+    pub fn report(&self, id: i64) -> Result<Option<ApiManReport>, String> {
+        let conn = self.connect()?;
+        conn.query_row(
+            "SELECT id, name, description, report_xml, created_at, updated_at
+             FROM apiman_reports WHERE id = ?1",
+            params![id],
+            map_report_row,
+        )
+        .optional()
+        .map_err(|e| format!("load report failed: {e}"))
+    }
+
+    pub fn create_report(&self, input: ApiManReportInput) -> Result<ApiManReport, String> {
+        let name = input.name.trim();
+        if name.is_empty() || name.len() > 128 {
+            return Err("report name is required and must be 128 characters or less".to_string());
+        }
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM apiman_reports WHERE name = ?1",
+                params![name],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup report name failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("report name already exists: {}", name));
+        }
+        conn.execute(
+            "INSERT INTO apiman_reports (name, description, report_xml) VALUES (?1, ?2, ?3)",
+            params![
+                name,
+                input.description.unwrap_or_default().trim(),
+                input.report_xml,
+            ],
+        )
+        .map_err(|e| format!("insert report failed: {e}"))?;
+        let id = conn.last_insert_rowid();
+        self.report(id)?
+            .ok_or_else(|| "created report not found".to_string())
+    }
+
+    pub fn update_report(&self, id: i64, input: ApiManReportInput) -> Result<Option<ApiManReport>, String> {
+        let name = input.name.trim();
+        if name.is_empty() || name.len() > 128 {
+            return Err("report name is required and must be 128 characters or less".to_string());
+        }
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM apiman_reports WHERE name = ?1 AND id != ?2",
+                params![name, id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup report name failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("report name already exists: {}", name));
+        }
+        let affected = conn
+            .execute(
+                "UPDATE apiman_reports SET name = ?1, description = ?2, report_xml = ?3,
+                     updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?4",
+                params![
+                    name,
+                    input.description.unwrap_or_default().trim(),
+                    input.report_xml,
+                    id,
+                ],
+            )
+            .map_err(|e| format!("update report failed: {e}"))?;
+        if affected == 0 { return Ok(None); }
+        self.report(id)
+    }
+
+    pub fn delete_report(&self, id: i64) -> Result<bool, String> {
+        let conn = self.connect()?;
+        let affected = conn
+            .execute("DELETE FROM apiman_reports WHERE id = ?1", params![id])
+            .map_err(|e| format!("delete report failed: {e}"))?;
         Ok(affected > 0)
     }
 }

@@ -1,5 +1,5 @@
 use crate::ai;
-use crate::apps::apiman::{ApiManNodeInput, ApiManRequestInput, ApiManWorkspaceInput};
+use crate::apps::apiman::{ApiManNodeInput, ApiManReportInput, ApiManRequestInput, ApiManWireframeInput, ApiManWorkspaceInput};
 use crate::apps::dbman::{DbConnectionInput, ErdDiagramInput};
 use crate::apps::network::NetworkArchitectureInput;
 use crate::apps::settings::{
@@ -3669,11 +3669,65 @@ async fn handle_apiman_upsert_variable(
 
 async fn handle_apiman_delete_variable(
     State(state): State<Arc<AppState>>,
-    Path((ws_id, key)): Path<(i64, String)>,
+    Path(params): Path<(i64, String)>,
 ) -> Json<Value> {
+    let (ws_id, key) = params;
     match state.db.delete_apiman_variable(ws_id, &key) {
-        Ok(true) => utils::output(None, None),
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
         Ok(false) => utils::output(Some("variable not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+// ---- ApiMan: Wireframes ----
+
+async fn handle_apiman_wireframe_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_wireframes() {
+        Ok(items) => utils::output(None, Some(json!({ "wireframes": items }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_apiman_wireframe_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.wireframe(id) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "wireframe": item }))),
+        Ok(None) => utils::output(Some("wireframe not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_apiman_wireframe_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<ApiManWireframeInput>,
+) -> Json<Value> {
+    match state.db.create_wireframe(input) {
+        Ok(item) => utils::output(None, Some(json!({ "wireframe": item }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_apiman_wireframe_update(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<ApiManWireframeInput>,
+) -> Json<Value> {
+    match state.db.update_wireframe(id, input) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "wireframe": item }))),
+        Ok(None) => utils::output(Some("wireframe not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_apiman_wireframe_delete(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.delete_wireframe(id) {
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
+        Ok(false) => utils::output(Some("wireframe not found"), None),
         Err(e) => utils::output(Some(&e), None),
     }
 }
@@ -4338,6 +4392,26 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route(
             "/api/apiman/variables/:ws_id/:key",
             delete(handle_apiman_delete_variable),
+        )
+        .route(
+            "/apiman/wireframes",
+            get(handle_apiman_wireframe_list).post(handle_apiman_wireframe_create),
+        )
+        .route(
+            "/apiman/wireframes/:id",
+            get(handle_apiman_wireframe_get)
+                .put(handle_apiman_wireframe_update)
+                .delete(handle_apiman_wireframe_delete),
+        )
+        .route(
+            "/api/apiman/wireframes",
+            get(handle_apiman_wireframe_list).post(handle_apiman_wireframe_create),
+        )
+        .route(
+            "/api/apiman/wireframes/:id",
+            get(handle_apiman_wireframe_get)
+                .put(handle_apiman_wireframe_update)
+                .delete(handle_apiman_wireframe_delete),
         )
         .route(
             "/workflows",

@@ -91,7 +91,8 @@ var _orig_ready = $;
     const TAB_STORAGE_KEY = "fwm_tabs";
     const TAB_VIEW_PREFIX = "tabView_";
     const WORK_VIEW_MODES = [
-      'dashboard', 'workflow', 'netArch', 'erdDiagram', 'role', 'unit', 'user', 'dictionary', 'systemSetting',
+      'dashboard', 'workflow', 'netArch', 'erdDiagram', 'wireframe',
+      'role', 'unit', 'user', 'dictionary', 'systemSetting',
       'firewallMan', 'system', 'juniper', 'haproxy', 'nginx', 'netplan',
       'pcap', 'snmp', 'sftp', 'samba', 'apiman', 'dbman', 'security', 'tools', 'ai',
       'shell', 'widgets', 'logViewer', 'crontab'
@@ -125,6 +126,7 @@ var _orig_ready = $;
         workflow: lang.workflowLabel || 'Workflow Designer',
         netArch: lang.netArchLabel || 'Network Architecture Designer',
         erdDiagram: lang.erdDiagramLabel || 'ER-Diagram',
+        wireframe: lang.wireframeLabel || 'Wireframe Designer',
         role: lang.roleLabel || 'Role Maintenance',
         unit: lang.unitLabel || 'Unit Maintenance',
         user: lang.userLabel || 'User Maintenance',
@@ -151,6 +153,7 @@ var _orig_ready = $;
       var map = {
         firewallMan: 'bx-shield-quarter', dashboard: 'bx-bar-chart-alt-2', system: 'bx-desktop',
         workflow: 'bx-sitemap', netArch: 'bx-network-chart', erdDiagram: 'bx-sitemap',
+        wireframe: 'bx-pen',
         role: 'bx-id-card', unit: 'bx-buildings', user: 'bx-user',
         dictionary: 'bx-book', systemSetting: 'bx-slider',
         shell: 'bx-terminal', widgets: 'bx-cube', logViewer: 'bx-file', crontab: 'bx-time-five', ai: 'bx-bot', tools: 'bx-wrench', haproxy: 'bx-transfer',
@@ -369,6 +372,8 @@ var _orig_ready = $;
         erdDiagramLabel: "ER-Diagram", menuGroupSettings: "設定",
         roleLabel: "角色資料維護", unitLabel: "單位資料維護", userLabel: "使用者資料維護",
         dictionaryLabel: "資料字典資料維護", systemSettingLabel: "系統設定資料維護",
+        wireframeLabel: "Wireframe 設計", wireframeNew: "新增 Wireframe", wireframeEdit: "編輯 Wireframe", wireframeDelete: "刪除 Wireframe",
+        wireframeNoData: "尚無 Wireframe，點擊「新增 Wireframe」開始設計。",
         menuApiManNew: "新增工作區", menuDbManNew: "新增連線",
         menuSecurityCvs: "CVS 資料庫", menuSecurityScan: "網路掃描",
         menuGroupAI: "AI", menuGroupHelp: "協助", systemLabel: "系統現況", docLabel: "命令文件",
@@ -462,6 +467,8 @@ var _orig_ready = $;
         erdDiagramLabel: "ER-Diagram", menuGroupSettings: "Settings",
         roleLabel: "Role Maintenance", unitLabel: "Unit Maintenance", userLabel: "User Maintenance",
         dictionaryLabel: "Data Dictionary Maintenance", systemSettingLabel: "System Settings Maintenance",
+        wireframeLabel: "Wireframe Designer", wireframeNew: "New Wireframe", wireframeEdit: "Edit Wireframe", wireframeDelete: "Delete Wireframe",
+        wireframeNoData: "No wireframes yet. Click \"New Wireframe\" to start designing.",
         menuApiManNew: "New Workspace", menuDbManNew: "New Connection",
         menuSecurityCvs: "CVS Database", menuSecurityScan: "Network Scan",
         menuGroupAI: "AI", menuGroupHelp: "Help", systemLabel: "System", docLabel: "Command Reference",
@@ -554,6 +561,8 @@ var _orig_ready = $;
         erdDiagramLabel: "ER-Diagram", menuGroupSettings: "設定",
         roleLabel: "ロール保守", unitLabel: "組織保守", userLabel: "ユーザー保守",
         dictionaryLabel: "データ辞書保守", systemSettingLabel: "システム設定保守",
+        wireframeLabel: "ワイヤーフレーム設計", wireframeNew: "新規ワイヤーフレーム", wireframeEdit: "ワイヤーフレーム編集", wireframeDelete: "ワイヤーフレーム削除",
+        wireframeNoData: "ワイヤーフレームがありません。「新規ワイヤーフレーム」をクリックして作成してください。",
         menuApiManNew: "新規ワークスペース", menuDbManNew: "新規接続",
         menuSecurityCvs: "CVS データベース", menuSecurityScan: "ネットワークスキャン",
         menuGroupAI: "AI", menuGroupHelp: "ヘルプ", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
@@ -645,6 +654,7 @@ var _orig_ready = $;
       $('#menuNetArchLabel').text(lng.netArchLabel || '網路架構編輯');
       $('#netArchTitle').text(lng.netArchTitle || '網路架構編輯');
       $('#menuErdDiagramLabel').text(lng.erdDiagramLabel || 'ER-Diagram');
+      $('#menuWireframeLabel').text(lng.wireframeLabel || 'Wireframe 設計');
       $('#menuGroupSettingsLabel').text(lng.menuGroupSettings || '設定');
       $('#menuRoleLabel').text(lng.roleLabel || '角色資料維護');
       $('#menuUnitLabel').text(lng.unitLabel || '單位資料維護');

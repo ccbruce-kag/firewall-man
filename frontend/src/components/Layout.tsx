@@ -20,6 +20,7 @@ import CrontabView from './views/Sys/CrontabView'
 import LogViewerView from './views/Sys/LogViewerView'
 import WidgetsView from './views/Sys/WidgetsView'
 import ApiManView from './views/Apps/ApiMan/ApiManView'
+import WireframeView from './views/Apps/ApiMan/WireframeView'
 import DbManView from './views/Apps/DbMan/DbManView'
 import ErdDiagramView from './views/Apps/DbMan/ErdDiagramView'
 import SecurityView from './views/Security/SecurityView'
@@ -73,6 +74,7 @@ export default function Layout() {
                 <SystemView />
                 <WorkflowDesignerView />
                 <ApiManView />
+                <WireframeView />
                 <DbManView />
                 <ErdDiagramView />
                 <RolesView />

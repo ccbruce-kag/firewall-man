@@ -30,6 +30,42 @@ pub struct ApiManVariableInput {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+pub struct ApiManWireframe {
+    pub id: i64,
+    pub name: String,
+    pub description: Option<String>,
+    pub scene_json: String,
+    pub viewport_json: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct ApiManWireframeInput {
+    pub name: String,
+    pub description: Option<String>,
+    pub scene_json: String,
+    pub viewport_json: Option<String>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ApiManReport {
+    pub id: i64,
+    pub name: String,
+    pub description: Option<String>,
+    pub report_xml: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct ApiManReportInput {
+    pub name: String,
+    pub description: Option<String>,
+    pub report_xml: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ApiManWorkspace {
     pub id: i64,
     pub name: String,
