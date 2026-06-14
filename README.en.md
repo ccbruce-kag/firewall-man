@@ -8,7 +8,7 @@ In the context of network servers and infrastructure, “Kyklos” can be applie
 A Rust-based cross-platform firewall web management tool supporting **Linux (iptables)**, **macOS (pfctl)**, and **Windows (PowerShell NetSecurity)**.
 
 <br/>
-<p align="center"><img width="256" alt="rustoauth2" src="docs/op/screenshot.png" /></p>
+<p align="center"><img width="256" alt="rustoauth2" src="docs/logo.svg" /></p>
 <br/>
 ## Features
 

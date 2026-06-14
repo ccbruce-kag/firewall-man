@@ -8,10 +8,11 @@ In the context of network servers and infrastructure, “Kyklos” can be applie
 A Rust-based cross-platform firewall web management tool supporting **Linux (iptables)**, **macOS (pfctl)**, and **Windows (PowerShell NetSecurity)**.
 
 <br/>
-<p align="center"><img width="256" alt="rustoauth2" src="docs/op/screenshot.png" /></p>
+<p align="center"><img width="256" alt="rustoauth2" src="docs/logo.svg" /></p>
 <br/>
 
 ## Features
+<img width="256" alt="rustoauth2" src="docs/op/screenshot.png" />
 
 - **Cross-platform**: Linux uses iptables/ip6tables, macOS uses pfctl, Windows uses PowerShell NetSecurity – auto-detected at startup
 - **IPv4 / IPv6 Dual Stack**: Manage both IPv4 and IPv6 firewall rules (Linux only)

@@ -1,3 +1,9 @@
+/* ─── KyKlos brand logo ─── */
+.app-brand-logo.kyklos svg {
+  width: 42px;
+  height: 42px;
+}
+
 /* ─── Inline styles from original index.html ─── */
 .rule-table th { white-space: nowrap; font-size: .75rem; }
 .rule-table td { font-size: .8125rem; vertical-align: middle; }

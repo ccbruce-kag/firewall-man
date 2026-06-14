@@ -1,11 +1,12 @@
-# Miitai 網路與安全工具管理平臺
+# Kyklos
+Kyklos（Κύκλος） 在希臘文原意是「圓、循環、週期」，在網路與伺服器系統中，可以延伸成一種**「循環式、分散式、持續運作」的架構概念**。
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 基於 Rust 實作的防火牆 Web 管理工具，支援 **Linux (iptables)**、**macOS (pfctl)** 與 **Windows (PowerShell NetSecurity)** 三平台。
 
 <br/>
-<p align="center"><img width="256" alt="rustoauth2" src="docs/op/screenshot.png" /></p>
+<p align="center"><img width="256" alt="rustoauth2" src="docs/logo.svg" /></p>
 <br/>
 
 ## 功能特色
@@ -32,16 +33,16 @@
 cd backend && cargo build --release
 
 # 執行（需 root / sudo 權限）
-sudo ./kyklos
+sudo ./firewall-man
 
 # 自訂監聽位址與認證
-./kyklos -a :8080 -u myuser -p mypass
+./firewall-man -a :8080 -u myuser -p mypass
 
 # 使用環境變數
 export IPT_WEB_USERNAME=admin
 export IPT_WEB_PASSWORD=secret
 export IPT_WEB_ADDRESS=:10001
-./kyklos
+./firewall-man
 ```
 
 ### Windows
@@ -51,7 +52,7 @@ export IPT_WEB_ADDRESS=:10001
 cd backend && cargo build --release
 
 # 執行（需以系統管理員執行）
-.\kyklos.exe
+.\firewall-man.exe
 ```
 
 啟動後開啟瀏覽器訪問 `http://<主機IP>:10001`。
@@ -72,8 +73,8 @@ cd backend && cargo build --release
 ## Docker
 
 ```bash
-docker build -t Miitai/kyklos:0.1.0 .
-docker run -d --network host --privileged Miitai/kyklos:0.1.0
+docker build -t Miitai/firewall-man:0.1.0 .
+docker run -d --network host --privileged Miitai/firewall-man:0.1.0
 ```
 
 > 注意：需使用 `--privileged` 或以 `CAP_NET_ADMIN` 執行，否則防火牆命令將被拒絕。
