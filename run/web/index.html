@@ -33,14 +33,21 @@
       }, true);
       var menuViews = {
         menuDashLink: ['dashboard', 'General Dashboard', 'bx-bar-chart-alt-2'],
-        menuTablesLink: ['tables', 'Tables', 'bx-shield-quarter'],
+        menuFirewallManLink: ['firewallMan', 'Tables', 'bx-shield-quarter'],
         menuJuniperLink: ['juniper', 'Juniper Settings', 'bx-network-chart'],
         menuHaproxyLink: ['haproxy', 'HAProxy Management', 'bx-transfer'],
         menuNginxLink: ['nginx', 'Nginx Management', 'bx-windows'],
         menuNetplanLink: ['netplan', 'Netplan Config', 'bx-wifi'],
+        menuPcapLink: ['pcap', 'PCAP', 'bx-wifi'],
+        menuSnmpLink: ['snmp', 'SNMP', 'bx-analyse'],
+        menuSambaLink: ['samba', 'Samba', 'bx-folder'],
+        menuSftpLink: ['sftp', 'SFTP', 'bx-folder'],
         menuSysLink: ['system', 'System', 'bx-desktop'],
         menuToolsLink: ['tools', 'Tools', 'bx-wrench'],
         menuShellLink: ['shell', 'Shell', 'bx-terminal'],
+        menuWidgetsLink: ['widgets', 'Widgets', 'bx-cube'],
+        menuLogViewerLink: ['logViewer', 'Log Viewer', 'bx-file'],
+        menuCrontabLink: ['crontab', 'Crontab', 'bx-time-five'],
         menuAILink: ['ai', 'AI Assistant', 'bx-bot'],
         menuDbManNewLink: ['dbman', 'DbMan', 'bx-data'],
         menuSecurityCvsLink: ['security', 'Security', 'bx-shield'],
@@ -52,11 +59,7 @@
           return;
         }
         var tabBar = document.getElementById('tabBar');
-        var viewMap = {
-          tables: 'firewallView'
-        };
-        var viewId = viewMap[mode] || mode + 'View';
-        var view = document.getElementById(viewId);
+        var view = document.getElementById(mode + 'View');
         if (!tabBar || !view) {
           console.warn('[fwm-menu] view not ready', mode);
           return;
@@ -66,8 +69,8 @@
           pane.style.display = 'none';
         });
         [
-          'dashboard','tables','system','juniper','haproxy','nginx','netplan',
-          'apiman','dbman','security','tools','ai','shell'
+          'dashboard','firewallMan','system','juniper','haproxy','nginx','netplan',
+          'apiman','dbman','sftp','samba','snmp','pcap','security','tools','ai','shell','widgets','logViewer','crontab'
         ].forEach(function (viewMode) {
           var el = document.getElementById(viewMode + 'View');
           if (el) el.style.display = 'none';
@@ -128,8 +131,8 @@
       console.log('[fwm-menu] delegated fallback installed');
     })();
   </script>
-  <script type="module" crossorigin src="/assets/index-EKEBs8Um.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-hTIHPUHf.css">
+  <script type="module" crossorigin src="/assets/index-_xMNJZrA.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-zxUkEYLv.css">
 </head>
 <body>
   <div id="root"></div>

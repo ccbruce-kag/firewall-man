@@ -309,7 +309,7 @@ pub async fn start_auto_import(db: Arc<crate::db::AppDb>, interval_minutes: u64)
             eprintln!("[auto-import] importing {} from {}", source.name, source.url);
             match download_and_parse_csv(&source.url, &source.delimiter, source.has_header).await {
                 Ok(data) => {
-                    let db_path = "firewall-man.sqlite3";
+                    let db_path = "kyklos.sqlite3";
                     if let Err(e) = save_csv_to_db(db_path, &source.table_name, &data.columns, &data.rows).await {
                         eprintln!("[auto-import] {} save failed: {}", source.name, e);
                     } else {

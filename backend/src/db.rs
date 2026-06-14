@@ -9,6 +9,7 @@ use crate::net::nginx::{NginxModule, NginxSettings, NginxSite, NginxSiteUpdate};
 use crate::security::{CvsSource, CvsSourceInput, ScanResult, ScanTask, ScanTaskInput};
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
+use std::fs;
 use std::path::PathBuf;
 
 const DEFAULT_DEVICE_ID: i64 = 1;
@@ -161,6 +162,7 @@ impl AppDb {
             .filter(|v| !v.trim().is_empty())
             .map(PathBuf::from)
             .unwrap_or_else(|| PathBuf::from("kyklos.sqlite3"));
+        migrate_legacy_firewall_db(&path)?;
         let db = Self { path };
         db.init()?;
         Ok(db)
@@ -2195,6 +2197,39 @@ fn validate_haproxy_update(update: &HaproxyLoadBalancerUpdate) -> Result<(), Str
     if update.servers.is_empty() {
         return Err("at least one HAProxy backend server is required".to_string());
     }
+    Ok(())
+}
+
+fn migrate_legacy_firewall_db(path: &PathBuf) -> Result<(), String> {
+    let should_seed_from_legacy = match fs::metadata(path) {
+        Ok(meta) => meta.len() == 0,
+        Err(_) => true,
+    };
+    if !should_seed_from_legacy {
+        return Ok(());
+    }
+
+    let legacy_path = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty())
+        .map(|parent| parent.join("firewall-man.sqlite3"))
+        .unwrap_or_else(|| PathBuf::from("firewall-man.sqlite3"));
+    if !legacy_path.exists() {
+        return Ok(());
+    }
+    if let Some(parent) = path.parent() {
+        if !parent.as_os_str().is_empty() {
+            fs::create_dir_all(parent)
+                .map_err(|e| format!("create database directory failed: {e}"))?;
+        }
+    }
+    fs::copy(&legacy_path, path).map_err(|e| {
+        format!(
+            "migrate legacy database {} to {} failed: {e}",
+            legacy_path.display(),
+            path.display()
+        )
+    })?;
     Ok(())
 }
 

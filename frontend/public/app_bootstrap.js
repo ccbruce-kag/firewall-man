@@ -1,0 +1,675 @@
+console.log('[app.js] loaded, jQuery=', typeof $, 'readyState=', document.readyState);
+var _orig_ready = $;
+  
+    // ─── layer polyfill (layui.layer → Bootstrap) ───
+    let modalInstance = null;
+    let toastIdx = 0;
+    const layer = {
+      msg(text, opts) {
+        const idx = ++toastIdx;
+        const icon = (opts && opts.icon === 1) ? 'bx-check-circle text-success' : 'bx-info-circle text-primary';
+        const html = `<div id="t${idx}" class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2000">
+          <div class="toast-body"><i class="bx ${icon} me-2"></i>${text}</div></div>`;
+        $('#toastContainer').append(html);
+        const t = new bootstrap.Toast(document.getElementById('t' + idx));
+        t.show();
+        setTimeout(() => { $(`#t${idx}`).remove(); }, 2500);
+      },
+      alert(content, opts) {
+        const title = (typeof opts === 'object' && opts.title) ? opts.title : ((i18n[currentLang] || i18n.en).warning || 'Warning');
+        const btnText = i18n ? i18n[currentLang || 'en'].confirm : 'OK';
+        $('#commonModalTitle').text(title);
+        $('#commonModalBody').html(typeof content === 'string' ? content : content.join ? content.join('') : String(content));
+        $('#commonModalFooter').html(`<button type="button" class="btn btn-primary" data-bs-dismiss="modal">${btnText}</button>`);
+        _showModal();
+      },
+      confirm(content, yesCallback, noCallback) {
+        const lang = i18n ? i18n[currentLang || 'en'] : { confirm: 'OK', cancel: 'Cancel', warning: 'Warning' };
+        $('#commonModalTitle').text(lang.warning || 'Warning');
+        $('#commonModalBody').text(content);
+        $('#commonModalFooter').html(`<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${lang.cancel}</button><button type="button" class="btn btn-primary" id="confirmYes">${lang.confirm}</button>`);
+        _showModal();
+        $('#confirmYes').off('click').on('click', function () { _hideModal(); if (yesCallback) yesCallback(); });
+      },
+      open(opts) {
+        $('#commonModalTitle').text(opts.title || '');
+        $('#commonModalBody').html(opts.content || '');
+        if (opts.btn && opts.btn.length) {
+          let html = '';
+          const actions = ['confirm', 'download', 'cancel'];
+          opts.btn.forEach((text, i) => {
+            const cls = i === 0 ? 'btn-primary' : i === opts.btn.length - 1 ? 'btn-secondary' : 'btn-outline-primary';
+            html += `<button type="button" class="btn ${cls} me-2" data-idx="${i}">${text}</button>`;
+          });
+          $('#commonModalFooter').html(html);
+          $('#commonModalFooter button').off('click').on('click', function () {
+            const idx = parseInt($(this).data('idx'));
+            if (opts['btn' + (idx + 1)]) opts['btn' + (idx + 1)]();
+            if (idx === opts.btn.length - 1) _hideModal();
+          });
+        } else {
+          $('#commonModalFooter').html('');
+        }
+        if (opts.area) {
+          const w = opts.area[0] === 'auto' ? 'auto' : opts.area[0];
+          const h = opts.area[1] || 'auto';
+          $('.modal-dialog').css({ maxWidth: w, width: w });
+        }
+        opts.success && opts.success($('#commonModalBody'));
+        _showModal();
+      },
+      close() { _hideModal(); },
+      prompt(opts, callback) {
+        const lang = i18n ? i18n[currentLang || 'en'] : { confirm: 'OK', cancel: 'Cancel' };
+        const title = opts.title || '';
+        const val = opts.value || '';
+        const placeholder = '';
+        $('#commonModalTitle').text(title);
+        $('#commonModalBody').html(`<textarea class="form-control" style="min-height:200px;font-family:monospace">${val}</textarea>`);
+        $('#commonModalFooter').html(`<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${lang.cancel}</button><button type="button" class="btn btn-primary" id="promptConfirm">${lang.confirm}</button>`);
+        _showModal();
+        $('#promptConfirm').off('click').on('click', function () {
+          const v = $('#commonModalBody textarea').val();
+          _hideModal();
+          if (callback) callback(v, 0, null);
+        });
+      }
+    };
+    function _showModal() {
+      const el = document.getElementById('commonModal');
+      if (!el || !window.bootstrap || !bootstrap.Modal) return;
+      if (modalInstance) modalInstance.dispose();
+      modalInstance = new bootstrap.Modal(el, { backdrop: true, keyboard: true, focus: true });
+      modalInstance.show();
+    }
+    function _hideModal() { if (modalInstance) { modalInstance.hide(); modalInstance.dispose(); modalInstance = null; } }
+  
+  
+    // ─── Application Logic ───
+    let currentProtocol = "ipv4";
+    let currentPlatform = "linux";
+    const TAB_STORAGE_KEY = "fwm_tabs";
+    const TAB_VIEW_PREFIX = "tabView_";
+    const WORK_VIEW_MODES = [
+      'dashboard', 'firewallMan', 'system', 'juniper', 'haproxy', 'nginx', 'netplan',
+      'pcap', 'snmp', 'sftp', 'samba', 'apiman', 'dbman', 'security', 'tools', 'ai',
+      'shell', 'widgets', 'logViewer', 'crontab'
+    ];
+    let tabState = { tabs: [], activeId: null };
+    function hideAllWorkViews() {
+      WORK_VIEW_MODES.forEach(function (viewMode) {
+        $('#' + viewMode + 'View').hide();
+      });
+    }
+    function saveTabs() {
+      try { localStorage.setItem(TAB_STORAGE_KEY, JSON.stringify(tabState)); } catch(e) {}
+    }
+    function loadTabs() {
+      try {
+        var raw = localStorage.getItem(TAB_STORAGE_KEY);
+        if (raw) tabState = JSON.parse(raw);
+      } catch(e) { tabState = { tabs: [], activeId: null }; }
+    }
+    function findTab(mode) {
+      for (var i = 0; i < tabState.tabs.length; i++) {
+        if (tabState.tabs[i].id === mode) return i;
+      }
+      return -1;
+    }
+    function tabLabel(mode) {
+      var lang = i18n[currentLang] || {};
+      var map = {
+        firewallMan: lang.firewallManLabel || 'FirewallMan',
+        dashboard: lang.dashLabel || 'General Dashboard',
+        system: lang.systemLabel || 'System',
+        shell: lang.shellLabel || 'Shell',
+        widgets: lang.widgetsLabel || 'Widgets',
+        logViewer: lang.logViewerLabel || 'Log Viewer',
+        crontab: lang.crontabLabel || 'Crontab',
+        ai: lang.aiLabel || 'AI Assistant',
+        tools: lang.toolsLabel || 'Tools',
+        haproxy: lang.haproxyLabel || 'HAProxy Management',
+        nginx: lang.nginxLabel || 'Nginx Management',
+        juniper: lang.juniperLabel || 'Juniper Settings',
+        netplan: lang.netplanLabel || 'Netplan Config',
+        apiman: 'ApiMan',
+        dbman: 'DbMan',
+        security: lang.securityLabel || 'Security',
+      };
+      return map[mode] || mode;
+    }
+    function tabIcon(mode) {
+      var map = {
+        firewallMan: 'bx-shield-quarter', dashboard: 'bx-bar-chart-alt-2', system: 'bx-desktop',
+        shell: 'bx-terminal', widgets: 'bx-cube', logViewer: 'bx-file', crontab: 'bx-time-five', ai: 'bx-bot', tools: 'bx-wrench', haproxy: 'bx-transfer',
+        nginx: 'bx-windows', juniper: 'bx-network-chart', netplan: 'bx-wifi',
+        apiman: 'bx-link', dbman: 'bx-data', security: 'bx-shield',
+      };
+      return map[mode] || 'bx-file';
+    }
+    function renderTabs() {
+      var $bar = $('#tabBar').empty();
+      tabState.tabs.forEach(function (t, i) {
+        var active = t.id === tabState.activeId ? ' active' : '';
+        $bar.append('<div class="tab-item' + active + '" data-idx="' + i + '" data-mode="' + t.id + '" title="' + tabLabel(t.id) + '">' +
+          '<i class="bx ' + tabIcon(t.id) + '"></i> ' + tabLabel(t.id) +
+          '<span class="tab-close" data-mode="' + t.id + '">&times;</span></div>');
+      });
+      if (!$bar.find('.active').length && $bar.find('.tab-item').length) {
+        $bar.find('.tab-item:first').addClass('active');
+      }
+    }
+    function activateTabImpl(mode) {
+      tabState.activeId = mode;
+      // Keep raw view nodes hidden before moving/showing the active tab pane.
+      hideAllWorkViews();
+      // Hide all tab panes
+      $('.tab-content-pane').removeClass('active').hide();
+      var paneId = TAB_VIEW_PREFIX + mode;
+      var $pane = $('#' + paneId);
+      if (!$pane.length) {
+        // Find the original view element and wrap it in a tab pane
+        var $origView = $('#' + mode + 'View');
+        if ($origView.length) {
+          // Remove inline display:none from original view so pane visibility controls it
+          if ($origView.css('display') === 'none') $origView.css('display', '');
+          $origView.wrap('<div id="' + paneId + '" class="tab-content-pane"></div>');
+          $pane = $('#' + paneId);
+        }
+      }
+      if ($pane.length) {
+        $pane.addClass('active').show();
+        $('#' + mode + 'View').css('display', '');
+      }
+      renderTabs();
+      saveTabs();
+    }
+    function ensureTab(mode) {
+      loadTabs();
+      var idx = findTab(mode);
+      if (idx >= 0) {
+        tabState.activeId = mode;
+        saveTabs();
+        return false; // tab already exists
+      }
+      tabState.tabs.push({ id: mode });
+      tabState.activeId = mode;
+      saveTabs();
+      return true; // new tab
+    }
+    function closeTab(mode) {
+      loadTabs();
+      var idx = findTab(mode);
+      if (idx < 0) return;
+      tabState.tabs.splice(idx, 1);
+      if (tabState.activeId === mode) {
+        tabState.activeId = tabState.tabs.length > 0 ? tabState.tabs[Math.min(idx, tabState.tabs.length - 1)].id : null;
+      }
+      saveTabs();
+      // Remove the pane
+      var paneId = TAB_VIEW_PREFIX + mode;
+      var $pane = $('#' + paneId);
+      if ($pane.length) {
+        var $view = $pane.find('#' + mode + 'View');
+        if ($view.length) {
+          $view.unwrap();
+          $view.css('display', 'none');
+        }
+        $pane.remove();
+      }
+      if (mode === 'firewallMan') {
+        $('#firewallManView').css('display', 'none');
+      }
+      if (tabState.activeId && findTab(tabState.activeId) >= 0) {
+        activateTabImpl(tabState.activeId);
+      }
+    }
+    const languageKey = "iptables_lang";
+    const storedLang = localStorage.getItem(languageKey);
+    const browserLang = (function () { var l = ((navigator.languages && navigator.languages[0]) || navigator.language || "en").toLowerCase(); if (l.startsWith("zh")) return "zh"; if (l.startsWith("ja")) return "ja"; return "en"; })();
+    const langOrder = ['zh', 'en', 'ja'];
+    const langNames = { zh: '中文', en: 'English', ja: '日本語' };
+    let currentLang = langOrder.includes(storedLang) ? storedLang : browserLang;
+    if (!langOrder.includes(currentLang)) currentLang = 'en';
+    const i18n = {
+      zh: {
+        title: "管理平臺", docAssistTitle: "文件協助", chainLabel: "鏈", defaultPolicy: "默認策略",
+        // title: "{cmd} 管理平臺", docAssistTitle: "文件協助", chainLabel: "鏈", defaultPolicy: "默認策略",
+        packets: "經過的包數量", bytes: "字節數", references: "被引用數量", tableLabel: "表", tableWord: "表", chainWord: "鏈",
+        clearAllRule: "清空所有表規則", clearCurrentRule: "清空當前表規則", clearEmptyChain: "清空自定義空鏈",
+        clearAllMetrics: "清零所有表計數", clearCurrentMetrics: "清零當前表計數", clearChain: "清空規則",
+        viewTable: "查看當前表規則", execCmd: "執行命令", exportRule: "導出規則", importRule: "導入規則", doc: "命令文件",
+        protocolLabel: "協議", tabRaw: "raw", tabMangle: "mangle", tabNat: "nat", tabFilter: "filter",
+        nativeChain: "原生鏈", customChain: "自定義鏈", insert: "插入", append: "添加", zero: "清零",
+        zeroCounters: "清零計數", delete: "刪除", refresh: "刷新", refreshSuccess: "刷新成功", viewCmd: "查看命令",
+        warning: "提示", confirm: "確認", cancel: "取消", insertRuleTitle: "插入規則", appendRuleTitle: "添加規則",
+        rulePlaceholder: "請輸入規則", execCommandTitleTpl: "執行 {cmd} 命令", inputCommand: "輸入命令",
+        commandSuccess: "命令執行成功", importPromptTpl: "粘貼 {cmd} 規則", importSuccess: "導入規則成功！",
+        flushRuleSuccess: "清除規則成功！", flushMetricsSuccess: "清除統計數據成功！", clearEmptySuccess: "清空自定義空鏈成功！",
+        insertSuccess: "插入規則成功！", appendSuccess: "添加規則成功！", updateSuccess: "修改規則成功！",
+        copySuccess: "複製成功，可直接粘貼至文件！", exportDialogTitle: "全部規則命令",
+        btnCopy: "複製", btnDownload: "導出", btnOk: "確定",
+        clearConfirmPrefix: "確認清除", allRulesSuffix: "所有規則？", chainRulesSuffix: " 鏈的所有規則？",
+        allMetricsSuffix: "所有統計數據？", ruleMetricsPrefix: "第 ", ruleMetricsSuffix: " 條規則的統計數據？",
+        ruleNumberPrefix: "第", ruleNumberSuffix: "條規則", clearEmptyPrompt: "確認清除用戶自定義的所有空鏈？",
+        menuGroupDash: "儀表板", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", firewallManLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "工具集合", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
+        menuApiManNew: "新增工作區", menuDbManNew: "新增連線",
+        menuSecurityCvs: "CVS 資料庫", menuSecurityScan: "網路掃描",
+        menuGroupAI: "AI", menuGroupHelp: "協助", systemLabel: "系統現況", docLabel: "命令文件",
+        juniperLabel: "Juniper 設定", juniperInfo: "設備資訊", juniperVlan: "VLAN 管理", juniperPort: "Port 管理",
+        juniperRefresh: "重新整理", juniperCreateVlan: "新增 VLAN", juniperVlanList: "VLAN 列表", juniperPortList: "Port 管理",
+        juniperConnected: "已連線", juniperDisconnected: "未連線", juniperMgmtIp: "管理 IP", juniperHostname: "Hostname",
+        juniperModel: "Model", juniperVersion: "JunOS Version", juniperUptime: "Uptime", juniperSerial: "Serial Number",
+        juniperSettings: "連線設定", juniperDeviceName: "設備名稱", juniperHost: "管理 IP / Host", juniperPortNo: "SSH Port",
+        juniperUsername: "Username", juniperPassword: "Password", juniperTimeout: "Timeout", juniperPasswordHint: "留空代表保留既有密碼",
+        juniperClearPassword: "清除已儲存密碼", juniperStrictHostKey: "Strict Host Key Checking", juniperSaveSettings: "儲存設定",
+        juniperSettingsSaved: "Juniper 連線設定已儲存",
+        juniperVlanName: "VLAN 名稱", juniperVlanId: "VLAN ID", juniperInterfaces: "綁定介面", juniperAction: "操作",
+        juniperAdmin: "Admin Status", juniperLink: "Link Status", juniperMode: "Mode", juniperMembers: "VLAN Members",
+        juniperSetAccess: "設定 Access VLAN", juniperSetTrunk: "設定 Trunk VLAN", juniperCommandPreview: "指令預覽",
+        juniperEnabled: "啟用", juniperDisabled: "停用", juniperEnablePort: "啟用 Port", juniperDisablePort: "停用 Port",
+        juniperLinkInUse: "使用中", juniperLinkUnused: "未使用",
+        juniperPortMap: "Port 狀態面板", juniperSelectedCount: "已選取 {count} 個 Port", juniperSelectAll: "全選", juniperClearSelection: "清除選取",
+        juniperSelected: "已選取", juniperBulkKeep: "保持原狀", juniperBulkApply: "套用至選取 Port", juniperBulkTitle: "批次設定 Port",
+        juniperNoPortSelected: "請至少選取一個 Port", juniperAccessOneVlan: "Access 模式只能選擇一個 VLAN",
+        juniperMgmtPortWarning: "注意：ge-0/0/23 是 Firewall-Man 管理連線 Port，修改或停用可能造成 Juniper 失聯。",
+        juniperConfirmApply: "確認下發這些 JunOS 指令？", juniperApplied: "Juniper 設定已套用", juniperDeleted: "已刪除 VLAN",
+        netplanLabel: "Netplan 設定",
+        nginxLabel: "Nginx 管理", nginxEnv: "環境設定", nginxSites: "網站管理", nginxModules: "模組管理",
+        nginxEnvTitle: "Nginx 環境設定", nginxBin: "Nginx 執行檔路徑", nginxConfigDir: "設定目錄", nginxSitesDir: "sites-enabled 目錄",
+        nginxModulesDir: "modules-enabled 目錄", nginxConfDDir: "conf.d 目錄", nginxTest: "測試設定", nginxReload: "重新載入",
+        nginxSaveEnv: "儲存環境設定", nginxSiteFormTitle: "網站設定", nginxSiteName: "網站名稱", nginxServerName: "Server Name",
+        nginxSiteType: "網站類型", nginxStaticSite: "靜態網站 (Server)", nginxReverseProxy: "反向代理 (Reverse Proxy)",
+        nginxDocRoot: "Document Root", nginxProxyPass: "Proxy Pass", nginxEnabled: "啟用", nginxCustomConfig: "自訂 Config（留空自動產生）",
+        nginxSaveSite: "儲存網站", nginxPreviewSite: "預覽設定", nginxDeleteSite: "刪除", nginxSiteList: "網站列表",
+        nginxRefresh: "重新整理", nginxModuleAdd: "新增模組", nginxModuleName: "模組名稱", nginxAddModule: "新增模組",
+        nginxScanModules: "從系統掃描", nginxModuleList: "模組列表", nginxType: "類型", nginxStatus: "狀態", nginxActions: "操作",
+        nginxConfirmDelete: "確認刪除此網站？", nginxConfirmDeleteFile: "確認刪除 sites-enabled 中的檔案？",
+        nginxSiteAdded: "網站已新增", nginxSiteUpdated: "網站已更新", nginxSiteDeleted: "網站已刪除",
+        nginxEnvSaved: "環境設定已儲存", nginxTestSuccess: "設定測試完成", nginxReloadSuccess: "Nginx 已重新載入",
+        nginxModuleAdded: "模組已新增", nginxModuleToggled: "模組狀態已切換",
+        haproxyLabel: "HAProxy 管理", haproxyStatus: "HAProxy 狀態", haproxyWeb: "Web 負載平衡", haproxySql: "SQL Server 負載平衡", haproxyTest: "連線測試",
+        haproxyReload: "Reload HAProxy", haproxyRestart: "Restart HAProxy", haproxyInstalled: "是否已安裝", haproxyService: "Service 狀態",
+        haproxyConfigPath: "設定檔路徑", haproxyConfigValid: "設定檔驗證", haproxyVersion: "版本", haproxyGenerate: "產生設定預覽",
+        haproxyValidate: "驗證設定", haproxyApply: "驗證並套用", haproxyAddServer: "新增 Server", haproxyPreview: "HAProxy Config Preview",
+        haproxyConfirmApply: "確認寫入設定、備份原設定並 reload HAProxy？", haproxyApplied: "HAProxy 設定已套用",
+        dashTotalRules: "規則總數", dashTotalChains: "鏈總數", dashTotalPkts: "封包總計", dashTotalBytes: "位元組總計",
+        dashTrendLabel: "流量趨勢 (5 秒取樣)", dashIn: "入站", dashOut: "出站", dashPkt: "封包", dashPortIn: "入封包", dashPortOut: "出封包", dashPortTotal: "總計",
+        dashNoData: "無資料", dashUpdated: "更新時間",
+        sysHostname: "主機名稱", sysUptime: "運作時間", sysOS: "作業系統", sysIP: "IP 位址",
+        sysMemory: "記憶體", sysSwap: "Swap", sysUsed: "已用", sysFree: "可用", sysTotal: "總計",
+        sysDisk: "磁碟", sysMount: "掛載點", sysFilesystem: "檔案系統", sysUsePct: "使用率",
+        sysProcess: "處理程序", sysPID: "PID", sysName: "名稱", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "狀態",
+        sysRefresh: "重新整理", sysSortBy: "排序",
+        shellLabel: "Shell", widgetsLabel: "Widgets", logViewerLabel: "Log Viewer", aiLabel: "AI 助手", aiSend: "送出", aiInputPlaceholder: "輸入需求...",
+        aiStatusIdle: "閒置", aiStatusRunning: "執行中", aiStatusDone: "完成", aiStatusError: "錯誤",
+        aiCopy: "複製", aiExecute: "執行", aiExecuted: "已執行", aiCopyOk: "已複製", aiConfirmExec: "確認執行此命令？",
+        aiHeader: "AI 助手 (opencode)", aiIntroName: "AI 助手",
+        aiIntroText: "輸入你的需求，我會產生對應的防火牆命令。例如：<br>· 封鎖所有來自 192.168.1.0/24 的流量<br>· 允許 SSH (port 22) 從任何地方連入<br>· 列出目前所有 DROP 規則",
+        closeTab: "關閉", closeAll: "關閉全部", closeButMe: "關閉除我之外", closeLeft: "關閉左方", closeRight: "關閉右方",
+        securityLabel: "資安", loading: "載入中...", noData: "無資料",
+        apimanCreateWorkspace: "建立工作區", apimanWorkspaceName: "工作區名稱", apimanWorkspaceDescription: "說明",
+        apimanWorkspaceDescriptionPlaceholder: "用途、環境或 API 說明", apimanWorkspaceNameRequired: "請輸入工作區名稱",
+        apimanWorkspaceCreated: "工作區已建立", apimanNoWorkspace: "尚無工作區", apimanCreateFirstWorkspace: "建立第一個工作區",
+        dbmanDatabase: "資料庫", dbmanSchema: "資料庫結構", dbmanNoTables: "無資料表",
+        dbmanTable: "table", dbmanView: "view", dbmanStoredProcedure: "stored procedure", dbmanStoredFunction: "stored function",
+        dbmanConnectionSettings: "連線設定", dbmanBack: "返回", dbmanSaveQuery: "儲存查詢", dbmanExpand: "放大",
+        dbmanRun: "執行", dbmanSavedQueries: "已儲存查詢", dbmanNewConnection: "新增連線",
+        dbmanEditConnection: "編輯連線",
+        fieldName: "名稱", fieldType: "類型", fieldFilePath: "檔案路徑", fieldUser: "使用者", fieldPassword: "密碼",
+        testConnection: "測試連線", save: "儲存", dbmanNoConnections: "尚無連線", dbmanQuickConnectLocal: "快速連線至本機資料庫",
+        dbmanNoSavedQueries: "尚無儲存查詢",
+      },
+      en: {
+        title: "{cmd} Web Console", docAssistTitle: "Quick Help", chainLabel: "Chain", defaultPolicy: "Default policy",
+        packets: "Packets", bytes: "Bytes", references: "References", tableLabel: "Table", tableWord: "table", chainWord: "chain",
+        clearAllRule: "Flush All Tables", clearCurrentRule: "Flush Current Table", clearEmptyChain: "Drop Empty Custom Chains",
+        clearAllMetrics: "Zero All Counters", clearCurrentMetrics: "Zero Current Table", clearChain: "Flush Rules",
+        viewTable: "View Current Table", execCmd: "Run Command", exportRule: "Export Rules", importRule: "Import Rules", doc: "Command Reference",
+        protocolLabel: "Protocol", tabRaw: "raw", tabMangle: "mangle", tabNat: "nat", tabFilter: "filter",
+        nativeChain: "System Chains", customChain: "Custom Chains", insert: "Insert", append: "Append", zero: "Zero",
+        zeroCounters: "Zero Counters", delete: "Delete", refresh: "Refresh", refreshSuccess: "Refreshed", viewCmd: "View Command",
+        warning: "Warning", confirm: "OK", cancel: "Cancel", insertRuleTitle: "Insert Rule", appendRuleTitle: "Append Rule",
+        rulePlaceholder: "Enter rule arguments", execCommandTitleTpl: "Run {cmd} command", inputCommand: "Command",
+        commandSuccess: "Command executed successfully", importPromptTpl: "Paste {cmd} rules",
+        importSuccess: "Rules imported successfully!", flushRuleSuccess: "Rules cleared successfully!",
+        flushMetricsSuccess: "Counters reset successfully!", clearEmptySuccess: "Empty custom chains removed!",
+        insertSuccess: "Rule inserted successfully!", appendSuccess: "Rule appended successfully!",
+        updateSuccess: "Rule updated successfully!", copySuccess: "Copied! You can paste it into a file.",
+        exportDialogTitle: "All rules", btnCopy: "Copy", btnDownload: "Download", btnOk: "OK",
+        clearConfirmPrefix: "Confirm to clear", allRulesSuffix: "all rules?", chainRulesSuffix: " chain rules?",
+        allMetricsSuffix: "all counters?", ruleMetricsPrefix: "Rule #", ruleMetricsSuffix: " counters?",
+        ruleNumberPrefix: "Rule #", ruleNumberSuffix: "", clearEmptyPrompt: "Clear all empty custom chains?",
+        menuGroupDash: "Dashboard", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", firewallManLabel: "FirewallMan",         menuGroupSys: "System Tools", toolsLabel: "Tools", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
+        menuApiManNew: "New Workspace", menuDbManNew: "New Connection",
+        menuSecurityCvs: "CVS Database", menuSecurityScan: "Network Scan",
+        menuGroupAI: "AI", menuGroupHelp: "Help", systemLabel: "System", docLabel: "Command Reference",
+        juniperLabel: "Juniper Settings", juniperInfo: "Device Info", juniperVlan: "VLAN Management", juniperPort: "Port Management",
+        juniperRefresh: "Refresh", juniperCreateVlan: "Create VLAN", juniperVlanList: "VLAN List", juniperPortList: "Port Management",
+        juniperConnected: "Connected", juniperDisconnected: "Disconnected", juniperMgmtIp: "Management IP", juniperHostname: "Hostname",
+        juniperModel: "Model", juniperVersion: "JunOS Version", juniperUptime: "Uptime", juniperSerial: "Serial Number",
+        juniperSettings: "Connection Settings", juniperDeviceName: "Device Name", juniperHost: "Management IP / Host", juniperPortNo: "SSH Port",
+        juniperUsername: "Username", juniperPassword: "Password", juniperTimeout: "Timeout", juniperPasswordHint: "Leave blank to keep the stored password",
+        juniperClearPassword: "Clear stored password", juniperStrictHostKey: "Strict Host Key Checking", juniperSaveSettings: "Save Settings",
+        juniperSettingsSaved: "Juniper connection settings saved",
+        juniperVlanName: "VLAN Name", juniperVlanId: "VLAN ID", juniperInterfaces: "Interfaces", juniperAction: "Action",
+        juniperAdmin: "Admin Status", juniperLink: "Link Status", juniperMode: "Mode", juniperMembers: "VLAN Members",
+        juniperSetAccess: "Set Access VLAN", juniperSetTrunk: "Set Trunk VLAN", juniperCommandPreview: "Command Preview",
+        juniperEnabled: "Enabled", juniperDisabled: "Disabled", juniperEnablePort: "Enable Port", juniperDisablePort: "Disable Port",
+        juniperLinkInUse: "In Use", juniperLinkUnused: "Unused",
+        juniperPortMap: "Port Status Panel", juniperSelectedCount: "{count} ports selected", juniperSelectAll: "Select All", juniperClearSelection: "Clear Selection",
+        juniperSelected: "Selected", juniperBulkKeep: "Keep unchanged", juniperBulkApply: "Apply to Selected Ports", juniperBulkTitle: "Bulk Port Configuration",
+        juniperNoPortSelected: "Select at least one port", juniperAccessOneVlan: "Access mode requires exactly one VLAN",
+        juniperMgmtPortWarning: "Warning: ge-0/0/23 is the Firewall-Man management port. Changing or disabling it may disconnect Juniper.",
+        juniperConfirmApply: "Apply these JunOS commands?", juniperApplied: "Juniper setting applied", juniperDeleted: "VLAN deleted",
+        netplanLabel: "Netplan Config",
+        nginxLabel: "Nginx Management", nginxEnv: "Environment", nginxSites: "Sites", nginxModules: "Modules",
+        nginxEnvTitle: "Nginx Environment", nginxBin: "Nginx Binary", nginxConfigDir: "Config Dir", nginxSitesDir: "sites-enabled Dir",
+        nginxModulesDir: "modules-enabled Dir", nginxConfDDir: "conf.d Dir", nginxTest: "Test Config", nginxReload: "Reload",
+        nginxSaveEnv: "Save Environment", nginxSiteFormTitle: "Site Settings", nginxSiteName: "Site Name", nginxServerName: "Server Name",
+        nginxSiteType: "Site Type", nginxStaticSite: "Static Site (Server)", nginxReverseProxy: "Reverse Proxy",
+        nginxDocRoot: "Document Root", nginxProxyPass: "Proxy Pass", nginxEnabled: "Enabled", nginxCustomConfig: "Custom Config (leave blank to auto-generate)",
+        nginxSaveSite: "Save Site", nginxPreviewSite: "Preview Config", nginxDeleteSite: "Delete", nginxSiteList: "Site List",
+        nginxRefresh: "Refresh", nginxModuleAdd: "Add Module", nginxModuleName: "Module Name", nginxAddModule: "Add Module",
+        nginxScanModules: "Scan from System", nginxModuleList: "Module List", nginxType: "Type", nginxStatus: "Status", nginxActions: "Actions",
+        nginxConfirmDelete: "Confirm delete this site?", nginxConfirmDeleteFile: "Confirm delete file from sites-enabled?",
+        nginxSiteAdded: "Site added", nginxSiteUpdated: "Site updated", nginxSiteDeleted: "Site deleted",
+        nginxEnvSaved: "Environment saved", nginxTestSuccess: "Config test completed", nginxReloadSuccess: "Nginx reloaded",
+        nginxModuleAdded: "Module added", nginxModuleToggled: "Module toggled",
+        haproxyLabel: "HAProxy Management", haproxyStatus: "HAProxy Status", haproxyWeb: "Web Load Balance", haproxySql: "SQL Server Load Balance", haproxyTest: "Connection Test",
+        haproxyReload: "Reload HAProxy", haproxyRestart: "Restart HAProxy", haproxyInstalled: "Installed", haproxyService: "Service Status",
+        haproxyConfigPath: "Config Path", haproxyConfigValid: "Config Valid", haproxyVersion: "Version", haproxyGenerate: "Generate Preview",
+        haproxyValidate: "Validate Config", haproxyApply: "Validate & Apply", haproxyAddServer: "Add Server", haproxyPreview: "HAProxy Config Preview",
+        haproxyConfirmApply: "Write config, back up current file, and reload HAProxy?", haproxyApplied: "HAProxy config applied",
+        dashTotalRules: "Total Rules", dashTotalChains: "Chains", dashTotalPkts: "Packets", dashTotalBytes: "Bytes",
+        dashTrendLabel: "Traffic Trend (5s interval)", dashIn: "In", dashOut: "Out", dashPkt: "pkt", dashPortIn: "In (pkts)", dashPortOut: "Out (pkts)", dashPortTotal: "Total",
+        dashNoData: "No data", dashUpdated: "Updated",
+        sysHostname: "Hostname", sysUptime: "Uptime", sysOS: "OS", sysIP: "IP Address",
+        sysMemory: "Memory", sysSwap: "Swap", sysUsed: "Used", sysFree: "Free", sysTotal: "Total",
+        sysDisk: "Disk", sysMount: "Mount", sysFilesystem: "Filesystem", sysUsePct: "Use%",
+        sysProcess: "Processes", sysPID: "PID", sysName: "Name", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "State",
+        sysRefresh: "Refresh", sysSortBy: "Sort",
+        shellLabel: "Shell", widgetsLabel: "Widgets", logViewerLabel: "Log Viewer", aiLabel: "AI Assistant", aiSend: "Send", aiInputPlaceholder: "Enter your request...",
+        aiStatusIdle: "Idle", aiStatusRunning: "Running", aiStatusDone: "Done", aiStatusError: "Error",
+        aiCopy: "Copy", aiExecute: "Execute", aiExecuted: "Executed", aiCopyOk: "Copied", aiConfirmExec: "Confirm to execute this command?",
+        aiHeader: "AI Assistant (opencode)", aiIntroName: "AI Assistant",
+        aiIntroText: "Enter your request and I will generate matching firewall commands. For example:<br>· Block all traffic from 192.168.1.0/24<br>· Allow SSH (port 22) from anywhere<br>· List all current DROP rules",
+        closeTab: "Close", closeAll: "Close All", closeButMe: "Close But Me", closeLeft: "Close Left", closeRight: "Close Right",
+        securityLabel: "Security", loading: "Loading...", noData: "No data",
+        apimanCreateWorkspace: "Create Workspace", apimanWorkspaceName: "Workspace Name", apimanWorkspaceDescription: "Description",
+        apimanWorkspaceDescriptionPlaceholder: "Purpose, environment, or API notes", apimanWorkspaceNameRequired: "Enter a workspace name",
+        apimanWorkspaceCreated: "Workspace created", apimanNoWorkspace: "No workspaces yet", apimanCreateFirstWorkspace: "Create first workspace",
+        dbmanDatabase: "Database", dbmanSchema: "Database Schema", dbmanNoTables: "No tables",
+        dbmanTable: "table", dbmanView: "view", dbmanStoredProcedure: "stored procedure", dbmanStoredFunction: "stored function",
+        dbmanConnectionSettings: "Connection Settings", dbmanBack: "Back", dbmanSaveQuery: "Save Query", dbmanExpand: "Expand",
+        dbmanRun: "Run", dbmanSavedQueries: "Saved Queries", dbmanNewConnection: "New Connection",
+        dbmanEditConnection: "Edit Connection",
+        fieldName: "Name", fieldType: "Type", fieldFilePath: "File Path", fieldUser: "User", fieldPassword: "Password",
+        testConnection: "Test Connection", save: "Save", dbmanNoConnections: "No connections yet", dbmanQuickConnectLocal: "Quick connect to local database",
+        dbmanNoSavedQueries: "No saved queries",
+      },
+      ja: {
+        title: "{cmd} 管理コンソール", docAssistTitle: "クイックヘルプ", chainLabel: "チェイン", defaultPolicy: "デフォルトポリシー",
+        packets: "パケット数", bytes: "バイト数", references: "参照数", tableLabel: "テーブル", tableWord: "テーブル", chainWord: "チェイン",
+        clearAllRule: "全テーブルをフラッシュ", clearCurrentRule: "現在のテーブルをフラッシュ", clearEmptyChain: "空のカスタムチェインを削除",
+        clearAllMetrics: "全カウンタをゼロ", clearCurrentMetrics: "現在のテーブルカウンタをゼロ", clearChain: "ルールをクリア",
+        viewTable: "現在のテーブルを表示", execCmd: "コマンドを実行", exportRule: "ルールをエクスポート", importRule: "ルールをインポート", doc: "コマンドリファレンス",
+        protocolLabel: "プロトコル", tabRaw: "raw", tabMangle: "mangle", tabNat: "nat", tabFilter: "filter",
+        nativeChain: "システムチェイン", customChain: "カスタムチェイン", insert: "挿入", append: "追加", zero: "ゼロ",
+        zeroCounters: "カウンタをゼロ", delete: "削除", refresh: "更新", refreshSuccess: "更新完了", viewCmd: "コマンドを表示",
+        warning: "確認", confirm: "OK", cancel: "キャンセル", insertRuleTitle: "ルールを挿入", appendRuleTitle: "ルールを追加",
+        rulePlaceholder: "ルールを入力", execCommandTitleTpl: "{cmd} コマンドを実行", inputCommand: "コマンドを入力",
+        commandSuccess: "コマンドが正常に実行されました", importPromptTpl: "{cmd} ルールを貼り付け", importSuccess: "ルールのインポートが完了しました！",
+        flushRuleSuccess: "ルールのクリアが完了しました！", flushMetricsSuccess: "統計データのクリアが完了しました！", clearEmptySuccess: "空のカスタムチェインを削除しました！",
+        insertSuccess: "ルールを挿入しました！", appendSuccess: "ルールを追加しました！", updateSuccess: "ルールを更新しました！",
+        copySuccess: "コピーしました！ファイルに貼り付けてください。", exportDialogTitle: "全ルールコマンド",
+        btnCopy: "コピー", btnDownload: "ダウンロード", btnOk: "OK",
+        clearConfirmPrefix: "確認", allRulesSuffix: "すべてのルールをクリアしますか？", chainRulesSuffix: " チェインの全ルールをクリアしますか？",
+        allMetricsSuffix: "すべての統計データをクリアしますか？", ruleMetricsPrefix: "ルール #", ruleMetricsSuffix: " の統計データをクリアしますか？",
+        ruleNumberPrefix: "ルール #", ruleNumberSuffix: "", clearEmptyPrompt: "空のカスタムチェインをすべて削除しますか？",
+        menuGroupDash: "ダッシュボード", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", firewallManLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "ツール集", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
+        menuApiManNew: "新規ワークスペース", menuDbManNew: "新規接続",
+        menuSecurityCvs: "CVS データベース", menuSecurityScan: "ネットワークスキャン",
+        menuGroupAI: "AI", menuGroupHelp: "ヘルプ", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
+        juniperLabel: "Juniper 設定", juniperInfo: "デバイス情報", juniperVlan: "VLAN 管理", juniperPort: "Port 管理",
+        juniperRefresh: "更新", juniperCreateVlan: "VLAN 作成", juniperVlanList: "VLAN 一覧", juniperPortList: "Port 管理",
+        juniperConnected: "接続済み", juniperDisconnected: "未接続", juniperMgmtIp: "管理 IP", juniperHostname: "Hostname",
+        juniperModel: "Model", juniperVersion: "JunOS Version", juniperUptime: "Uptime", juniperSerial: "Serial Number",
+        juniperSettings: "接続設定", juniperDeviceName: "デバイス名", juniperHost: "管理 IP / Host", juniperPortNo: "SSH Port",
+        juniperUsername: "Username", juniperPassword: "Password", juniperTimeout: "Timeout", juniperPasswordHint: "空欄の場合は保存済みパスワードを維持します",
+        juniperClearPassword: "保存済みパスワードを削除", juniperStrictHostKey: "Strict Host Key Checking", juniperSaveSettings: "設定を保存",
+        juniperSettingsSaved: "Juniper 接続設定を保存しました",
+        juniperVlanName: "VLAN 名", juniperVlanId: "VLAN ID", juniperInterfaces: "インターフェース", juniperAction: "操作",
+        juniperAdmin: "Admin Status", juniperLink: "Link Status", juniperMode: "Mode", juniperMembers: "VLAN Members",
+        juniperSetAccess: "Access VLAN 設定", juniperSetTrunk: "Trunk VLAN 設定", juniperCommandPreview: "コマンドプレビュー",
+        juniperEnabled: "有効", juniperDisabled: "無効", juniperEnablePort: "Port を有効化", juniperDisablePort: "Port を無効化",
+        juniperLinkInUse: "使用中", juniperLinkUnused: "未使用",
+        juniperPortMap: "Port ステータスパネル", juniperSelectedCount: "{count} Port 選択中", juniperSelectAll: "すべて選択", juniperClearSelection: "選択解除",
+        juniperSelected: "選択済み", juniperBulkKeep: "変更しない", juniperBulkApply: "選択 Port に適用", juniperBulkTitle: "Port 一括設定",
+        juniperNoPortSelected: "Port を1つ以上選択してください", juniperAccessOneVlan: "Access モードでは VLAN を1つだけ選択してください",
+        juniperMgmtPortWarning: "注意: ge-0/0/23 は Firewall-Man 管理 Port です。変更または無効化すると Juniper に接続できなくなる可能性があります。",
+        juniperConfirmApply: "これらの JunOS コマンドを適用しますか？", juniperApplied: "Juniper 設定を適用しました", juniperDeleted: "VLAN を削除しました",
+        netplanLabel: "Netplan 設定",
+        nginxLabel: "Nginx 管理", nginxEnv: "環境設定", nginxSites: "サイト管理", nginxModules: "モジュール管理",
+        nginxEnvTitle: "Nginx 環境設定", nginxBin: "Nginx 実行ファイル", nginxConfigDir: "設定ディレクトリ", nginxSitesDir: "sites-enabled ディレクトリ",
+        nginxModulesDir: "modules-enabled ディレクトリ", nginxConfDDir: "conf.d ディレクトリ", nginxTest: "設定テスト", nginxReload: "再読み込み",
+        nginxSaveEnv: "環境設定を保存", nginxSiteFormTitle: "サイト設定", nginxSiteName: "サイト名", nginxServerName: "Server Name",
+        nginxSiteType: "サイトタイプ", nginxStaticSite: "静的サイト (Server)", nginxReverseProxy: "リバースプロキシ",
+        nginxDocRoot: "Document Root", nginxProxyPass: "Proxy Pass", nginxEnabled: "有効", nginxCustomConfig: "カスタム Config（空欄で自動生成）",
+        nginxSaveSite: "サイトを保存", nginxPreviewSite: "設定をプレビュー", nginxDeleteSite: "削除", nginxSiteList: "サイト一覧",
+        nginxRefresh: "更新", nginxModuleAdd: "モジュール追加", nginxModuleName: "モジュール名", nginxAddModule: "追加",
+        nginxScanModules: "システムからスキャン", nginxModuleList: "モジュール一覧", nginxType: "タイプ", nginxStatus: "状態", nginxActions: "操作",
+        nginxConfirmDelete: "このサイトを削除しますか？", nginxConfirmDeleteFile: "sites-enabled のファイルを削除しますか？",
+        nginxSiteAdded: "サイトを追加しました", nginxSiteUpdated: "サイトを更新しました", nginxSiteDeleted: "サイトを削除しました",
+        nginxEnvSaved: "環境設定を保存しました", nginxTestSuccess: "設定テストが完了しました", nginxReloadSuccess: "Nginx を再読み込みしました",
+        nginxModuleAdded: "モジュールを追加しました", nginxModuleToggled: "モジュール状態を変更しました",
+        haproxyLabel: "HAProxy 管理", haproxyStatus: "HAProxy 状態", haproxyWeb: "Web ロードバランス", haproxySql: "SQL Server ロードバランス", haproxyTest: "接続テスト",
+        haproxyReload: "HAProxy Reload", haproxyRestart: "HAProxy Restart", haproxyInstalled: "インストール済み", haproxyService: "Service 状態",
+        haproxyConfigPath: "設定ファイル", haproxyConfigValid: "設定検証", haproxyVersion: "バージョン", haproxyGenerate: "設定プレビュー生成",
+        haproxyValidate: "設定を検証", haproxyApply: "検証して適用", haproxyAddServer: "Server 追加", haproxyPreview: "HAProxy Config Preview",
+        haproxyConfirmApply: "設定を書き込み、現設定をバックアップして HAProxy を reload しますか？", haproxyApplied: "HAProxy 設定を適用しました",
+        dashTotalRules: "ルール総数", dashTotalChains: "チェイン数", dashTotalPkts: "パケット総数", dashTotalBytes: "バイト総数",
+        dashTrendLabel: "トラフィック傾向 (5秒間隔)", dashIn: "入力", dashOut: "出力", dashPkt: "pkt", dashPortIn: "入力 (pkt)", dashPortOut: "出力 (pkt)", dashPortTotal: "合計",
+        dashNoData: "データなし", dashUpdated: "更新時間",
+        sysHostname: "ホスト名", sysUptime: "稼働時間", sysOS: "OS", sysIP: "IP アドレス",
+        sysMemory: "メモリ", sysSwap: "スワップ", sysUsed: "使用中", sysFree: "空き", sysTotal: "合計",
+        sysDisk: "ディスク", sysMount: "マウント", sysFilesystem: "ファイルシステム", sysUsePct: "使用率",
+        sysProcess: "プロセス", sysPID: "PID", sysName: "名前", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "状態",
+        sysRefresh: "更新", sysSortBy: "並び替え",
+        shellLabel: "Shell", widgetsLabel: "Widgets", logViewerLabel: "Log Viewer", aiLabel: "AI アシスタント", aiSend: "送信", aiInputPlaceholder: "リクエストを入力...",
+        aiStatusIdle: "アイドル", aiStatusRunning: "実行中", aiStatusDone: "完了", aiStatusError: "エラー",
+        aiCopy: "コピー", aiExecute: "実行", aiExecuted: "実行済み", aiCopyOk: "コピーしました", aiConfirmExec: "このコマンドを実行しますか？",
+        aiHeader: "AI アシスタント (opencode)", aiIntroName: "AI アシスタント",
+        aiIntroText: "要望を入力すると、対応するファイアウォールコマンドを生成します。例：<br>· 192.168.1.0/24 からの通信をすべてブロック<br>· 任意の場所から SSH (port 22) を許可<br>· 現在の DROP ルールを一覧表示",
+        closeTab: "閉じる", closeAll: "すべて閉じる", closeButMe: "自分以外を閉じる", closeLeft: "左を閉じる", closeRight: "右を閉じる",
+        securityLabel: "セキュリティ", loading: "読み込み中...", noData: "データなし",
+        apimanCreateWorkspace: "ワークスペース作成", apimanWorkspaceName: "ワークスペース名", apimanWorkspaceDescription: "説明",
+        apimanWorkspaceDescriptionPlaceholder: "用途、環境、API メモ", apimanWorkspaceNameRequired: "ワークスペース名を入力してください",
+        apimanWorkspaceCreated: "ワークスペースを作成しました", apimanNoWorkspace: "ワークスペースがありません", apimanCreateFirstWorkspace: "最初のワークスペースを作成",
+        dbmanDatabase: "データベース", dbmanSchema: "データベース構造", dbmanNoTables: "テーブルなし",
+        dbmanTable: "table", dbmanView: "view", dbmanStoredProcedure: "stored procedure", dbmanStoredFunction: "stored function",
+        dbmanConnectionSettings: "接続設定", dbmanBack: "戻る", dbmanSaveQuery: "クエリを保存", dbmanExpand: "拡大",
+        dbmanRun: "実行", dbmanSavedQueries: "保存済みクエリ", dbmanNewConnection: "新規接続",
+        dbmanEditConnection: "接続を編集",
+        fieldName: "名前", fieldType: "タイプ", fieldFilePath: "ファイルパス", fieldUser: "ユーザー", fieldPassword: "パスワード",
+        testConnection: "接続テスト", save: "保存", dbmanNoConnections: "接続がありません", dbmanQuickConnectLocal: "ローカルデータベースにクイック接続",
+        dbmanNoSavedQueries: "保存済みクエリがありません",
+      }
+    };
+    function t(key) {
+      let s = i18n[currentLang][key];
+      if (typeof s === "string" && s.indexOf("{cmd}") !== -1) s = s.replace("{cmd}", fwDisplayName());
+      return s;
+    }
+    function setLanguage(lang, persist) {
+      currentLang = langOrder.includes(lang) ? lang : 'en';
+      window.currentLang = currentLang;
+      document.documentElement.lang = currentLang;
+      if (persist) localStorage.setItem(languageKey, currentLang);
+      $(".ipc-title").text(t("title"));
+      document.title = t("title");
+      $("#docDropdownLabel").text(t("docAssistTitle"));
+      var lng = i18n[currentLang];
+      $('#menuGroupDashLabel').text(lng.menuGroupDash || '儀表板');
+      $('#menuDashLabel').text(lng.dashLabel || 'General Dashboard');
+      $('#menuSysLabel').text(lng.systemLabel || 'System');
+      $('#menuGroupNetLabel').text(lng.menuGroupNet || 'Network Tools');
+      $('#menuFirewallManLabel').text(lng.firewallManLabel || 'FirewallMan');
+      $('#menuHaproxyLabel').text(lng.haproxyLabel || 'HaProxy 管理');
+      $('#menuNginxLabel').text(lng.nginxLabel || 'Nginx 管理');
+      $('#menuNetplanLabel').text(lng.netplanLabel || 'Netplan 設定');
+      $('#menuJuniperLabel').text(lng.juniperLabel || 'Juniper 設定');
+      $('#menuGroupSysLabel').text(lng.menuGroupSys || '系統工具');
+      $('#menuToolsLabel').text(lng.toolsLabel || '系統工具');
+      $('#menuShellLabel').text(lng.shellLabel || 'Shell');
+      $('#menuWidgetsLabel').text(lng.widgetsLabel || 'Widgets');
+      $('#menuLogViewerLabel').text(lng.logViewerLabel || 'Log Viewer');
+      $('#menuCrontabLabel').text(lng.crontabLabel || 'Crontab');
+      $('#menuGroupApiManLabel').text(lng.menuGroupApiMan || 'ApiMan');
+      $('#menuApiManNewLabel').text(lng.menuApiManNew || 'New Workspace');
+      $('#menuGroupDbManLabel').text(lng.menuGroupDbMan || 'DbMan');
+      $('#menuDbManNewLabel').text(lng.menuDbManNew || 'New Connection');
+      $('#menuGroupSecurityLabel').text(lng.menuGroupSecurity || 'Security');
+      $('#menuSecurityCvsLabel').text(lng.menuSecurityCvs || 'CVS 資料庫');
+      $('#menuSecurityScanLabel').text(lng.menuSecurityScan || '網路掃描');
+      $('#menuGroupAILabel').text(lng.menuGroupAI || 'AI');
+      $('#menuAILabel').text(lng.aiLabel || 'AI Assistant');
+      $('#menuGroupHelpLabel').text(lng.menuGroupHelp || 'Help');
+      $('#menuDocLabel').text(lng.docLabel || 'Command Reference');
+      $('#juniperInfoTabLabel,#juniperInfoTitle').text(lng.juniperInfo || 'Device Info');
+      $('#juniperVlanTabLabel').text(lng.juniperVlan || 'VLAN Management');
+      $('#juniperPortTabLabel,#juniperPortListTitle').text(lng.juniperPort || 'Port Management');
+      $('#juniperPortMapTitle').text(lng.juniperPortMap || 'Port Status Panel');
+      $('#juniperPortSelectAllLabel').text(lng.juniperSelectAll || 'Select All');
+      $('#juniperPortClearSelectionLabel').text(lng.juniperClearSelection || 'Clear Selection');
+      $('#juniperBulkApplyLabel').text(lng.juniperBulkApply || 'Apply to Selected Ports');
+      $('#juniperBulkKeepOption').text(lng.juniperBulkKeep || 'Keep unchanged');
+      $('#juniperBulkEnableOption').text(lng.juniperEnabled || 'Enabled');
+      $('#juniperBulkDisableOption,#juniperLegendDisabled').text(lng.juniperDisabled || 'Disabled');
+      $('#juniperLegendInUse').text(lng.juniperLinkInUse || 'In Use');
+      $('#juniperLegendUnused').text(lng.juniperLinkUnused || 'Unused');
+      $('#juniperLegendSelected').text(lng.juniperSelected || 'Selected');
+      $('#juniperBulkModeLabel').text(lng.juniperMode || 'Mode');
+      $('#juniperBulkVlansLabel').text(lng.juniperMembers || 'VLAN Members');
+      $('#juniperBulkEnabledLabel').text(lng.juniperAdmin || 'Admin Status');
+      $('#juniperVlanCreateTitle,#juniperCreateVlanLabel').text(lng.juniperCreateVlan || 'Create VLAN');
+      $('#juniperVlanListTitle').text(lng.juniperVlanList || 'VLAN List');
+      $('.juniperRefreshLabel').text(lng.juniperRefresh || 'Refresh');
+      $('#juniperSettingsTitle').text(lng.juniperSettings || 'Connection Settings');
+      $('label[for="juniperDeviceName"]').text(lng.juniperDeviceName || 'Device Name');
+      $('label[for="juniperHost"]').text(lng.juniperHost || 'Management IP / Host');
+      $('label[for="juniperPort"]').text(lng.juniperPortNo || 'SSH Port');
+      $('label[for="juniperUsername"]').text(lng.juniperUsername || 'Username');
+      $('label[for="juniperPassword"]').text(lng.juniperPassword || 'Password');
+      $('label[for="juniperTimeout"]').text(lng.juniperTimeout || 'Timeout');
+      $('#juniperPasswordHint').text(lng.juniperPasswordHint || 'Leave blank to keep the stored password');
+      $('#juniperClearPasswordLabel').text(lng.juniperClearPassword || 'Clear stored password');
+      $('#juniperStrictHostKeyLabel').text(lng.juniperStrictHostKey || 'Strict Host Key Checking');
+      $('#juniperSettingsSaveLabel').text(lng.juniperSaveSettings || 'Save Settings');
+      $('label[for="juniperVlanName"]').text(lng.juniperVlanName || 'VLAN Name');
+      $('label[for="juniperVlanId"]').text(lng.juniperVlanId || 'VLAN ID');
+      if (typeof updateJuniperPortSelection === 'function') updateJuniperPortSelection();
+      $('#haproxyStatusTabLabel,#haproxyStatusTitle').text(lng.haproxyStatus || 'HAProxy Status');
+      $('#haproxyWebTabLabel,#haproxyWebTitle').text(lng.haproxyWeb || 'Web Load Balance');
+      $('#haproxySqlTabLabel,#haproxySqlTitle').text(lng.haproxySql || 'SQL Server Load Balance');
+      $('#haproxyTestTabLabel').text(lng.haproxyTest || 'Connection Test');
+      $('#haproxyReloadLabel').text(lng.haproxyReload || 'Reload HAProxy');
+      $('#haproxyRestartLabel').text(lng.haproxyRestart || 'Restart HAProxy');
+      $('.haproxyRefreshLabel').text(lng.juniperRefresh || 'Refresh');
+      $('.haproxyGenerateLabel').text(lng.haproxyGenerate || 'Generate Preview');
+      $('.haproxyValidateLabel').text(lng.haproxyValidate || 'Validate Config');
+      $('.haproxyApplyLabel').text(lng.haproxyApply || 'Validate & Apply');
+      $('.haproxyAddServerLabel').text(lng.haproxyAddServer || 'Add Server');
+      $('.haproxyPreviewTitle').text(lng.haproxyPreview || 'HAProxy Config Preview');
+      if (lng.aiSend) $('#aiSendLabel').text(lng.aiSend);
+      if (lng.aiInputPlaceholder) $('#aiInput').attr('placeholder', lng.aiInputPlaceholder);
+      const labels = [
+        ["#clear-all-rule", "clearAllRule"], ["#clear-current-table-rule", "clearCurrentRule"],
+        ["#clear-all-empty-chain", "clearEmptyChain"], ["#clear-all-metrics", "clearAllMetrics"],
+        ["#clear-current-table-metrics", "clearCurrentMetrics"], ["#self-iptables", "viewTable"],
+        ["#exec-iptables", "execCmd"], ["#export-all-rule", "exportRule"],
+        ["#import-all-rule", "importRule"], ["#open-iptables-doc", "doc"],
+      ];
+      labels.forEach(([sel, k]) => { const el = $(sel); if (el.length) el.html(el.html().replace(/(<\/i>)\s*.*/, '$1 ' + t(k))); });
+      const tabs = ["tabRaw", "tabMangle", "tabNat", "tabFilter"];
+      $(".iptables-table .nav-link").each((i, el) => { if (tabs[i]) $(el).text(t(tabs[i])); });
+      $("#languageDropdownLabel").text(langNames[currentLang] || 'English');
+      $("#languageDropdownMenu .dropdown-item").each(function () {
+        $(this).toggleClass("active fw-semibold", $(this).data("lang") === lang);
+        $(this).find(".bx-check").remove();
+        if ($(this).data("lang") === lang) {
+          $(this).append('<i class="bx bx-check ms-auto text-primary"></i>');
+        }
+      });
+      $('[data-i18n]').each(function () {
+        var key = $(this).data('i18n');
+        if (key && lng[key]) $(this).text(lng[key]);
+      });
+      $('[data-i18n-html]').each(function () {
+        var key = $(this).data('i18n-html');
+        if (key && lng[key]) $(this).html(lng[key]);
+      });
+      $('[data-i18n-placeholder]').each(function () {
+        var key = $(this).data('i18n-placeholder');
+        if (key && lng[key]) $(this).attr('placeholder', lng[key]);
+      });
+      $('[data-i18n-title]').each(function () {
+        var key = $(this).data('i18n-title');
+        if (key && lng[key]) $(this).attr('title', lng[key]);
+      });
+    }
+    // ─── Logger ───
+    let logCount = 0;
+    const LOG_LEVELS = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 };
+    const consoleMethods = { DEBUG: 'debug', INFO: 'info', WARN: 'warn', ERROR: 'error' };
+    const consoleStyles = {
+      DEBUG: 'color:#6c7086',
+      INFO:  'color:#89b4fa;font-weight:600',
+      WARN:  'color:#f9e2af;font-weight:600',
+      ERROR: 'color:#f38ba8;font-weight:600',
+    };
+    const logger = {
+      _append(level, msg, cmd) {
+        logCount++;
+        const time = new Date().toLocaleTimeString();
+        const cls = Object.keys(LOG_LEVELS).find(k => LOG_LEVELS[k] === level) || 'DEBUG';
+        const entry = document.createElement('div');
+        entry.className = 'log-entry log-' + cls.toLowerCase();
+        let html = `<span class="log-time">[${time}]</span><span class="log-msg">${msg}</span>`;
+        if (cmd) html += `<span class="log-cmd">&#8594; ${cmd}</span>`;
+        entry.innerHTML = html;
+        document.getElementById('logContent').appendChild(entry);
+        document.getElementById('logBadge').textContent = logCount;
+        const c = document.getElementById('logContainer');
+        if (c.classList.contains('open')) c.scrollTop = c.scrollHeight;
+        // Mirror to browser developer console
+        if (typeof console !== 'undefined') {
+          const tag = '%c[' + cls + '][' + time + ']';
+          const style = consoleStyles[cls] || '';
+          const args = [tag, style, msg];
+          if (cmd) args.push('→ ' + cmd);
+          const fn = console[consoleMethods[cls]] || console.log;
+          fn.apply(console, args);
+        }
+        // Mirror to server-side Rust console via /log endpoint (fire-and-forget)
+        try {
+          if (typeof fetch !== 'undefined') {
+            const body = new URLSearchParams();
+            body.set('level', cls.toLowerCase());
+            body.set('msg', String(msg));
+            if (cmd) body.set('cmd', String(cmd));
+            fetch('/log', { method: 'POST', body: body, keepalive: true }).catch(function () {});
+          }
+        } catch (e) { /* silently ignore */ }
+      },
+      debug(msg, cmd) { this._append(LOG_LEVELS.DEBUG, msg, cmd); },
+      info(msg, cmd) { this._append(LOG_LEVELS.INFO, msg, cmd); },
+      warn(msg, cmd) { this._append(LOG_LEVELS.WARN, msg, cmd); },
+      error(msg, cmd) { this._append(LOG_LEVELS.ERROR, msg, cmd); },
+      clear() {
+        document.getElementById('logContent').innerHTML = '';
+        logCount = 0;
+        document.getElementById('logBadge').textContent = '0';
+        if (typeof console !== 'undefined' && console.clear) console.clear();
+      }
+    };

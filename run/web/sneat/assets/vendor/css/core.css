@@ -801,7 +801,7 @@ progress {
   --bs-gutter-y: 0;
   display: -webkit-box;
   display: -ms-flexbox;
-  display: flex;
+  /* display: flex; */
   -ms-flex-wrap: wrap;
       flex-wrap: wrap;
   margin-top: calc(-1 * var(--bs-gutter-y));
@@ -25711,10 +25711,13 @@ li:not(:first-child) .dropdown-item, .dropdown-menu .dropdown-item:not(:first-ch
 }
 .menu .app-brand {
   inline-size: 100%;
-  padding-inline: calc(var(--bs-menu-vertical-link-padding-x) * 2.1333);
+  padding-inline: calc(var(--bs-menu-vertical-link-padding-x) * 1.38);
 }
 .menu .app-brand .app-brand-text {
   color: var(--bs-heading-color);
+  /* position: relative;
+  left: -28px;
+  top: 5px; */
 }
 .menu .app-brand .layout-menu-toggle {
   position: absolute;
