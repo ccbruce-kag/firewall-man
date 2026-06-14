@@ -17,7 +17,13 @@ async function formApi<T = unknown>(path: string, options: RequestInit = {}): Pr
 }
 
 function countFields(json: string): number {
-  try { const arr = JSON.parse(json || '[]'); return Array.isArray(arr) ? arr.length : 0 } catch { return 0 }
+  try {
+    const parsed = JSON.parse(json || '[]')
+    if (Array.isArray(parsed)) return parsed.length
+    if (Array.isArray(parsed?.fields)) return parsed.fields.length
+    if (Array.isArray(parsed?.components)) return parsed.components.length
+    return 0
+  } catch { return 0 }
 }
 
 function formatSize(json: string): string {
@@ -48,8 +54,8 @@ export default function FormEditorView() {
     ;(async () => {
       setBusy(true); setMsg('')
       try { const data = await formApi<{ forms: FormRecord[] }>('/api/apiman/forms'); if (!isMounted) return; setRecords(data.forms || []) }
-      catch (err) { if (!isMounted) { setMsg(err instanceof Error ? err.message : String(err)); setMsgKind('danger') } }
-      finally { if (!isMounted) setBusy(false) }
+      catch (err) { if (isMounted) { setMsg(err instanceof Error ? err.message : String(err)); setMsgKind('danger') } }
+      finally { if (isMounted) setBusy(false) }
     })()
     return () => { isMounted = false }
   }, [])
@@ -117,8 +123,8 @@ export default function FormEditorView() {
         </div></div></div>
         <div className="row mb-3"><div className="col-12"><div className="card"><div className="card-header py-2"><strong style={{ fontSize: '.8125rem' }}>關於 Form 表單編輯</strong></div>
           <div className="card-body p-2" style={{ fontSize: '.75rem' }}>
-            <p className="mb-2">Form 模組基於 <a href="https://github.com/optimajet/formengine" target="_blank" rel="noreferrer">FormEngine Designer</a> 開源工具，提供拖放式表單設計：</p>
-            <ul className="mb-0 ps-3"><li>Input / TextArea / Dropdown / Checkbox / Radio / DatePicker 等欄位</li><li>拖放調整順序與結構</li><li>JSON schema 匯出與匯入</li><li>搭配後端生成對應表單</li></ul>
+            <p className="mb-2">Form 模組使用內建 schema 編輯器，提供常用欄位維護與 JSON schema 匯出：</p>
+            <ul className="mb-0 ps-3"><li>Input / TextArea / Dropdown / Checkbox / Radio / DatePicker 等欄位</li><li>欄位排序、新增、修改、刪除</li><li>JSON schema 編輯、套用與匯出</li><li>搭配後端生成對應表單</li></ul>
           </div>
         </div></div></div>
       </div>

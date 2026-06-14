@@ -1,11 +1,61 @@
-/* FormEngine Designer 自訂佈局：確保撐滿容器並隱藏 rsuite 浮水印 */
-/* FormEngine 內建 CSS 會自行處理三欄佈局 */
+.kyklos-form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
 
-.rbro-form-layout {
+.kyklos-form-fields,
+.kyklos-form-side,
+.kyklos-form-preview,
+.kyklos-form-json {
+  min-height: 0;
+}
+
+.kyklos-form-fields,
+.kyklos-form-preview,
+.kyklos-form-json {
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #fff;
+  padding: 8px;
+}
+
+.kyklos-form-table {
+  max-height: calc(92vh - 220px);
+  overflow: auto;
+}
+
+.kyklos-form-side {
+  display: grid;
+  grid-template-rows: minmax(160px, 1fr) minmax(180px, 42%);
+  gap: 8px;
+}
+
+.kyklos-form-preview {
+  overflow: auto;
+}
+
+.kyklos-form-json {
   display: flex;
   flex-direction: column;
 }
 
-.rbro-form-layout .wx-s2aE1xdZ {
-  height: 100%;
+.kyklos-form-json textarea {
+  flex: 1 1 auto;
+  min-height: 0;
+  font-family: Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: .75rem;
+  resize: none;
+}
+
+@media (max-width: 992px) {
+  .kyklos-form-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .kyklos-form-side {
+    grid-template-rows: minmax(160px, auto) minmax(180px, auto);
+  }
 }
