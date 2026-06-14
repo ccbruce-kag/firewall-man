@@ -286,7 +286,7 @@ var _orig_ready = $;
         aiCopy: "複製", aiExecute: "執行", aiExecuted: "已執行", aiCopyOk: "已複製", aiConfirmExec: "確認執行此命令？",
         aiHeader: "AI 助手 (opencode)", aiIntroName: "AI 助手",
         aiIntroText: "輸入你的需求，我會產生對應的防火牆命令。例如：<br>· 封鎖所有來自 192.168.1.0/24 的流量<br>· 允許 SSH (port 22) 從任何地方連入<br>· 列出目前所有 DROP 規則",
-        closeTab: "關閉", closeAll: "關閉全部", closeLeft: "關閉左方", closeRight: "關閉右方",
+        closeTab: "關閉", closeAll: "關閉全部", closeButMe: "關閉除我之外", closeLeft: "關閉左方", closeRight: "關閉右方",
         securityLabel: "資安", loading: "載入中...", noData: "無資料",
         apimanCreateWorkspace: "建立工作區", apimanWorkspaceName: "工作區名稱", apimanWorkspaceDescription: "說明",
         apimanWorkspaceDescriptionPlaceholder: "用途、環境或 API 說明", apimanWorkspaceNameRequired: "請輸入工作區名稱",
@@ -374,7 +374,7 @@ var _orig_ready = $;
         aiCopy: "Copy", aiExecute: "Execute", aiExecuted: "Executed", aiCopyOk: "Copied", aiConfirmExec: "Confirm to execute this command?",
         aiHeader: "AI Assistant (opencode)", aiIntroName: "AI Assistant",
         aiIntroText: "Enter your request and I will generate matching firewall commands. For example:<br>· Block all traffic from 192.168.1.0/24<br>· Allow SSH (port 22) from anywhere<br>· List all current DROP rules",
-        closeTab: "Close", closeAll: "Close All", closeLeft: "Close Left", closeRight: "Close Right",
+        closeTab: "Close", closeAll: "Close All", closeButMe: "Close But Me", closeLeft: "Close Left", closeRight: "Close Right",
         securityLabel: "Security", loading: "Loading...", noData: "No data",
         apimanCreateWorkspace: "Create Workspace", apimanWorkspaceName: "Workspace Name", apimanWorkspaceDescription: "Description",
         apimanWorkspaceDescriptionPlaceholder: "Purpose, environment, or API notes", apimanWorkspaceNameRequired: "Enter a workspace name",
@@ -461,7 +461,7 @@ var _orig_ready = $;
         aiCopy: "コピー", aiExecute: "実行", aiExecuted: "実行済み", aiCopyOk: "コピーしました", aiConfirmExec: "このコマンドを実行しますか？",
         aiHeader: "AI アシスタント (opencode)", aiIntroName: "AI アシスタント",
         aiIntroText: "要望を入力すると、対応するファイアウォールコマンドを生成します。例：<br>· 192.168.1.0/24 からの通信をすべてブロック<br>· 任意の場所から SSH (port 22) を許可<br>· 現在の DROP ルールを一覧表示",
-        closeTab: "閉じる", closeAll: "すべて閉じる", closeLeft: "左を閉じる", closeRight: "右を閉じる",
+        closeTab: "閉じる", closeAll: "すべて閉じる", closeButMe: "自分以外を閉じる", closeLeft: "左を閉じる", closeRight: "右を閉じる",
         securityLabel: "セキュリティ", loading: "読み込み中...", noData: "データなし",
         apimanCreateWorkspace: "ワークスペース作成", apimanWorkspaceName: "ワークスペース名", apimanWorkspaceDescription: "説明",
         apimanWorkspaceDescriptionPlaceholder: "用途、環境、API メモ", apimanWorkspaceNameRequired: "ワークスペース名を入力してください",
@@ -3613,6 +3613,7 @@ var _orig_ready = $;
         if (idx < 0) return;
         if (action === 'closeLeft') { tabState.tabs.splice(0, idx); saveTabs(); if (tabState.activeId && findTab(tabState.activeId) < 0) { tabState.activeId = tabState.tabs[0] ? tabState.tabs[0].id : null; } saveTabs(); renderTabs(); if (tabState.activeId) activateTabImpl(tabState.activeId); }
         if (action === 'closeRight') { tabState.tabs.splice(idx + 1); saveTabs(); if (tabState.activeId && findTab(tabState.activeId) < 0) { tabState.activeId = tabState.tabs[tabState.tabs.length - 1] ? tabState.tabs[tabState.tabs.length - 1].id : null; } saveTabs(); renderTabs(); if (tabState.activeId) activateTabImpl(tabState.activeId); }
+        if (action === 'closeButMe') { tabState.tabs = [tabState.tabs[idx]]; tabState.activeId = mode; saveTabs(); renderTabs(); if (tabState.activeId) activateTabImpl(tabState.activeId); }
       });
       $(document).on('contextmenu', '.tab-item', function (e) {
         e.preventDefault();
@@ -3622,6 +3623,7 @@ var _orig_ready = $;
           '<div class="ctx-item" data-action="close"><i class="bx bx-x"></i> ' + (lang.closeTab || '關閉') + '</div>' +
           '<div class="ctx-divider"></div>' +
           '<div class="ctx-item" data-action="closeAll"><i class="bx bx-x-circle"></i> ' + (lang.closeAll || '關閉全部') + '</div>' +
+          '<div class="ctx-item" data-action="closeButMe"><i class="bx bx-minus-circle"></i> ' + (lang.closeButMe || '關閉除我之外') + '</div>' +
           '<div class="ctx-item" data-action="closeLeft"><i class="bx bx-chevron-left"></i> ' + (lang.closeLeft || '關閉左方') + '</div>' +
           '<div class="ctx-item" data-action="closeRight"><i class="bx bx-chevron-right"></i> ' + (lang.closeRight || '關閉右方') + '</div>'
         ).data('mode', mode).css({ left: e.clientX + 'px', top: e.clientY + 'px' }).show();
