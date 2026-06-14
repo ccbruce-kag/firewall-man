@@ -21,9 +21,10 @@ use crate::net::haproxy::HaproxyClient;
 use crate::net::juniper::JuniperClient;
 use crate::net::nginx::{NginxClient, NginxSettings};
 use crate::server::{build_router, AppState};
+use crate::sys::crontab::CronService;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tracing::info;
+use tracing::{info, warn};
 
 const BUILD_VERSION: &str = env!("CARGO_PKG_VERSION");
 const BUILD_DATE: &str = include_str!(concat!(env!("OUT_DIR"), "/build-date.txt"));
@@ -98,12 +99,18 @@ fn main() {
 
     let platform = detect_platform();
     let db = AppDb::from_env().unwrap_or_else(|e| panic!("database initialization failed: {}", e));
+    let cron = Arc::new(CronService::new(db.clone()));
     info!("detected platform: {:?}", platform);
     services::memcache::start_background_from_env();
     services::oauth2_server::start_background_from_env();
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {
+        if let Err(e) = cron.start().await {
+            warn!("crontab scheduler initialization failed: {}", e);
+        }
+        services::reverse_proxy::start_background_from_env();
+
         match platform {
             Platform::Linux => {
                 let ipv4 = match IptablesCmd::new_ipv4().version().await {
@@ -127,7 +134,9 @@ fn main() {
                     }
                 };
 
-                let nginx_settings = db.nginx_settings().unwrap_or_else(|_| NginxSettings::default());
+                let nginx_settings = db
+                    .nginx_settings()
+                    .unwrap_or_else(|_| NginxSettings::default());
                 let state = Arc::new(AppState {
                     ipv4,
                     ipv6,
@@ -138,11 +147,14 @@ fn main() {
                     juniper: Arc::new(JuniperClient::new(db.clone())),
                     haproxy: Arc::new(HaproxyClient::from_env()),
                     nginx: std::sync::Mutex::new(NginxClient::new(nginx_settings)),
+                    cron: cron.clone(),
                 });
 
                 // Background CVS auto-import every 60 minutes
                 let db_auto = Arc::new(db.clone());
-                tokio::spawn(async move { crate::security::start_auto_import(db_auto, 60).await; });
+                tokio::spawn(async move {
+                    crate::security::start_auto_import(db_auto, 60).await;
+                });
 
                 let app = build_router(state);
 
@@ -170,7 +182,9 @@ fn main() {
 
                 let pf_shared = Arc::new(pf) as Arc<dyn FirewallCmd>;
 
-                let nginx_settings = db.nginx_settings().unwrap_or_else(|_| NginxSettings::default());
+                let nginx_settings = db
+                    .nginx_settings()
+                    .unwrap_or_else(|_| NginxSettings::default());
                 let state = Arc::new(AppState {
                     ipv4: Some(pf_shared.clone()),
                     ipv6: Some(pf_shared),
@@ -181,10 +195,13 @@ fn main() {
                     juniper: Arc::new(JuniperClient::new(db.clone())),
                     haproxy: Arc::new(HaproxyClient::from_env()),
                     nginx: std::sync::Mutex::new(NginxClient::new(nginx_settings)),
+                    cron: cron.clone(),
                 });
 
                 let db_auto = Arc::new(db.clone());
-                tokio::spawn(async move { crate::security::start_auto_import(db_auto, 60).await; });
+                tokio::spawn(async move {
+                    crate::security::start_auto_import(db_auto, 60).await;
+                });
 
                 let app = build_router(state);
 
@@ -212,7 +229,9 @@ fn main() {
 
                 let wf_shared = Arc::new(wf) as Arc<dyn FirewallCmd>;
 
-                let nginx_settings = db.nginx_settings().unwrap_or_else(|_| NginxSettings::default());
+                let nginx_settings = db
+                    .nginx_settings()
+                    .unwrap_or_else(|_| NginxSettings::default());
                 let state = Arc::new(AppState {
                     ipv4: Some(wf_shared.clone()),
                     ipv6: Some(wf_shared),
@@ -223,10 +242,13 @@ fn main() {
                     juniper: Arc::new(JuniperClient::new(db.clone())),
                     haproxy: Arc::new(HaproxyClient::from_env()),
                     nginx: std::sync::Mutex::new(NginxClient::new(nginx_settings)),
+                    cron: cron.clone(),
                 });
 
                 let db_auto = Arc::new(db.clone());
-                tokio::spawn(async move { crate::security::start_auto_import(db_auto, 60).await; });
+                tokio::spawn(async move {
+                    crate::security::start_auto_import(db_auto, 60).await;
+                });
 
                 let app = build_router(state);
 

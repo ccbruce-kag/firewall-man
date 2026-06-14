@@ -90,7 +90,17 @@ var _orig_ready = $;
     let currentPlatform = "linux";
     const TAB_STORAGE_KEY = "fwm_tabs";
     const TAB_VIEW_PREFIX = "tabView_";
+    const WORK_VIEW_MODES = [
+      'dashboard', 'firewallMan', 'system', 'juniper', 'haproxy', 'nginx', 'netplan',
+      'pcap', 'snmp', 'sftp', 'samba', 'apiman', 'dbman', 'security', 'tools', 'ai',
+      'shell', 'widgets', 'logViewer', 'crontab'
+    ];
     let tabState = { tabs: [], activeId: null };
+    function hideAllWorkViews() {
+      WORK_VIEW_MODES.forEach(function (viewMode) {
+        $('#' + viewMode + 'View').hide();
+      });
+    }
     function saveTabs() {
       try { localStorage.setItem(TAB_STORAGE_KEY, JSON.stringify(tabState)); } catch(e) {}
     }
@@ -113,6 +123,9 @@ var _orig_ready = $;
         dashboard: lang.dashLabel || 'General Dashboard',
         system: lang.systemLabel || 'System',
         shell: lang.shellLabel || 'Shell',
+        widgets: lang.widgetsLabel || 'Widgets',
+        logViewer: lang.logViewerLabel || 'Log Viewer',
+        crontab: lang.crontabLabel || 'Crontab',
         ai: lang.aiLabel || 'AI Assistant',
         tools: lang.toolsLabel || 'Tools',
         haproxy: lang.haproxyLabel || 'HAProxy Management',
@@ -128,7 +141,7 @@ var _orig_ready = $;
     function tabIcon(mode) {
       var map = {
         firewallMan: 'bx-shield-quarter', dashboard: 'bx-bar-chart-alt-2', system: 'bx-desktop',
-        shell: 'bx-terminal', ai: 'bx-bot', tools: 'bx-wrench', haproxy: 'bx-transfer',
+        shell: 'bx-terminal', widgets: 'bx-cube', logViewer: 'bx-file', crontab: 'bx-time-five', ai: 'bx-bot', tools: 'bx-wrench', haproxy: 'bx-transfer',
         nginx: 'bx-windows', juniper: 'bx-network-chart', netplan: 'bx-wifi',
         apiman: 'bx-link', dbman: 'bx-data', security: 'bx-shield',
       };
@@ -148,6 +161,8 @@ var _orig_ready = $;
     }
     function activateTabImpl(mode) {
       tabState.activeId = mode;
+      // Keep raw view nodes hidden before moving/showing the active tab pane.
+      hideAllWorkViews();
       // Hide all tab panes
       $('.tab-content-pane').removeClass('active').hide();
       var paneId = TAB_VIEW_PREFIX + mode;
@@ -164,6 +179,7 @@ var _orig_ready = $;
       }
       if ($pane.length) {
         $pane.addClass('active').show();
+        $('#' + mode + 'View').css('display', '');
       }
       renderTabs();
       saveTabs();
@@ -197,9 +213,12 @@ var _orig_ready = $;
         var $view = $pane.find('#' + mode + 'View');
         if ($view.length) {
           $view.unwrap();
-          $view.css('display', '');
+          $view.css('display', 'none');
         }
         $pane.remove();
+      }
+      if (mode === 'firewallMan') {
+        $('#firewallManView').css('display', 'none');
       }
       if (tabState.activeId && findTab(tabState.activeId) >= 0) {
         activateTabImpl(tabState.activeId);
@@ -214,7 +233,8 @@ var _orig_ready = $;
     if (!langOrder.includes(currentLang)) currentLang = 'en';
     const i18n = {
       zh: {
-        title: "{cmd} 管理平臺", docAssistTitle: "文件協助", chainLabel: "鏈", defaultPolicy: "默認策略",
+        title: "管理平臺", docAssistTitle: "文件協助", chainLabel: "鏈", defaultPolicy: "默認策略",
+        // title: "{cmd} 管理平臺", docAssistTitle: "文件協助", chainLabel: "鏈", defaultPolicy: "默認策略",
         packets: "經過的包數量", bytes: "字節數", references: "被引用數量", tableLabel: "表", tableWord: "表", chainWord: "鏈",
         clearAllRule: "清空所有表規則", clearCurrentRule: "清空當前表規則", clearEmptyChain: "清空自定義空鏈",
         clearAllMetrics: "清零所有表計數", clearCurrentMetrics: "清零當前表計數", clearChain: "清空規則",
@@ -232,7 +252,7 @@ var _orig_ready = $;
         clearConfirmPrefix: "確認清除", allRulesSuffix: "所有規則？", chainRulesSuffix: " 鏈的所有規則？",
         allMetricsSuffix: "所有統計數據？", ruleMetricsPrefix: "第 ", ruleMetricsSuffix: " 條規則的統計數據？",
         ruleNumberPrefix: "第", ruleNumberSuffix: "條規則", clearEmptyPrompt: "確認清除用戶自定義的所有空鏈？",
-        menuGroupDash: "儀表板", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", firewallManLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "工具集合",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
+        menuGroupDash: "儀表板", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", firewallManLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "工具集合", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
         menuApiManNew: "新增工作區", menuDbManNew: "新增連線",
         menuSecurityCvs: "CVS 資料庫", menuSecurityScan: "網路掃描",
         menuGroupAI: "AI", menuGroupHelp: "協助", systemLabel: "系統現況", docLabel: "命令文件",
@@ -281,7 +301,7 @@ var _orig_ready = $;
         sysDisk: "磁碟", sysMount: "掛載點", sysFilesystem: "檔案系統", sysUsePct: "使用率",
         sysProcess: "處理程序", sysPID: "PID", sysName: "名稱", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "狀態",
         sysRefresh: "重新整理", sysSortBy: "排序",
-        shellLabel: "Shell", aiLabel: "AI 助手", aiSend: "送出", aiInputPlaceholder: "輸入需求...",
+        shellLabel: "Shell", widgetsLabel: "Widgets", logViewerLabel: "Log Viewer", aiLabel: "AI 助手", aiSend: "送出", aiInputPlaceholder: "輸入需求...",
         aiStatusIdle: "閒置", aiStatusRunning: "執行中", aiStatusDone: "完成", aiStatusError: "錯誤",
         aiCopy: "複製", aiExecute: "執行", aiExecuted: "已執行", aiCopyOk: "已複製", aiConfirmExec: "確認執行此命令？",
         aiHeader: "AI 助手 (opencode)", aiIntroName: "AI 助手",
@@ -320,7 +340,7 @@ var _orig_ready = $;
         clearConfirmPrefix: "Confirm to clear", allRulesSuffix: "all rules?", chainRulesSuffix: " chain rules?",
         allMetricsSuffix: "all counters?", ruleMetricsPrefix: "Rule #", ruleMetricsSuffix: " counters?",
         ruleNumberPrefix: "Rule #", ruleNumberSuffix: "", clearEmptyPrompt: "Clear all empty custom chains?",
-        menuGroupDash: "Dashboard", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", firewallManLabel: "FirewallMan",         menuGroupSys: "System Tools", toolsLabel: "Tools",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
+        menuGroupDash: "Dashboard", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", firewallManLabel: "FirewallMan",         menuGroupSys: "System Tools", toolsLabel: "Tools", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
         menuApiManNew: "New Workspace", menuDbManNew: "New Connection",
         menuSecurityCvs: "CVS Database", menuSecurityScan: "Network Scan",
         menuGroupAI: "AI", menuGroupHelp: "Help", systemLabel: "System", docLabel: "Command Reference",
@@ -369,7 +389,7 @@ var _orig_ready = $;
         sysDisk: "Disk", sysMount: "Mount", sysFilesystem: "Filesystem", sysUsePct: "Use%",
         sysProcess: "Processes", sysPID: "PID", sysName: "Name", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "State",
         sysRefresh: "Refresh", sysSortBy: "Sort",
-        shellLabel: "Shell", aiLabel: "AI Assistant", aiSend: "Send", aiInputPlaceholder: "Enter your request...",
+        shellLabel: "Shell", widgetsLabel: "Widgets", logViewerLabel: "Log Viewer", aiLabel: "AI Assistant", aiSend: "Send", aiInputPlaceholder: "Enter your request...",
         aiStatusIdle: "Idle", aiStatusRunning: "Running", aiStatusDone: "Done", aiStatusError: "Error",
         aiCopy: "Copy", aiExecute: "Execute", aiExecuted: "Executed", aiCopyOk: "Copied", aiConfirmExec: "Confirm to execute this command?",
         aiHeader: "AI Assistant (opencode)", aiIntroName: "AI Assistant",
@@ -407,7 +427,7 @@ var _orig_ready = $;
         clearConfirmPrefix: "確認", allRulesSuffix: "すべてのルールをクリアしますか？", chainRulesSuffix: " チェインの全ルールをクリアしますか？",
         allMetricsSuffix: "すべての統計データをクリアしますか？", ruleMetricsPrefix: "ルール #", ruleMetricsSuffix: " の統計データをクリアしますか？",
         ruleNumberPrefix: "ルール #", ruleNumberSuffix: "", clearEmptyPrompt: "空のカスタムチェインをすべて削除しますか？",
-        menuGroupDash: "ダッシュボード", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", firewallManLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "ツール集",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
+        menuGroupDash: "ダッシュボード", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", firewallManLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "ツール集", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
         menuApiManNew: "新規ワークスペース", menuDbManNew: "新規接続",
         menuSecurityCvs: "CVS データベース", menuSecurityScan: "ネットワークスキャン",
         menuGroupAI: "AI", menuGroupHelp: "ヘルプ", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
@@ -456,7 +476,7 @@ var _orig_ready = $;
         sysDisk: "ディスク", sysMount: "マウント", sysFilesystem: "ファイルシステム", sysUsePct: "使用率",
         sysProcess: "プロセス", sysPID: "PID", sysName: "名前", sysCPU: "CPU%", sysMEM: "MEM%", sysRSS: "RSS", sysState: "状態",
         sysRefresh: "更新", sysSortBy: "並び替え",
-        shellLabel: "Shell", aiLabel: "AI アシスタント", aiSend: "送信", aiInputPlaceholder: "リクエストを入力...",
+        shellLabel: "Shell", widgetsLabel: "Widgets", logViewerLabel: "Log Viewer", aiLabel: "AI アシスタント", aiSend: "送信", aiInputPlaceholder: "リクエストを入力...",
         aiStatusIdle: "アイドル", aiStatusRunning: "実行中", aiStatusDone: "完了", aiStatusError: "エラー",
         aiCopy: "コピー", aiExecute: "実行", aiExecuted: "実行済み", aiCopyOk: "コピーしました", aiConfirmExec: "このコマンドを実行しますか？",
         aiHeader: "AI アシスタント (opencode)", aiIntroName: "AI アシスタント",
@@ -502,6 +522,9 @@ var _orig_ready = $;
       $('#menuGroupSysLabel').text(lng.menuGroupSys || '系統工具');
       $('#menuToolsLabel').text(lng.toolsLabel || '系統工具');
       $('#menuShellLabel').text(lng.shellLabel || 'Shell');
+      $('#menuWidgetsLabel').text(lng.widgetsLabel || 'Widgets');
+      $('#menuLogViewerLabel').text(lng.logViewerLabel || 'Log Viewer');
+      $('#menuCrontabLabel').text(lng.crontabLabel || 'Crontab');
       $('#menuGroupApiManLabel').text(lng.menuGroupApiMan || 'ApiMan');
       $('#menuApiManNewLabel').text(lng.menuApiManNew || 'New Workspace');
       $('#menuGroupDbManLabel').text(lng.menuGroupDbMan || 'DbMan');
@@ -3205,8 +3228,8 @@ var _orig_ready = $;
               tab.show();
             }
           } catch(e) {}
-          setTimeout(loadLogFiles, 100);
         },
+        logViewer: function() { setTimeout(loadLogFiles, 100); },
         system: function() { loadSystemInfo(); },
         firewallMan: function() { $('.action-buttons').show(); loadListRule(currentTableName()); },
       };
@@ -3214,7 +3237,7 @@ var _orig_ready = $;
         dashboard: 'menuDash', firewallMan: 'menuFirewallMan', juniper: 'menuJuniper',
         haproxy: 'menuHaproxy', nginx: 'menuNginx', netplan: 'menuNetplan',
         pcap: 'menuPcap', snmp: 'menuSnmp', apiman: 'menuApiManNew', dbman: 'menuDbManNew', security: 'menuSecurityCvs',
-        tools: 'menuTools', system: 'menuSys', shell: 'menuShell', ai: 'menuAI',
+        tools: 'menuTools', system: 'menuSys', shell: 'menuShell', widgets: 'menuWidgets', logViewer: 'menuLogViewer', crontab: 'menuCrontab', ai: 'menuAI',
       };
       // ─── Rebuild dynamic menus ───
       rebuildApiManMenu();
@@ -3227,15 +3250,16 @@ var _orig_ready = $;
       });
       $('#logClear').on('click', function () { logger.clear(); });
       function inactiveAllLeaf() {
-        $('#menuDash,#menuFirewallMan,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuPcap,#menuSnmp,#menuSys,#menuTools,#menuShell,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
+        $('#menuDash,#menuFirewallMan,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuPcap,#menuSnmp,#menuSys,#menuTools,#menuShell,#menuWidgets,#menuLogViewer,#menuCrontab,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
       }
       function hideAllViews() {
-        $('#dashboardView,#firewallManView,#systemView,#juniperView,#haproxyView,#nginxView,#netplanView,#pcapView,#snmpView,#apimanView,#dbmanView,#securityView,#toolsView,#aiView,#shellView').hide();
+        hideAllWorkViews();
       }
       // ─── Dashboard view toggle & timer ───
       function switchView(mode) {
         destroyTerminal();
         if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
+        if (mode !== 'logViewer') { try { stopLogRefresh(); } catch(e) {} }
         $('.action-buttons').hide();
         console.log('[app.js] switchView called:', mode, 'menuDash exists:', !!$('#menuDashLink').length, 'dashView exists:', !!$('#dashboardView').length);
         if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
@@ -3264,7 +3288,10 @@ var _orig_ready = $;
             menuSysLink: 'system',
             menuToolsLink: 'tools',
             menuShellLink: 'shell',
-          menuAILink: 'ai',
+            menuWidgetsLink: 'widgets',
+            menuLogViewerLink: 'logViewer',
+            menuCrontabLink: 'crontab',
+            menuAILink: 'ai',
             menuDbManNewLink: 'dbman',
             menuSecurityCvsLink: 'security',
             menuSecurityScanLink: 'security'
@@ -4716,8 +4743,9 @@ var _orig_ready = $;
       // ─── Log Viewer ───
       var logRefreshTimer = null;
       var logCurrentPath = null;
+      var logBase = '/miitai-fwm/0.52/backend/api/system/log';
       function loadLogFiles() {
-        $.get(toolsBase + '/log/list', function (res) {
+        $.get(logBase + '/list', function (res) {
           if (res.code !== 0) {
             logger.warn('日誌列表載入失敗', res.msg);
             return;
@@ -4739,7 +4767,7 @@ var _orig_ready = $;
         logCurrentPath = path;
         $('#toolsLogStatus').text('載入中...');
         logger.info('Log Tail 請求', path + ' (' + lines + ' 行)');
-        $.post(toolsBase + '/log/tail', { path: path, lines: lines }, function (res) {
+        $.post(logBase + '/tail', { path: path, lines: lines }, function (res) {
           if (res.code !== 0) {
             $('#toolsLogOutput').text('錯誤: ' + (res.msg || '?'));
             $('#toolsLogStatus').text('失敗');
@@ -4762,7 +4790,7 @@ var _orig_ready = $;
         stopLogRefresh();
         if (!logCurrentPath) return;
         logRefreshTimer = setInterval(function () {
-          $.post(toolsBase + '/log/tail', { path: logCurrentPath, lines: $('#toolsLogLines').val() || 50 }, function (res) {
+          $.post(logBase + '/tail', { path: logCurrentPath, lines: $('#toolsLogLines').val() || 50 }, function (res) {
             if (res.code === 0) {
               var autoScroll = false;
               var out = document.getElementById('toolsLogOutput');
@@ -4795,11 +4823,6 @@ var _orig_ready = $;
         $('#toolsLogStatus').text('');
         stopLogRefresh();
         logCurrentPath = null;
-      });
-      // Load log files when Log tab is shown
-      $(document).on('shown.bs.tab', '#tools-log-tab', function () {
-        loadLogFiles();
-        stopLogRefresh();
       });
       // ─── Tools event handlers ───
       var toolsBase = '/miitai-fwm/0.52/backend/api/tools';

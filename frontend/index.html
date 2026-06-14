@@ -45,6 +45,9 @@
         menuSysLink: ['system', 'System', 'bx-desktop'],
         menuToolsLink: ['tools', 'Tools', 'bx-wrench'],
         menuShellLink: ['shell', 'Shell', 'bx-terminal'],
+        menuWidgetsLink: ['widgets', 'Widgets', 'bx-cube'],
+        menuLogViewerLink: ['logViewer', 'Log Viewer', 'bx-file'],
+        menuCrontabLink: ['crontab', 'Crontab', 'bx-time-five'],
         menuAILink: ['ai', 'AI Assistant', 'bx-bot'],
         menuDbManNewLink: ['dbman', 'DbMan', 'bx-data'],
         menuSecurityCvsLink: ['security', 'Security', 'bx-shield'],
@@ -67,7 +70,7 @@
         });
         [
           'dashboard','firewallMan','system','juniper','haproxy','nginx','netplan',
-          'apiman','dbman','sftp','samba','snmp','pcap','security','tools','ai','shell'
+          'apiman','dbman','sftp','samba','snmp','pcap','security','tools','ai','shell','widgets','logViewer','crontab'
         ].forEach(function (viewMode) {
           var el = document.getElementById(viewMode + 'View');
           if (el) el.style.display = 'none';

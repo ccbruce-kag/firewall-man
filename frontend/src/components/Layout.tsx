@@ -14,6 +14,9 @@ import SftpView from './views/Net/SftpView'
 import SnmpView from './views/Net/SnmpView'
 import ShellView from './views/Sys/ShellView'
 import ToolsView from './views/Sys/ToolsView'
+import CrontabView from './views/Sys/CrontabView'
+import LogViewerView from './views/Sys/LogViewerView'
+import WidgetsView from './views/Sys/WidgetsView'
 import ApiManView from './views/Apps/ApiMan/ApiManView'
 import DbManView from './views/Apps/DbMan/DbManView'
 import SecurityView from './views/Security/SecurityView'
@@ -55,6 +58,9 @@ export default function Layout() {
                 <AiView />
                 <ShellView />
                 <ToolsView />
+                <WidgetsView />
+                <LogViewerView />
+                <CrontabView />
                 <SystemView />
                 <ApiManView />
                 <DbManView />

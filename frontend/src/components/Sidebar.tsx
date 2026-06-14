@@ -145,6 +145,24 @@ export default function Sidebar() {
                 <div className="text-truncate" id="menuShellLabel">Shell</div>
               </a>
             </li>
+            <li className="menu-item" id="menuWidgets">
+              <a href="#" className="menu-link" id="menuWidgetsLink">
+                <i className="menu-icon tf-icons bx bx-cube"></i>
+                <div className="text-truncate" id="menuWidgetsLabel">Widgets</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuLogViewer">
+              <a href="#" className="menu-link" id="menuLogViewerLink">
+                <i className="menu-icon tf-icons bx bx-file"></i>
+                <div className="text-truncate" id="menuLogViewerLabel">Log Viewer</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuCrontab">
+              <a href="#" className="menu-link" id="menuCrontabLink">
+                <i className="menu-icon tf-icons bx bx-time-five"></i>
+                <div className="text-truncate" id="menuCrontabLabel">Crontab</div>
+              </a>
+            </li>
           </ul>
         </li>
         <li className="menu-item" id="menuGroupApiMan">
