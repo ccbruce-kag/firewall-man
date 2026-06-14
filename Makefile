@@ -8,7 +8,7 @@ run:
 	cd backend && cargo run
 
 images:
-	docker build -t micopa/firewall-man:0.1.0 .
+	docker build -t Miitai/firewall-man:0.1.0 .
 
 clean:
 	cd backend && cargo clean

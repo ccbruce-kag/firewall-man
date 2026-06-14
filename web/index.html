@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
-  <title class="ipc-title">防火牆管理平臺</title>
+  <title class="ipc-title">網路與安全工具管理平臺</title>
   <link rel="icon" type="image/x-icon" href="/web/sneat/assets/img/favicon/favicon.ico" />
   <link rel="stylesheet" href="/web/sneat/assets/vendor/fonts/iconify-icons.css" />
   <link rel="stylesheet" href="/web/sneat/assets/vendor/css/core.css" />
@@ -224,6 +224,25 @@
     .rule-editor-ctstate input { width: auto; }
     .rule-editor-section { border-top: 1px solid var(--bs-border-color); padding-top: .75rem; margin-top: .5rem; }
     .rule-editor-section:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+    /* ─── Tab Bar ─── */
+    .tab-bar { display:flex; background:var(--bs-tertiary-bg); border-bottom:2px solid var(--bs-primary); overflow-x:auto; overflow-y:hidden; scrollbar-width:thin; flex-shrink:0; padding:0; min-height:34px; }
+    .tab-item { display:flex; align-items:center; gap:4px; padding:6px 10px; font-size:.75rem; cursor:pointer; border-right:1px solid var(--bs-border-color); white-space:nowrap; user-select:none; transition:background .12s; flex-shrink:0; position:relative; }
+    .tab-item:hover { background:var(--bs-tertiary-bg); filter:brightness(1.1); }
+    .tab-item.active { background:var(--bs-body-bg); border-bottom:2px solid var(--bs-primary); margin-bottom:-2px; color:var(--bs-primary); font-weight:600; }
+    .tab-item .tab-close { display:none; width:16px;height:16px;border-radius:50%;align-items:center;justify-content:center;font-size:10px;color:var(--bs-secondary-color);cursor:pointer; }
+    .tab-item:hover .tab-close { display:inline-flex; }
+    .tab-item .tab-close:hover { background:var(--bs-danger);color:#fff; }
+    .tab-context-menu { position:fixed; z-index:20001; min-width:160px; background:var(--bs-body-bg); border:1px solid var(--bs-border-color); border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,.12); font-size:.75rem; padding:4px 0; }
+    .tab-context-menu .ctx-item { padding:6px 14px; cursor:pointer; display:flex; align-items:center; gap:8px; }
+    .tab-context-menu .ctx-item:hover { background:var(--bs-tertiary-bg); color:var(--bs-primary); }
+    .tab-context-menu .ctx-divider { height:1px; background:var(--bs-border-color); margin:4px 8px; }
+    .tab-content-wrap { display:flex; flex-direction:column; height:100%; }
+    .tab-content-pane { display:none; flex:1; }
+    .tab-content-pane.active { display:block; }
+    .dbman-sql-modal { position:fixed; z-index:20001; top:50%;left:50%;transform:translate(-50%,-50%); width:90vw;height:80vh; background:var(--bs-body-bg); border:1px solid var(--bs-border-color); border-radius:8px; box-shadow:0 8px 32px rgba(0,0,0,.15); display:flex; flex-direction:column; }
+    .dbman-sql-modal .modal-header { padding:8px 12px; border-bottom:1px solid var(--bs-border-color); display:flex; justify-content:space-between; align-items:center; }
+    .dbman-sql-modal textarea { flex:1; width:100%; border:0; border-radius:0; font-size:.8125rem; resize:none; padding:12px; font-family:monospace; }
+    .dbman-sql-modal .modal-footer { padding:6px 12px; border-top:1px solid var(--bs-border-color); display:flex; justify-content:flex-end; gap:6px; }
   </style>
 </head>
 <body>
@@ -241,54 +260,156 @@
         <div class="menu-divider mt-0"></div>
         <div class="menu-inner-shadow"></div>
         <ul class="menu-inner py-1">
-          <li class="menu-item" id="menuDash">
-            <a href="#" class="menu-link" id="menuDashLink">
+          <li class="menu-item" id="menuGroupDash">
+            <a href="#" class="menu-link menu-toggle">
               <i class="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
-              <div class="text-truncate" id="menuDashLabel">Dashboard</div>
+              <div class="text-truncate" id="menuGroupDashLabel">儀表板</div>
             </a>
+            <ul class="menu-sub">
+              <li class="menu-item" id="menuDash">
+                <a href="#" class="menu-link" id="menuDashLink">
+                  <div class="text-truncate" id="menuDashLabel">一般性儀表板</div>
+                </a>
+              </li>
+              <li class="menu-item" id="menuSys">
+                <a href="#" class="menu-link" id="menuSysLink">
+                  <div class="text-truncate" id="menuSysLabel">系統現況</div>
+                </a>
+              </li>
+            </ul>
           </li>
-          <li class="menu-item active" id="menuTables">
-            <a href="#" class="menu-link" id="menuTablesLink">
-              <i class="menu-icon tf-icons bx bx-shield-quarter"></i>
-              <div class="text-truncate" id="menuTablesLabel">防火牆管理</div>
+          <li class="menu-item" id="menuGroupNet">
+            <a href="#" class="menu-link menu-toggle">
+              <i class="menu-icon tf-icons bx bx-globe"></i>
+              <div class="text-truncate" id="menuGroupNetLabel">網路工具</div>
             </a>
+            <ul class="menu-sub">
+              <li class="menu-item active" id="menuTables">
+                <a href="#" class="menu-link" id="menuTablesLink">
+                  <i class="menu-icon tf-icons bx bx-shield-quarter"></i>
+                  <div class="text-truncate" id="menuTablesLabel">防火牆管理</div>
+                </a>
+              </li>
+              <li class="menu-item" id="menuHaproxy">
+                <a href="#" class="menu-link" id="menuHaproxyLink">
+                  <i class="menu-icon tf-icons bx bx-transfer"></i>
+                  <div class="text-truncate" id="menuHaproxyLabel">HaProxy 管理</div>
+                </a>
+              </li>
+              <li class="menu-item" id="menuNginx">
+                <a href="#" class="menu-link" id="menuNginxLink">
+                  <i class="menu-icon tf-icons bx bx-windows"></i>
+                  <div class="text-truncate" id="menuNginxLabel">Nginx 管理</div>
+                </a>
+              </li>
+              <li class="menu-item" id="menuJuniper">
+                <a href="#" class="menu-link" id="menuJuniperLink">
+                  <i class="menu-icon tf-icons bx bx-network-chart"></i>
+                  <div class="text-truncate" id="menuJuniperLabel">Juniper 設定</div>
+                </a>
+              </li>
+              <li class="menu-item" id="menuNetplan">
+                <a href="#" class="menu-link" id="menuNetplanLink">
+                  <i class="menu-icon tf-icons bx bx-wifi"></i>
+                  <div class="text-truncate" id="menuNetplanLabel">Netplan 設定</div>
+                </a>
+              </li>
+            </ul>
           </li>
-          <li class="menu-item" id="menuJuniper">
-            <a href="#" class="menu-link" id="menuJuniperLink">
-              <i class="menu-icon tf-icons bx bx-network-chart"></i>
-              <div class="text-truncate" id="menuJuniperLabel">Juniper 設定</div>
+          <li class="menu-item" id="menuGroupSys">
+            <a href="#" class="menu-link menu-toggle">
+              <i class="menu-icon tf-icons bx bx-wrench"></i>
+              <div class="text-truncate" id="menuGroupSysLabel">系統工具</div>
             </a>
+            <ul class="menu-sub">
+              <li class="menu-item" id="menuTools">
+                <a href="#" class="menu-link" id="menuToolsLink">
+                  <i class="menu-icon tf-icons bx bx-wrench"></i>
+                  <div class="text-truncate" id="menuToolsLabel">系統工具</div>
+                </a>
+              </li>
+              <li class="menu-item" id="menuShell">
+                <a href="#" class="menu-link" id="menuShellLink">
+                  <i class="menu-icon tf-icons bx bx-terminal"></i>
+                  <div class="text-truncate" id="menuShellLabel">Shell</div>
+                </a>
+              </li>
+            </ul>
           </li>
-          <li class="menu-item" id="menuHaproxy">
-            <a href="#" class="menu-link" id="menuHaproxyLink">
-              <i class="menu-icon tf-icons bx bx-transfer"></i>
-              <div class="text-truncate" id="menuHaproxyLabel">HAProxy 管理</div>
+          <li class="menu-item" id="menuGroupApiMan">
+            <a href="#" class="menu-link menu-toggle">
+              <i class="menu-icon tf-icons bx bx-link"></i>
+              <div class="text-truncate" id="menuGroupApiManLabel">ApiMan</div>
             </a>
+            <ul class="menu-sub">
+              <li class="menu-item" id="menuApiManNew">
+                <a href="#" class="menu-link" id="menuApiManNewLink">
+                  <i class="menu-icon tf-icons bx bx-plus-circle"></i>
+                  <div class="text-truncate" id="menuApiManNewLabel">新增工作區</div>
+                </a>
+              </li>
+            </ul>
           </li>
-          <li class="menu-item" id="menuSys">
-            <a href="#" class="menu-link" id="menuSysLink">
-              <i class="menu-icon tf-icons bx bx-desktop"></i>
-              <div class="text-truncate" id="menuSysLabel">系統現況</div>
+          <li class="menu-item" id="menuGroupDbMan">
+            <a href="#" class="menu-link menu-toggle">
+              <i class="menu-icon tf-icons bx bx-data"></i>
+              <div class="text-truncate" id="menuGroupDbManLabel">DbMan</div>
             </a>
+            <ul class="menu-sub">
+              <li class="menu-item" id="menuDbManNew">
+                <a href="#" class="menu-link" id="menuDbManNewLink">
+                  <i class="menu-icon tf-icons bx bx-plus-circle"></i>
+                  <div class="text-truncate" id="menuDbManNewLabel">新增連線</div>
+                </a>
+              </li>
+              <li class="menu-item menuDivider" style="height:1px;background:var(--bs-border-color);margin:2px 12px"></li>
+              <div id="menuDbManConnItems"></div>
+            </ul>
           </li>
-          <li class="menu-item" id="menuShell">
-            <a href="#" class="menu-link" id="menuShellLink">
-              <i class="menu-icon tf-icons bx bx-terminal"></i>
-              <div class="text-truncate" id="menuShellLabel">Shell</div>
+          <li class="menu-item" id="menuGroupSecurity">
+            <a href="#" class="menu-link menu-toggle">
+              <i class="menu-icon tf-icons bx bx-shield"></i>
+              <div class="text-truncate" id="menuGroupSecurityLabel">資安</div>
             </a>
+            <ul class="menu-sub">
+              <li class="menu-item" id="menuSecurityCvs">
+                <a href="#" class="menu-link" id="menuSecurityCvsLink">
+                  <div class="text-truncate" id="menuSecurityCvsLabel">CVS 資料庫</div>
+                </a>
+              </li>
+              <li class="menu-item" id="menuSecurityScan">
+                <a href="#" class="menu-link" id="menuSecurityScanLink">
+                  <div class="text-truncate" id="menuSecurityScanLabel">網路掃描</div>
+                </a>
+              </li>
+            </ul>
           </li>
-          <li class="menu-item" id="menuAI">
-            <a href="#" class="menu-link" id="menuAILink">
+          <li class="menu-item" id="menuGroupAI">
+            <a href="#" class="menu-link menu-toggle">
               <i class="menu-icon tf-icons bx bx-bot"></i>
-              <div class="text-truncate" id="menuAILabel">AI 助手</div>
+              <div class="text-truncate" id="menuGroupAILabel">AI</div>
             </a>
+            <ul class="menu-sub">
+              <li class="menu-item" id="menuAI">
+                <a href="#" class="menu-link" id="menuAILink">
+                  <div class="text-truncate" id="menuAILabel">AI 助手</div>
+                </a>
+              </li>
+            </ul>
           </li>
           <li class="menu-divider my-2"></li>
-          <li class="menu-item" id="menuDoc">
-            <a href="#" class="menu-link" id="menuDocLink">
+          <li class="menu-item" id="menuGroupHelp">
+            <a href="#" class="menu-link menu-toggle">
               <i class="menu-icon tf-icons bx bx-book-open"></i>
-              <div class="text-truncate" id="menuDocLabel">命令文件</div>
+              <div class="text-truncate" id="menuGroupHelpLabel">協助</div>
             </a>
+            <ul class="menu-sub">
+              <li class="menu-item" id="menuDoc">
+                <a href="#" class="menu-link" id="menuDocLink">
+                  <div class="text-truncate" id="menuDocLabel">命令文件</div>
+                </a>
+              </li>
+            </ul>
           </li>
         </ul>
       </aside>
@@ -303,7 +424,7 @@
           <div class="navbar-nav-right d-flex align-items-center justify-content-end w-100" id="navbar-collapse">
             <div class="navbar-nav align-items-center me-auto">
               <div class="nav-item d-flex align-items-center">
-                <span class="ipc-title fw-semibold fs-5">防火牆管理平臺</span>
+                <span class="ipc-title fw-semibold fs-5">網路與安全工具管理平臺</span>
                 <span class="ipc-version badge bg-label-info rounded-pill ms-2"></span>
               </div>
             </div>
@@ -329,7 +450,9 @@
         </nav>
 
         <div class="content-wrapper">
-          <div class="container-xxl flex-grow-1 container-p-y">
+          <div class="container-xxl flex-grow-1 container-p-y d-flex flex-column" style="padding-bottom:0">
+            <div class="tab-bar" id="tabBar"></div>
+            <div id="tabContentRoot" class="flex-grow-1" style="padding-top:.75rem">
             <div class="row mb-3">
               <div class="col-12 d-flex align-items-center gap-3">
                 <div class="protocol-switch" id="protocolSwitch">
@@ -380,6 +503,12 @@
                 <div class="col-md-6 mb-3"><div class="card dash-card">
                   <div class="card-header"><i class="bx bx-rss"></i>Top Ports</div>
                   <div class="card-body" id="dashTopPorts"></div>
+                </div></div>
+              </div>
+              <div class="row mb-3">
+                <div class="col-12"><div class="card dash-card">
+                  <div class="card-header"><i class="bx bx-list-ul"></i><span>最近活動</span></div>
+                  <div class="card-body" id="dashActivityBody" style="max-height:260px;overflow-y:auto;font-size:.75rem"></div>
                 </div></div>
               </div>
               <div class="dash-updated" id="dashUpdated"></div>
@@ -808,6 +937,164 @@
               </div>
             </div>
 
+            <!-- Nginx View -->
+            <div id="nginxView" style="display:none">
+              <ul class="nav nav-tabs nav-fill mb-3" id="nginxTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="nginx-env-tab" data-bs-toggle="tab" data-bs-target="#nginxEnvPane" type="button" role="tab">
+                    <i class="bx bx-cog me-1"></i><span id="nginxEnvTabLabel">環境設定</span>
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="nginx-sites-tab" data-bs-toggle="tab" data-bs-target="#nginxSitesPane" type="button" role="tab">
+                    <i class="bx bx-server me-1"></i><span id="nginxSitesTabLabel">網站管理</span>
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="nginx-modules-tab" data-bs-toggle="tab" data-bs-target="#nginxModulesPane" type="button" role="tab">
+                    <i class="bx bx-puzzle me-1"></i><span id="nginxModulesTabLabel">模組管理</span>
+                  </button>
+                </li>
+              </ul>
+
+              <div class="tab-content p-0">
+                <!-- Environment Settings -->
+                <div class="tab-pane fade show active" id="nginxEnvPane" role="tabpanel">
+                  <div class="card">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                      <strong style="font-size:.8125rem" id="nginxEnvTitle">Nginx 環境設定</strong>
+                    </div>
+                    <div class="card-body haproxy-form">
+                      <div class="row g-3">
+                        <div class="col-md-4">
+                          <label class="form-label" for="nginxBin">Nginx 執行檔路徑</label>
+                          <input type="text" class="form-control font-monospace" id="nginxBin" placeholder="nginx">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label" for="nginxConfigDir">設定目錄</label>
+                          <input type="text" class="form-control font-monospace" id="nginxConfigDir" placeholder="/etc/nginx">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label" for="nginxSitesEnabledDir">sites-enabled 目錄</label>
+                          <input type="text" class="form-control font-monospace" id="nginxSitesEnabledDir" placeholder="/etc/nginx/sites-enabled">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label" for="nginxModulesEnabledDir">modules-enabled 目錄</label>
+                          <input type="text" class="form-control font-monospace" id="nginxModulesEnabledDir" placeholder="/etc/nginx/modules-enabled">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label" for="nginxConfDDir">conf.d 目錄</label>
+                          <input type="text" class="form-control font-monospace" id="nginxConfDDir" placeholder="/etc/nginx/conf.d">
+                        </div>
+                      </div>
+                      <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button class="btn btn-outline-success" id="nginxTestBtn"><i class="bx bx-check-shield me-1"></i><span id="nginxTestLabel">測試設定</span></button>
+                        <button class="btn btn-outline-info" id="nginxReloadBtn"><i class="bx bx-refresh me-1"></i><span id="nginxReloadLabel">重新載入</span></button>
+                        <button class="btn btn-primary" id="nginxSaveEnvBtn"><i class="bx bx-save me-1"></i><span id="nginxSaveEnvLabel">儲存環境設定</span></button>
+                      </div>
+                      <div class="mt-3" id="nginxEnvResult"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sites Management -->
+                <div class="tab-pane fade" id="nginxSitesPane" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-lg-5">
+                      <div class="card">
+                        <div class="card-header py-2"><strong style="font-size:.8125rem" id="nginxSiteFormTitle">網站設定</strong></div>
+                        <div class="card-body haproxy-form">
+                          <input type="hidden" id="nginxEditSiteName" value="">
+                          <div class="mb-2">
+                            <label class="form-label" for="nginxSiteName">網站名稱</label>
+                            <input type="text" class="form-control font-monospace" id="nginxSiteName" placeholder="my-site">
+                          </div>
+                          <div class="mb-2">
+                            <label class="form-label" for="nginxServerName">Server Name</label>
+                            <input type="text" class="form-control font-monospace" id="nginxServerName" placeholder="_">
+                          </div>
+                          <div class="mb-2">
+                            <label class="form-label" for="nginxSiteType">網站類型</label>
+                            <select class="form-select" id="nginxSiteType">
+                              <option value="server">靜態網站 (Server)</option>
+                              <option value="reverse_proxy">反向代理 (Reverse Proxy)</option>
+                            </select>
+                          </div>
+                          <div class="mb-2" id="nginxDocRootGroup">
+                            <label class="form-label" for="nginxDocRoot">Document Root</label>
+                            <input type="text" class="form-control font-monospace" id="nginxDocRoot" placeholder="/var/www/html">
+                          </div>
+                          <div class="mb-2" id="nginxProxyPassGroup" style="display:none">
+                            <label class="form-label" for="nginxProxyPass">Proxy Pass</label>
+                            <input type="text" class="form-control font-monospace" id="nginxProxyPass" placeholder="http://127.0.0.1:3000">
+                          </div>
+                          <div class="mb-2">
+                            <label class="form-label" for="nginxSiteEnabled">
+                              <input type="checkbox" id="nginxSiteEnabled" checked>
+                              <span id="nginxSiteEnabledLabel">啟用</span>
+                            </label>
+                          </div>
+                          <div class="mb-2">
+                            <label class="form-label" for="nginxSiteConfig">自訂 Config（留空自動產生）</label>
+                            <textarea class="form-control font-monospace" id="nginxSiteConfig" rows="4" style="font-size:.75rem"></textarea>
+                          </div>
+                          <div class="d-flex gap-2">
+                            <button class="btn btn-primary" id="nginxSaveSiteBtn"><i class="bx bx-save me-1"></i><span id="nginxSaveSiteLabel">儲存網站</span></button>
+                            <button class="btn btn-outline-secondary" id="nginxPreviewSiteBtn"><i class="bx bx-code-alt me-1"></i><span id="nginxPreviewSiteLabel">預覽設定</span></button>
+                            <button class="btn btn-outline-danger" id="nginxDeleteSiteBtn" style="display:none"><i class="bx bx-trash me-1"></i><span id="nginxDeleteSiteLabel">刪除</span></button>
+                          </div>
+                          <div class="mt-2" id="nginxSitePreviewResult"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-lg-7">
+                      <div class="card">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                          <strong style="font-size:.8125rem" id="nginxSiteListTitle">網站列表</strong>
+                          <button class="btn btn-sm btn-outline-secondary" id="nginxRefreshSites"><i class="bx bx-refresh me-1"></i><span class="nginxRefreshLabel">重新整理</span></button>
+                        </div>
+                        <div class="card-body p-2" id="nginxSiteListBody"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Modules Management -->
+                <div class="tab-pane fade" id="nginxModulesPane" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-lg-4">
+                      <div class="card">
+                        <div class="card-header py-2"><strong style="font-size:.8125rem" id="nginxModuleAddTitle">新增模組</strong></div>
+                        <div class="card-body haproxy-form">
+                          <div class="mb-2">
+                            <label class="form-label" for="nginxModuleName">模組名稱</label>
+                            <input type="text" class="form-control font-monospace" id="nginxModuleName" placeholder="ssl">
+                          </div>
+                          <button class="btn btn-primary w-100" id="nginxAddModuleBtn"><i class="bx bx-plus me-1"></i><span id="nginxAddModuleLabel">新增模組</span></button>
+                        </div>
+                      </div>
+                      <div class="card mt-3">
+                        <div class="card-header py-2"><strong style="font-size:.8125rem" id="nginxScanModulesTitle">掃描系統模組</strong></div>
+                        <div class="card-body">
+                          <button class="btn btn-outline-secondary w-100" id="nginxScanModulesBtn"><i class="bx bx-search me-1"></i><span id="nginxScanModulesLabel">從系統掃描</span></button>
+                          <div class="mt-2" id="nginxScanModulesResult"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-lg-8">
+                      <div class="card">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                          <strong style="font-size:.8125rem" id="nginxModuleListTitle">模組列表</strong>
+                          <button class="btn btn-sm btn-outline-secondary" id="nginxRefreshModules"><i class="bx bx-refresh me-1"></i><span class="nginxRefreshLabel">重新整理</span></button>
+                        </div>
+                        <div class="card-body p-2" id="nginxModuleListBody"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- AI View -->
             <div id="aiView" style="display:none">
               <div class="card dash-card">
@@ -833,6 +1120,464 @@
             <!-- Shell View -->
             <div id="shellView" style="display:none;height:calc(100vh - 220px);">
               <div id="terminal" tabindex="0" style="height:100%;width:100%;"></div>
+            </div>
+
+            <!-- Netplan View -->
+            <div id="netplanView" style="display:none">
+              <ul class="nav nav-tabs nav-fill mb-3" id="netplanTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="netplan-config-tab" data-bs-toggle="tab" data-bs-target="#netplanConfigPane" type="button" role="tab"><i class="bx bx-cog me-1"></i><span id="netplanConfigTabLabel">IP 設定</span></button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="netplan-history-tab" data-bs-toggle="tab" data-bs-target="#netplanHistoryPane" type="button" role="tab"><i class="bx bx-history me-1"></i><span id="netplanHistoryTabLabel">歷史紀錄</span></button>
+                </li>
+              </ul>
+              <div class="tab-content p-0">
+                <div class="tab-pane fade show active" id="netplanConfigPane" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-lg-5">
+                      <div class="card">
+                        <div class="card-header py-2"><strong style="font-size:.8125rem"><i class="bx bx-wifi me-1"></i><span id="netplanFormTitle">網路介面設定</span></strong></div>
+                        <div class="card-body haproxy-form">
+                          <div class="mb-2">
+                            <label class="form-label" for="netplanInterface">網路介面</label>
+                            <select class="form-select font-monospace" id="netplanInterface"></select>
+                            <button class="btn btn-sm btn-outline-secondary mt-1" id="netplanRefreshIfaces"><i class="bx bx-refresh me-1"></i>重新整理介面</button>
+                          </div>
+                          <div class="mb-2">
+                            <label class="form-label" for="netplanDhcp">
+                              <input type="checkbox" id="netplanDhcp" checked>
+                              <span id="netplanDhcpLabel">DHCP（自動取得 IP）</span>
+                            </label>
+                          </div>
+                          <div id="netplanStaticFields">
+                            <div class="mb-2">
+                              <label class="form-label" for="netplanIpAddress">IP 位址</label>
+                              <input type="text" class="form-control font-monospace" id="netplanIpAddress" placeholder="192.168.1.100">
+                            </div>
+                            <div class="mb-2">
+                              <label class="form-label" for="netplanPrefix">子網路遮罩 (CIDR)</label>
+                              <input type="number" class="form-control" id="netplanPrefix" value="24" min="1" max="32">
+                            </div>
+                            <div class="mb-2">
+                              <label class="form-label" for="netplanGateway">默認閘道</label>
+                              <input type="text" class="form-control font-monospace" id="netplanGateway" placeholder="192.168.1.1">
+                            </div>
+                            <div class="mb-2">
+                              <label class="form-label" for="netplanDns">DNS 伺服器（逗號分隔）</label>
+                              <input type="text" class="form-control font-monospace" id="netplanDns" placeholder="8.8.8.8, 1.1.1.1">
+                            </div>
+                          </div>
+                          <div class="mb-2">
+                            <label class="form-label" for="netplanYaml">Netplan YAML（自動產生，可手動編輯）</label>
+                            <textarea class="form-control font-monospace" id="netplanYaml" rows="8" style="font-size:.75rem"></textarea>
+                          </div>
+                          <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary" id="netplanPreviewBtn"><i class="bx bx-code-alt me-1"></i><span id="netplanPreviewLabel">產生 YAML</span></button>
+                            <button class="btn btn-primary" id="netplanApplyBtn"><i class="bx bx-play me-1"></i><span id="netplanApplyLabel">套用設定</span></button>
+                          </div>
+                          <div class="mt-2" id="netplanResult"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-lg-7">
+                      <div class="card">
+                        <div class="card-header py-2"><strong style="font-size:.8125rem"><i class="bx bx-info-circle me-1"></i><span id="netplanIfaceInfoTitle">目前介面資訊</span></strong></div>
+                        <div class="card-body" id="netplanIfaceInfo">
+                          <div class="text-muted" style="font-size:.8125rem">請選擇網路介面以查看目前設定</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="netplanHistoryPane" role="tabpanel">
+                  <div class="card">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                      <strong style="font-size:.8125rem"><i class="bx bx-history me-1"></i><span id="netplanHistoryTitle">歷史設定（保留最近 3 筆）</span></strong>
+                      <button class="btn btn-sm btn-outline-secondary" id="netplanRefreshHistory"><i class="bx bx-refresh me-1"></i><span class="netplanRefreshLabel">重新整理</span></button>
+                    </div>
+                    <div class="card-body p-2" id="netplanHistoryBody"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ApiMan View -->
+            <div id="apimanView" style="display:none">
+              <div class="row g-3">
+                <div class="col-lg-4 col-xl-3">
+                  <div class="card">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                      <strong style="font-size:.8125rem"><i class="bx bx-folder me-1"></i><span id="apimanTreeTitle">ApiMan</span></strong>
+                      <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown"><i class="bx bx-plus"></i></button>
+                        <ul class="dropdown-menu dropdown-menu-end" id="apimanAddMenu">
+                          <li><a class="dropdown-item" href="#" id="apimanNewFolder"><i class="bx bx-folder-plus me-1"></i>新增資料夾</a></li>
+                          <li><a class="dropdown-item" href="#" id="apimanNewRequest"><i class="bx bx-plus-circle me-1"></i>新增 Request</a></li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="card-body p-2" id="apimanTreeBody" style="min-height:200px;max-height:calc(100vh - 280px);overflow-y:auto"></div>
+                  </div>
+                </div>
+                <div class="col-lg-8 col-xl-9">
+                  <div class="card" id="apimanRequestCard" style="display:none">
+                    <div class="card-body">
+                      <div class="row g-2 mb-2">
+                        <div class="col-md-2">
+                          <select class="form-select form-select-sm font-monospace" id="apimanMethod">
+                            <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option><option>PATCH</option>
+                          </select>
+                        </div>
+                        <div class="col-md-8">
+                          <input type="text" class="form-control form-control-sm font-monospace" id="apimanUrl" placeholder="https://api.example.com/endpoint">
+                          <div id="apimanVarHints" class="text-muted mt-1" style="font-size:.65rem;display:flex;flex-wrap:wrap;gap:2px 6px"></div>
+                        </div>
+                        <div class="col-md-2">
+                          <button class="btn btn-primary btn-sm w-100" id="apimanSendBtn"><i class="bx bx-send me-1"></i>送出</button>
+                        </div>
+                      </div>
+                      <ul class="nav nav-tabs nav-fill mb-2" id="apimanReqTabs" role="tablist">
+                        <li class="nav-item"><button class="nav-link active" id="apiman-params-tab" data-bs-toggle="tab" data-bs-target="#apimanParamsPane" type="button" role="tab">Params</button></li>
+                        <li class="nav-item"><button class="nav-link" id="apiman-auth-tab" data-bs-toggle="tab" data-bs-target="#apimanAuthPane" type="button" role="tab"><span id="apimanAuthBadge" class="badge bg-label-secondary rounded-pill">none</span> Auth</button></li>
+                        <li class="nav-item"><button class="nav-link" id="apiman-headers-tab" data-bs-toggle="tab" data-bs-target="#apimanHeadersPane" type="button" role="tab">Headers</button></li>
+                        <li class="nav-item"><button class="nav-link" id="apiman-body-tab" data-bs-toggle="tab" data-bs-target="#apimanBodyPane" type="button" role="tab">Body</button></li>
+                        <li class="nav-item"><button class="nav-link" id="apiman-vars-tab" data-bs-toggle="tab" data-bs-target="#apimanVarsPane" type="button" role="tab"><span class="badge bg-label-primary rounded-pill" id="apimanVarBadge">0</span> Vars</button></li>
+                      </ul>
+                      <div class="tab-content">
+                        <div class="tab-pane fade show active" id="apimanParamsPane" role="tabpanel">
+                          <div id="apimanParamsList"></div>
+                          <button class="btn btn-sm btn-outline-secondary mt-1" id="apimanAddParam"><i class="bx bx-plus me-1"></i>新增參數</button>
+                        </div>
+                        <div class="tab-pane fade" id="apimanAuthPane" role="tabpanel">
+                          <div class="mb-2">
+                            <label class="form-label" style="font-size:.75rem">授權類型</label>
+                            <select class="form-select form-select-sm" id="apimanAuthType">
+                              <option value="none">No Auth</option>
+                              <option value="basic">Basic Auth</option>
+                              <option value="bearer">Bearer Token</option>
+                              <option value="apikey">API Key</option>
+                            </select>
+                          </div>
+                          <div id="apimanAuthBasic" style="display:none">
+                            <div class="row g-2 mb-2">
+                              <div class="col-md-6"><label style="font-size:.75rem">Username</label><input type="text" class="form-control form-control-sm font-monospace" id="apimanAuthBasicUser" placeholder="admin"></div>
+                              <div class="col-md-6"><label style="font-size:.75rem">Password</label><input type="password" class="form-control form-control-sm font-monospace" id="apimanAuthBasicPass" placeholder="••••••"></div>
+                            </div>
+                          </div>
+                          <div id="apimanAuthBearer" style="display:none">
+                            <div class="mb-2">
+                              <label style="font-size:.75rem">Token</label>
+                              <input type="text" class="form-control form-control-sm font-monospace" id="apimanAuthBearerToken" placeholder="eyJhbGciOiJIUzI1NiIs...">
+                            </div>
+                          </div>
+                          <div id="apimanAuthApiKey" style="display:none">
+                            <div class="row g-2 mb-2">
+                              <div class="col-md-4"><label style="font-size:.75rem">Key</label><input type="text" class="form-control form-control-sm font-monospace" id="apimanAuthApiKeyName" placeholder="X-API-Key"></div>
+                              <div class="col-md-4"><label style="font-size:.75rem">Value</label><input type="text" class="form-control form-control-sm font-monospace" id="apimanAuthApiKeyValue" placeholder="your-api-key"></div>
+                              <div class="col-md-4"><label style="font-size:.75rem">放入</label><select class="form-select form-select-sm" id="apimanAuthApiKeyIn"><option value="header">Header</option><option value="query">Query Param</option></select></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="tab-pane fade" id="apimanHeadersPane" role="tabpanel">
+                          <div id="apimanHeadersList"></div>
+                          <button class="btn btn-sm btn-outline-secondary mt-1" id="apimanAddHeader"><i class="bx bx-plus me-1"></i>新增 Header</button>
+                        </div>
+                        <div class="tab-pane fade" id="apimanBodyPane" role="tabpanel">
+                           <div class="mb-2">
+                             <select class="form-select form-select-sm" id="apimanBodyType" style="width:auto">
+                               <option value="none">none</option>
+                               <option value="json">JSON</option>
+                               <option value="form">Form Data</option>
+                               <option value="text">Text</option>
+                             </select>
+                           </div>
+                           <textarea class="form-control font-monospace" id="apimanBody" rows="6" style="font-size:.75rem" placeholder='{"key": "value"}'></textarea>
+                         </div>
+                         <div class="tab-pane fade" id="apimanVarsPane" role="tabpanel">
+                           <div class="text-muted mb-2" style="font-size:.75rem">在 URL、Headers、Body 中使用 <code>{{variable_name}}</code> 語法，發送時自動取代</div>
+                           <div id="apimanVarsList"></div>
+                           <div class="d-flex gap-1 mt-1">
+                             <button class="btn btn-sm btn-outline-secondary" id="apimanAddVar"><i class="bx bx-plus me-1"></i>新增變數</button>
+                             <button class="btn btn-sm btn-outline-primary" id="apimanSaveVars"><i class="bx bx-save me-1"></i>儲存變數</button>
+                           </div>
+                         </div>
+                      </div>
+                      <div class="d-flex justify-content-end gap-2 mt-2">
+                        <button class="btn btn-sm btn-outline-success" id="apimanSaveReqBtn"><i class="bx bx-save me-1"></i>儲存</button>
+                        <button class="btn btn-sm btn-outline-info" id="apimanHistoryBtn" style="display:none"><i class="bx bx-history me-1"></i>歷史</button>
+                      </div>
+                      <div class="mt-2" id="apimanResponse"></div>
+                    </div>
+                  </div>
+                  <div class="card" id="apimanEmptyState">
+                    <div class="card-body text-center text-muted py-5">
+                      <i class="bx bx-folder-open" style="font-size:3rem;opacity:.3"></i>
+                      <p class="mt-2" id="apimanEmptyLabel">請選擇一個 Request 或建立新的</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- DbMan View -->
+            <div id="dbmanView" style="display:none">
+              <div class="row g-3">
+                <div class="col-lg-4 col-xl-3">
+                  <div class="card">
+                    <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                      <strong style="font-size:.8125rem"><i class="bx bx-data me-1"></i>DbMan</strong>
+                      <button class="btn btn-sm btn-outline-primary" id="dbmanAddConnBtn"><i class="bx bx-plus"></i></button>
+                    </div>
+                    <div class="card-body p-2" id="dbmanConnList" style="min-height:200px;max-height:calc(100vh - 280px);overflow-y:auto"></div>
+                  </div>
+                </div>
+                <div class="col-lg-8 col-xl-9">
+                  <div id="dbmanConnView" style="display:none">
+                    <div class="card mb-2">
+                      <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                        <span><strong id="dbmanCurrentConnLabel"></strong></span>
+                        <button class="btn btn-sm btn-outline-secondary" id="dbmanDisconnectBtn"><i class="bx bx-log-out me-1"></i>返回</button>
+                      </div>
+                    </div>
+                    <div class="card mb-2">
+                      <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                        <strong style="font-size:.8125rem">資料表</strong>
+                      </div>
+                      <div class="card-body p-2" id="dbmanTableList"></div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                      <div class="col-md-8">
+                        <div class="card">
+                          <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                            <strong style="font-size:.8125rem">SQL 查詢</strong>
+                            <button class="btn btn-sm btn-outline-info" id="dbmanSaveQueryBtn" title="儲存查詢"><i class="bx bx-bookmark me-1"></i>儲存</button>
+                          </div>
+                          <div class="card-body">
+                            <div style="position:relative">
+                            <textarea class="form-control font-monospace dbman-sql-editor" id="dbmanSql" rows="4" style="font-size:.75rem;resize:vertical;min-height:80px" placeholder="SELECT * FROM ..."></textarea>
+                            <button class="btn btn-sm btn-outline-secondary dbman-sql-expand" style="position:absolute;bottom:4px;right:4px;padding:0 4px;font-size:.65rem" title="放大"><i class="bx bx-expand"></i></button>
+                            </div>
+                            <button class="btn btn-primary btn-sm mt-2" id="dbmanRunSql"><i class="bx bx-play me-1"></i>執行</button>
+                            <div id="dbmanSqlResult" class="mt-2"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="card">
+                          <div class="card-header py-2"><strong style="font-size:.8125rem">已儲存查詢</strong></div>
+                          <div class="card-body p-2" id="dbmanSavedQueries"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="dbmanConnForm" style="display:none">
+                    <div class="card">
+                      <div class="card-header py-2"><strong style="font-size:.8125rem" id="dbmanFormTitle">新增連線</strong></div>
+                      <div class="card-body haproxy-form">
+                        <input type="hidden" id="dbmanEditConnId" value="">
+                        <div class="mb-2">
+                          <label class="form-label">名稱</label>
+                          <input type="text" class="form-control font-monospace" id="dbmanFormName" placeholder="My Database">
+                        </div>
+                        <div class="mb-2">
+                          <label class="form-label">類型</label>
+                          <select class="form-select" id="dbmanFormType">
+                            <option value="sqlite">SQLite</option>
+                            <option value="mysql">MySQL</option>
+                            <option value="sqlserver">SQL Server</option>
+                          </select>
+                        </div>
+                        <div class="mb-2" id="dbmanFormSqliteGroup">
+                          <label class="form-label">檔案路徑</label>
+                          <input type="text" class="form-control font-monospace" id="dbmanFormFilePath" placeholder="/path/to/db.sqlite3">
+                        </div>
+                        <div id="dbmanFormServerGroup" style="display:none">
+                          <div class="row g-2 mb-2">
+                            <div class="col-md-6"><label class="form-label">Host</label><input type="text" class="form-control font-monospace" id="dbmanFormHost" placeholder="127.0.0.1"></div>
+                            <div class="col-md-3"><label class="form-label">Port</label><input type="number" class="form-control" id="dbmanFormPort" placeholder="3306"></div>
+                            <div class="col-md-3"><label class="form-label">資料庫</label><input type="text" class="form-control font-monospace" id="dbmanFormDb" placeholder="database"></div>
+                          </div>
+                          <div class="row g-2 mb-2">
+                            <div class="col-md-6"><label class="form-label">使用者</label><input type="text" class="form-control font-monospace" id="dbmanFormUser" placeholder="root"></div>
+                            <div class="col-md-6"><label class="form-label">密碼</label><input type="password" class="form-control font-monospace" id="dbmanFormPass"></div>
+                          </div>
+                          <div class="mb-2">
+                            <label><input type="checkbox" id="dbmanFormTrustCert"> Trust Server Certificate</label>
+                          </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                          <button class="btn btn-primary" id="dbmanFormSaveBtn"><i class="bx bx-save me-1"></i>儲存</button>
+                          <button class="btn btn-outline-success" id="dbmanFormTestBtn"><i class="bx bx-plug me-1"></i>測試連線</button>
+                          <button class="btn btn-outline-secondary" id="dbmanFormCancelBtn">取消</button>
+                        </div>
+                        <div id="dbmanFormResult" class="mt-2"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Security View -->
+            <div id="securityView" style="display:none">
+              <ul class="nav nav-tabs nav-fill mb-3" id="securityTabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" id="security-cvs-tab" data-bs-toggle="tab" data-bs-target="#securityCvsPane" type="button" role="tab"><i class="bx bx-cloud-download me-1"></i><span class="securityTabLabel">CVS 資料庫</span></button></li>
+                <li class="nav-item"><button class="nav-link" id="security-scan-tab" data-bs-toggle="tab" data-bs-target="#securityScanPane" type="button" role="tab"><i class="bx bx-scan me-1"></i><span class="securityTabLabel">網路掃描</span></button></li>
+              </ul>
+              <div class="tab-content p-0">
+                <div class="tab-pane fade show active" id="securityCvsPane" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-lg-5">
+                      <div class="card">
+                        <div class="card-header py-2"><strong style="font-size:.8125rem">CVS 來源</strong></div>
+                        <div class="card-body haproxy-form">
+                          <div class="mb-2">
+                            <label class="form-label">名稱</label>
+                            <input type="text" class="form-control font-monospace" id="secCvsName" placeholder="Threat Intel Feed">
+                          </div>
+                          <div class="mb-2">
+                            <label class="form-label">URL</label>
+                            <input type="text" class="form-control font-monospace" id="secCvsUrl" placeholder="https://example.com/data.csv">
+                          </div>
+                          <div class="mb-2">
+                            <label class="form-label">資料表名稱</label>
+                            <input type="text" class="form-control font-monospace" id="secCvsTable" value="cvs_import">
+                          </div>
+                          <div class="row g-2 mb-2">
+                            <div class="col-md-4"><label class="form-label">分隔符</label><select class="form-select" id="secCvsDelimiter"><option value=",">逗號 (,)</option><option value="tab">Tab</option><option value=";">分號 (;)</option></select></div>
+                            <div class="col-md-4"><label><input type="checkbox" id="secCvsHeader" checked> 有標題列</label></div>
+                          </div>
+                          <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary" id="secCvsPreviewBtn"><i class="bx bx-show me-1"></i>預覽</button>
+                            <button class="btn btn-primary" id="secCvsImportBtn"><i class="bx bx-cloud-download me-1"></i>下載並匯入</button>
+                            <button class="btn btn-outline-success" id="secCvsSaveSourceBtn"><i class="bx bx-save me-1"></i>儲存來源</button>
+                          </div>
+                          <div class="mt-2" id="secCvsResult"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-lg-7">
+                      <div class="card">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                          <strong style="font-size:.8125rem">已儲存來源</strong>
+                          <button class="btn btn-sm btn-outline-secondary" id="secCvsRefreshSources"><i class="bx bx-refresh"></i></button>
+                        </div>
+                        <div class="card-body p-2" id="secCvsSourceList"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="tab-pane fade" id="securityScanPane" role="tabpanel">
+                  <div class="row g-3">
+                    <div class="col-lg-5">
+                      <div class="card">
+                        <div class="card-header py-2"><strong style="font-size:.8125rem">新增掃描任務</strong></div>
+                        <div class="card-body haproxy-form">
+                          <div class="mb-2"><label class="form-label">任務名稱</label><input type="text" class="form-control font-monospace" id="secScanName" placeholder="Internal Scan"></div>
+                          <div class="mb-2"><label class="form-label">目標</label><input type="text" class="form-control font-monospace" id="secScanTarget" placeholder="192.168.1.0/24 or 10.0.0.1-100"></div>
+                          <div class="mb-2"><label class="form-label">埠號 (逗號分隔)</label><input type="text" class="form-control font-monospace" id="secScanPorts" value="22,80,443,3306,6379,8080,8443"></div>
+                          <div class="mb-2"><label class="form-label">掃描類型</label><select class="form-select" id="secScanType"><option value="tcp">TCP Connect</option><option value="udp">UDP</option></select></div>
+                          <button class="btn btn-primary w-100" id="secScanCreateBtn"><i class="bx bx-plus me-1"></i>建立並執行</button>
+                          <div class="mt-2" id="secScanResult"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-lg-7">
+                      <div class="card">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                          <strong style="font-size:.8125rem">掃描紀錄</strong>
+                          <button class="btn btn-sm btn-outline-secondary" id="secScanRefreshTasks"><i class="bx bx-refresh"></i></button>
+                        </div>
+                        <div class="card-body p-2" id="secScanTaskList"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tools View -->
+            <div id="toolsView" style="display:none">
+              <ul class="nav nav-tabs nav-fill mb-3" id="toolsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="tools-ping-tab" data-bs-toggle="tab" data-bs-target="#toolsPingPane" type="button" role="tab"><i class="bx bx-signal-5 me-1"></i><span class="toolsTabLabel">Ping</span></button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tools-lsof-tab" data-bs-toggle="tab" data-bs-target="#toolsLsofPane" type="button" role="tab"><i class="bx bx-list-ul me-1"></i><span class="toolsTabLabel">Lsof</span></button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tools-traceroute-tab" data-bs-toggle="tab" data-bs-target="#toolsTraceroutePane" type="button" role="tab"><i class="bx bx-transfer-alt me-1"></i><span class="toolsTabLabel">Traceroute</span></button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tools-nslookup-tab" data-bs-toggle="tab" data-bs-target="#toolsNslookupPane" type="button" role="tab"><i class="bx bx-search me-1"></i><span class="toolsTabLabel">Nslookup</span></button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tools-iploc-tab" data-bs-toggle="tab" data-bs-target="#toolsIpLocPane" type="button" role="tab"><i class="bx bx-map me-1"></i><span class="toolsTabLabel">IP 位置</span></button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="tools-netstat-tab" data-bs-toggle="tab" data-bs-target="#toolsNetstatPane" type="button" role="tab"><i class="bx bx-analyse me-1"></i><span class="toolsTabLabel">Netstat</span></button>
+                </li>
+              </ul>
+              <div class="tab-content p-0">
+                <div class="tab-pane fade show active" id="toolsPingPane" role="tabpanel">
+                  <div class="card"><div class="card-body">
+                    <div class="row g-2 align-items-end mb-2">
+                      <div class="col-md-5"><label class="form-label" style="font-size:.75rem">目標主機</label><input type="text" class="form-control font-monospace" id="toolsPingHost" placeholder="8.8.8.8"></div>
+                      <div class="col-md-2"><label class="form-label" style="font-size:.75rem">次數</label><input type="number" class="form-control" id="toolsPingCount" value="4" min="1" max="100"></div>
+                      <div class="col-md-2"><label class="form-label" style="font-size:.75rem">逾時(秒)</label><input type="number" class="form-control" id="toolsPingTimeout" value="10" min="1" max="60"></div>
+                      <div class="col-md-3"><button class="btn btn-primary w-100" id="toolsPingBtn"><i class="bx bx-play me-1"></i>執行 Ping</button></div>
+                    </div>
+                    <pre class="tools-output" id="toolsPingOutput" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px;max-height:400px;overflow:auto;white-space:pre-wrap"></pre>
+                  </div></div>
+                </div>
+                <div class="tab-pane fade" id="toolsLsofPane" role="tabpanel">
+                  <div class="card"><div class="card-body">
+                    <div class="row g-2 align-items-end mb-2">
+                      <div class="col-md-4"><label class="form-label" style="font-size:.75rem">Port</label><input type="number" class="form-control" id="toolsLsofPort" placeholder="80" min="1" max="65535"></div>
+                      <div class="col-md-3"><label class="form-label" style="font-size:.75rem">協定</label><select class="form-select" id="toolsLsofProtocol"><option value="">全部</option><option value="tcp">TCP</option><option value="udp">UDP</option></select></div>
+                      <div class="col-md-5"><button class="btn btn-primary w-100" id="toolsLsofBtn"><i class="bx bx-play me-1"></i>執行 Lsof</button></div>
+                    </div>
+                    <pre class="tools-output" id="toolsLsofOutput" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px;max-height:400px;overflow:auto;white-space:pre-wrap"></pre>
+                  </div></div>
+                </div>
+                <div class="tab-pane fade" id="toolsTraceroutePane" role="tabpanel">
+                  <div class="card"><div class="card-body">
+                    <div class="row g-2 align-items-end mb-2">
+                      <div class="col-md-6"><label class="form-label" style="font-size:.75rem">目標主機</label><input type="text" class="form-control font-monospace" id="toolsTraceHost" placeholder="8.8.8.8"></div>
+                      <div class="col-md-3"><label class="form-label" style="font-size:.75rem">最大跳數</label><input type="number" class="form-control" id="toolsTraceHops" value="30" min="1" max="64"></div>
+                      <div class="col-md-3"><button class="btn btn-primary w-100" id="toolsTracerouteBtn"><i class="bx bx-play me-1"></i>執行 Traceroute</button></div>
+                    </div>
+                    <pre class="tools-output" id="toolsTracerouteOutput" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px;max-height:400px;overflow:auto;white-space:pre-wrap"></pre>
+                  </div></div>
+                </div>
+                <div class="tab-pane fade" id="toolsNslookupPane" role="tabpanel">
+                  <div class="card"><div class="card-body">
+                    <div class="row g-2 align-items-end mb-2">
+                      <div class="col-md-5"><label class="form-label" style="font-size:.75rem">網域名稱</label><input type="text" class="form-control font-monospace" id="toolsNslookupDomain" placeholder="google.com"></div>
+                      <div class="col-md-4"><label class="form-label" style="font-size:.75rem">DNS Server（選填）</label><input type="text" class="form-control font-monospace" id="toolsNslookupDns" placeholder="8.8.8.8"></div>
+                      <div class="col-md-3"><button class="btn btn-primary w-100" id="toolsNslookupBtn"><i class="bx bx-play me-1"></i>執行 Nslookup</button></div>
+                    </div>
+                    <pre class="tools-output" id="toolsNslookupOutput" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px;max-height:400px;overflow:auto;white-space:pre-wrap"></pre>
+                  </div></div>
+                </div>
+                <div class="tab-pane fade" id="toolsIpLocPane" role="tabpanel">
+                  <div class="card"><div class="card-body">
+                    <div class="row g-2 align-items-end mb-2">
+                      <div class="col-md-6"><label class="form-label" style="font-size:.75rem">IP 位址</label><input type="text" class="form-control font-monospace" id="toolsIpLocIp" placeholder="8.8.8.8 (留空查自己)"></div>
+                      <div class="col-md-3"><button class="btn btn-primary w-100" id="toolsIpLocBtn"><i class="bx bx-search me-1"></i>查詢位置</button></div>
+                    </div>
+                    <div id="toolsIpLocResult" style="font-size:.8125rem"></div>
+                  </div></div>
+                </div>
+                <div class="tab-pane fade" id="toolsNetstatPane" role="tabpanel">
+                  <div class="card"><div class="card-body">
+                    <div class="mb-2"><span class="badge bg-label-info tools-netstat-cmd-badge"></span></div>
+                    <button class="btn btn-primary mb-2" id="toolsNetstatBtn"><i class="bx bx-play me-1"></i>執行 Netstat</button>
+                    <pre class="tools-output" id="toolsNetstatOutput" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px;max-height:400px;overflow:auto;white-space:pre-wrap"></pre>
+                  </div></div>
+                </div>
+              </div>
             </div>
 
             <!-- System View -->
@@ -877,6 +1622,7 @@
             </div>
           </div>
 
+          </div><!-- /tabContentRoot -->
           <!-- Logger -->
           <div class="log-panel" id="logPanel">
             <div class="log-toolbar">
@@ -892,8 +1638,9 @@
           <footer class="content-footer footer bg-footer-theme">
             <div class="container-xxl">
               <div class="footer-container d-flex align-items-center justify-content-between py-3 flex-md-row flex-column">
-                <div class="mb-2 mb-md-0">
-                  <small>MiCopa 防火牆管理平臺 &copy; <script>document.write(new Date().getFullYear())</script></small>
+                <div clasMiitai2 mb-md-0 d-flex align-items-center gap-2">
+                  <small>MiCopa 網路與安全工具管理平臺 &copy; <script>document.write(new Date().getFullYear())</script></small>
+                  <small class="badge bg-label-info rounded-pill" id="footerVersion">-</small>
                 </div>
               </div>
             </div>
@@ -1024,6 +1771,125 @@
     // ─── Application Logic ───
     let currentProtocol = "ipv4";
     let currentPlatform = "linux";
+    const TAB_STORAGE_KEY = "fwm_tabs";
+    const TAB_VIEW_PREFIX = "tabView_";
+    let tabState = { tabs: [], activeId: null };
+
+    function saveTabs() {
+      try { localStorage.setItem(TAB_STORAGE_KEY, JSON.stringify(tabState)); } catch(e) {}
+    }
+    function loadTabs() {
+      try {
+        var raw = localStorage.getItem(TAB_STORAGE_KEY);
+        if (raw) tabState = JSON.parse(raw);
+      } catch(e) { tabState = { tabs: [], activeId: null }; }
+    }
+    function findTab(mode) {
+      for (var i = 0; i < tabState.tabs.length; i++) {
+        if (tabState.tabs[i].id === mode) return i;
+      }
+      return -1;
+    }
+    function tabLabel(mode) {
+      var lang = i18n[currentLang] || {};
+      var map = {
+        tables: lang.tablesLabel || '防火牆管理',
+        dashboard: lang.dashLabel || '一般性儀表板',
+        system: lang.systemLabel || '系統現況',
+        shell: lang.shellLabel || 'Shell',
+        ai: lang.aiLabel || 'AI 助手',
+        tools: lang.toolsLabel || '系統工具',
+        haproxy: lang.haproxyLabel || 'HaProxy 管理',
+        nginx: lang.nginxLabel || 'Nginx 管理',
+        juniper: lang.juniperLabel || 'Juniper 設定',
+        netplan: lang.netplanLabel || 'Netplan 設定',
+        apiman: 'ApiMan',
+        dbman: 'DbMan',
+        security: '資安',
+      };
+      return map[mode] || mode;
+    }
+    function tabIcon(mode) {
+      var map = {
+        tables: 'bx-shield-quarter', dashboard: 'bx-bar-chart-alt-2', system: 'bx-desktop',
+        shell: 'bx-terminal', ai: 'bx-bot', tools: 'bx-wrench', haproxy: 'bx-transfer',
+        nginx: 'bx-windows', juniper: 'bx-network-chart', netplan: 'bx-wifi',
+        apiman: 'bx-link', dbman: 'bx-data', security: 'bx-shield',
+      };
+      return map[mode] || 'bx-file';
+    }
+    function renderTabs() {
+      var $bar = $('#tabBar').empty();
+      tabState.tabs.forEach(function (t, i) {
+        var active = t.id === tabState.activeId ? ' active' : '';
+        $bar.append('<div class="tab-item' + active + '" data-idx="' + i + '" data-mode="' + t.id + '" title="' + tabLabel(t.id) + '">' +
+          '<i class="bx ' + tabIcon(t.id) + '"></i> ' + tabLabel(t.id) +
+          '<span class="tab-close" data-mode="' + t.id + '">&times;</span></div>');
+      });
+      if (!$bar.find('.active').length && $bar.find('.tab-item').length) {
+        $bar.find('.tab-item:first').addClass('active');
+      }
+    }
+    function activateTabImpl(mode) {
+      tabState.activeId = mode;
+      // Hide all tab panes
+      $('.tab-content-pane').removeClass('active').hide();
+      var paneId = TAB_VIEW_PREFIX + mode;
+      var $pane = $('#' + paneId);
+      if (!$pane.length) {
+        // Find the original view element and wrap it in a tab pane
+        var $origView = $('#' + mode + 'View');
+        if ($origView.length) {
+          // Remove inline display:none from original view so pane visibility controls it
+          if ($origView.css('display') === 'none') $origView.css('display', '');
+          $origView.wrap('<div id="' + paneId + '" class="tab-content-pane"></div>');
+          $pane = $('#' + paneId);
+        }
+      }
+      if ($pane.length) {
+        $pane.addClass('active').show();
+      }
+      renderTabs();
+      saveTabs();
+    }
+    function ensureTab(mode) {
+      loadTabs();
+      var idx = findTab(mode);
+      if (idx >= 0) {
+        tabState.activeId = mode;
+        saveTabs();
+        return false; // tab already exists
+      }
+      tabState.tabs.push({ id: mode });
+      tabState.activeId = mode;
+      saveTabs();
+      return true; // new tab
+    }
+    function closeTab(mode) {
+      loadTabs();
+      var idx = findTab(mode);
+      if (idx < 0) return;
+      tabState.tabs.splice(idx, 1);
+      if (tabState.activeId === mode) {
+        tabState.activeId = tabState.tabs.length > 0 ? tabState.tabs[Math.min(idx, tabState.tabs.length - 1)].id : null;
+      }
+      saveTabs();
+      // Remove the pane
+      var paneId = TAB_VIEW_PREFIX + mode;
+      var $pane = $('#' + paneId);
+      if ($pane.length) {
+        var $view = $pane.find('#' + mode + 'View');
+        if ($view.length) {
+          $view.unwrap();
+          $view.css('display', '');
+        }
+        $pane.remove();
+      }
+      if (tabState.activeId && findTab(tabState.activeId) >= 0) {
+        activateTabImpl(tabState.activeId);
+      }
+    }
+
     const languageKey = "iptables_lang";
     const storedLang = localStorage.getItem(languageKey);
     const browserLang = (function () { var l = (navigator.language || "en").toLowerCase(); if (l.startsWith("zh")) return "zh"; if (l.startsWith("ja")) return "ja"; return "en"; })();
@@ -1052,7 +1918,10 @@
         clearConfirmPrefix: "確認清除", allRulesSuffix: "所有規則？", chainRulesSuffix: " 鏈的所有規則？",
         allMetricsSuffix: "所有統計數據？", ruleMetricsPrefix: "第 ", ruleMetricsSuffix: " 條規則的統計數據？",
         ruleNumberPrefix: "第", ruleNumberSuffix: "條規則", clearEmptyPrompt: "確認清除用戶自定義的所有空鏈？",
-        dashLabel: "儀表板", tablesLabel: "防火牆管理", systemLabel: "系統現況", docLabel: "命令文件",
+        menuGroupDash: "儀表板", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", tablesLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "系統工具",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
+        menuApiManNew: "新增工作區", menuDbManNew: "新增連線",
+        menuSecurityCvs: "CVS 資料庫", menuSecurityScan: "網路掃描",
+        menuGroupAI: "AI", menuGroupHelp: "協助", systemLabel: "系統現況", docLabel: "命令文件",
         juniperLabel: "Juniper 設定", juniperInfo: "設備資訊", juniperVlan: "VLAN 管理", juniperPort: "Port 管理",
         juniperRefresh: "重新整理", juniperCreateVlan: "新增 VLAN", juniperVlanList: "VLAN 列表", juniperPortList: "Port 管理",
         juniperConnected: "已連線", juniperDisconnected: "未連線", juniperMgmtIp: "管理 IP", juniperHostname: "Hostname",
@@ -1071,6 +1940,20 @@
         juniperNoPortSelected: "請至少選取一個 Port", juniperAccessOneVlan: "Access 模式只能選擇一個 VLAN",
         juniperMgmtPortWarning: "注意：ge-0/0/23 是 Firewall-Man 管理連線 Port，修改或停用可能造成 Juniper 失聯。",
         juniperConfirmApply: "確認下發這些 JunOS 指令？", juniperApplied: "Juniper 設定已套用", juniperDeleted: "已刪除 VLAN",
+        netplanLabel: "Netplan 設定",
+        nginxLabel: "Nginx 管理", nginxEnv: "環境設定", nginxSites: "網站管理", nginxModules: "模組管理",
+        nginxEnvTitle: "Nginx 環境設定", nginxBin: "Nginx 執行檔路徑", nginxConfigDir: "設定目錄", nginxSitesDir: "sites-enabled 目錄",
+        nginxModulesDir: "modules-enabled 目錄", nginxConfDDir: "conf.d 目錄", nginxTest: "測試設定", nginxReload: "重新載入",
+        nginxSaveEnv: "儲存環境設定", nginxSiteFormTitle: "網站設定", nginxSiteName: "網站名稱", nginxServerName: "Server Name",
+        nginxSiteType: "網站類型", nginxStaticSite: "靜態網站 (Server)", nginxReverseProxy: "反向代理 (Reverse Proxy)",
+        nginxDocRoot: "Document Root", nginxProxyPass: "Proxy Pass", nginxEnabled: "啟用", nginxCustomConfig: "自訂 Config（留空自動產生）",
+        nginxSaveSite: "儲存網站", nginxPreviewSite: "預覽設定", nginxDeleteSite: "刪除", nginxSiteList: "網站列表",
+        nginxRefresh: "重新整理", nginxModuleAdd: "新增模組", nginxModuleName: "模組名稱", nginxAddModule: "新增模組",
+        nginxScanModules: "從系統掃描", nginxModuleList: "模組列表", nginxType: "類型", nginxStatus: "狀態", nginxActions: "操作",
+        nginxConfirmDelete: "確認刪除此網站？", nginxConfirmDeleteFile: "確認刪除 sites-enabled 中的檔案？",
+        nginxSiteAdded: "網站已新增", nginxSiteUpdated: "網站已更新", nginxSiteDeleted: "網站已刪除",
+        nginxEnvSaved: "環境設定已儲存", nginxTestSuccess: "設定測試完成", nginxReloadSuccess: "Nginx 已重新載入",
+        nginxModuleAdded: "模組已新增", nginxModuleToggled: "模組狀態已切換",
         haproxyLabel: "HAProxy 管理", haproxyStatus: "HAProxy 狀態", haproxyWeb: "Web 負載平衡", haproxySql: "SQL Server 負載平衡", haproxyTest: "連線測試",
         haproxyReload: "Reload HAProxy", haproxyRestart: "Restart HAProxy", haproxyInstalled: "是否已安裝", haproxyService: "Service 狀態",
         haproxyConfigPath: "設定檔路徑", haproxyConfigValid: "設定檔驗證", haproxyVersion: "版本", haproxyGenerate: "產生設定預覽",
@@ -1087,6 +1970,7 @@
         shellLabel: "Shell", aiLabel: "AI 助手", aiSend: "送出", aiInputPlaceholder: "輸入需求...",
         aiStatusIdle: "閒置", aiStatusRunning: "執行中", aiStatusDone: "完成", aiStatusError: "錯誤",
         aiCopy: "複製", aiExecute: "執行", aiExecuted: "已執行", aiCopyOk: "已複製", aiConfirmExec: "確認執行此命令？",
+        closeTab: "關閉", closeAll: "關閉全部", closeLeft: "關閉左方", closeRight: "關閉右方",
       },
       en: {
         title: "{cmd} Web Console", docAssistTitle: "Quick Help", chainLabel: "Chain", defaultPolicy: "Default policy",
@@ -1108,7 +1992,10 @@
         clearConfirmPrefix: "Confirm to clear", allRulesSuffix: "all rules?", chainRulesSuffix: " chain rules?",
         allMetricsSuffix: "all counters?", ruleMetricsPrefix: "Rule #", ruleMetricsSuffix: " counters?",
         ruleNumberPrefix: "Rule #", ruleNumberSuffix: "", clearEmptyPrompt: "Clear all empty custom chains?",
-        dashLabel: "Dashboard", tablesLabel: "Tables", systemLabel: "System", docLabel: "Command Reference",
+        menuGroupDash: "Dashboard", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", tablesLabel: "Tables",         menuGroupSys: "System Tools", toolsLabel: "System Tools",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
+        menuApiManNew: "New Workspace", menuDbManNew: "New Connection",
+        menuSecurityCvs: "CVS Database", menuSecurityScan: "Network Scan",
+        menuGroupAI: "AI", menuGroupHelp: "Help", systemLabel: "System", docLabel: "Command Reference",
         juniperLabel: "Juniper Settings", juniperInfo: "Device Info", juniperVlan: "VLAN Management", juniperPort: "Port Management",
         juniperRefresh: "Refresh", juniperCreateVlan: "Create VLAN", juniperVlanList: "VLAN List", juniperPortList: "Port Management",
         juniperConnected: "Connected", juniperDisconnected: "Disconnected", juniperMgmtIp: "Management IP", juniperHostname: "Hostname",
@@ -1127,6 +2014,20 @@
         juniperNoPortSelected: "Select at least one port", juniperAccessOneVlan: "Access mode requires exactly one VLAN",
         juniperMgmtPortWarning: "Warning: ge-0/0/23 is the Firewall-Man management port. Changing or disabling it may disconnect Juniper.",
         juniperConfirmApply: "Apply these JunOS commands?", juniperApplied: "Juniper setting applied", juniperDeleted: "VLAN deleted",
+        netplanLabel: "Netplan Config",
+        nginxLabel: "Nginx Management", nginxEnv: "Environment", nginxSites: "Sites", nginxModules: "Modules",
+        nginxEnvTitle: "Nginx Environment", nginxBin: "Nginx Binary", nginxConfigDir: "Config Dir", nginxSitesDir: "sites-enabled Dir",
+        nginxModulesDir: "modules-enabled Dir", nginxConfDDir: "conf.d Dir", nginxTest: "Test Config", nginxReload: "Reload",
+        nginxSaveEnv: "Save Environment", nginxSiteFormTitle: "Site Settings", nginxSiteName: "Site Name", nginxServerName: "Server Name",
+        nginxSiteType: "Site Type", nginxStaticSite: "Static Site (Server)", nginxReverseProxy: "Reverse Proxy",
+        nginxDocRoot: "Document Root", nginxProxyPass: "Proxy Pass", nginxEnabled: "Enabled", nginxCustomConfig: "Custom Config (leave blank to auto-generate)",
+        nginxSaveSite: "Save Site", nginxPreviewSite: "Preview Config", nginxDeleteSite: "Delete", nginxSiteList: "Site List",
+        nginxRefresh: "Refresh", nginxModuleAdd: "Add Module", nginxModuleName: "Module Name", nginxAddModule: "Add Module",
+        nginxScanModules: "Scan from System", nginxModuleList: "Module List", nginxType: "Type", nginxStatus: "Status", nginxActions: "Actions",
+        nginxConfirmDelete: "Confirm delete this site?", nginxConfirmDeleteFile: "Confirm delete file from sites-enabled?",
+        nginxSiteAdded: "Site added", nginxSiteUpdated: "Site updated", nginxSiteDeleted: "Site deleted",
+        nginxEnvSaved: "Environment saved", nginxTestSuccess: "Config test completed", nginxReloadSuccess: "Nginx reloaded",
+        nginxModuleAdded: "Module added", nginxModuleToggled: "Module toggled",
         haproxyLabel: "HAProxy Management", haproxyStatus: "HAProxy Status", haproxyWeb: "Web Load Balance", haproxySql: "SQL Server Load Balance", haproxyTest: "Connection Test",
         haproxyReload: "Reload HAProxy", haproxyRestart: "Restart HAProxy", haproxyInstalled: "Installed", haproxyService: "Service Status",
         haproxyConfigPath: "Config Path", haproxyConfigValid: "Config Valid", haproxyVersion: "Version", haproxyGenerate: "Generate Preview",
@@ -1143,6 +2044,7 @@
         shellLabel: "Shell", aiLabel: "AI Assistant", aiSend: "Send", aiInputPlaceholder: "Enter your request...",
         aiStatusIdle: "Idle", aiStatusRunning: "Running", aiStatusDone: "Done", aiStatusError: "Error",
         aiCopy: "Copy", aiExecute: "Execute", aiExecuted: "Executed", aiCopyOk: "Copied", aiConfirmExec: "Confirm to execute this command?",
+        closeTab: "Close", closeAll: "Close All", closeLeft: "Close Left", closeRight: "Close Right",
       },
       ja: {
         title: "{cmd} 管理コンソール", docAssistTitle: "クイックヘルプ", chainLabel: "チェイン", defaultPolicy: "デフォルトポリシー",
@@ -1163,7 +2065,10 @@
         clearConfirmPrefix: "確認", allRulesSuffix: "すべてのルールをクリアしますか？", chainRulesSuffix: " チェインの全ルールをクリアしますか？",
         allMetricsSuffix: "すべての統計データをクリアしますか？", ruleMetricsPrefix: "ルール #", ruleMetricsSuffix: " の統計データをクリアしますか？",
         ruleNumberPrefix: "ルール #", ruleNumberSuffix: "", clearEmptyPrompt: "空のカスタムチェインをすべて削除しますか？",
-        dashLabel: "ダッシュボード", tablesLabel: "ファイアウォール管理", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
+        menuGroupDash: "ダッシュボード", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", tablesLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "システムツール",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
+        menuApiManNew: "新規ワークスペース", menuDbManNew: "新規接続",
+        menuSecurityCvs: "CVS データベース", menuSecurityScan: "ネットワークスキャン",
+        menuGroupAI: "AI", menuGroupHelp: "ヘルプ", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
         juniperLabel: "Juniper 設定", juniperInfo: "デバイス情報", juniperVlan: "VLAN 管理", juniperPort: "Port 管理",
         juniperRefresh: "更新", juniperCreateVlan: "VLAN 作成", juniperVlanList: "VLAN 一覧", juniperPortList: "Port 管理",
         juniperConnected: "接続済み", juniperDisconnected: "未接続", juniperMgmtIp: "管理 IP", juniperHostname: "Hostname",
@@ -1182,6 +2087,20 @@
         juniperNoPortSelected: "Port を1つ以上選択してください", juniperAccessOneVlan: "Access モードでは VLAN を1つだけ選択してください",
         juniperMgmtPortWarning: "注意: ge-0/0/23 は Firewall-Man 管理 Port です。変更または無効化すると Juniper に接続できなくなる可能性があります。",
         juniperConfirmApply: "これらの JunOS コマンドを適用しますか？", juniperApplied: "Juniper 設定を適用しました", juniperDeleted: "VLAN を削除しました",
+        netplanLabel: "Netplan 設定",
+        nginxLabel: "Nginx 管理", nginxEnv: "環境設定", nginxSites: "サイト管理", nginxModules: "モジュール管理",
+        nginxEnvTitle: "Nginx 環境設定", nginxBin: "Nginx 実行ファイル", nginxConfigDir: "設定ディレクトリ", nginxSitesDir: "sites-enabled ディレクトリ",
+        nginxModulesDir: "modules-enabled ディレクトリ", nginxConfDDir: "conf.d ディレクトリ", nginxTest: "設定テスト", nginxReload: "再読み込み",
+        nginxSaveEnv: "環境設定を保存", nginxSiteFormTitle: "サイト設定", nginxSiteName: "サイト名", nginxServerName: "Server Name",
+        nginxSiteType: "サイトタイプ", nginxStaticSite: "静的サイト (Server)", nginxReverseProxy: "リバースプロキシ",
+        nginxDocRoot: "Document Root", nginxProxyPass: "Proxy Pass", nginxEnabled: "有効", nginxCustomConfig: "カスタム Config（空欄で自動生成）",
+        nginxSaveSite: "サイトを保存", nginxPreviewSite: "設定をプレビュー", nginxDeleteSite: "削除", nginxSiteList: "サイト一覧",
+        nginxRefresh: "更新", nginxModuleAdd: "モジュール追加", nginxModuleName: "モジュール名", nginxAddModule: "追加",
+        nginxScanModules: "システムからスキャン", nginxModuleList: "モジュール一覧", nginxType: "タイプ", nginxStatus: "状態", nginxActions: "操作",
+        nginxConfirmDelete: "このサイトを削除しますか？", nginxConfirmDeleteFile: "sites-enabled のファイルを削除しますか？",
+        nginxSiteAdded: "サイトを追加しました", nginxSiteUpdated: "サイトを更新しました", nginxSiteDeleted: "サイトを削除しました",
+        nginxEnvSaved: "環境設定を保存しました", nginxTestSuccess: "設定テストが完了しました", nginxReloadSuccess: "Nginx を再読み込みしました",
+        nginxModuleAdded: "モジュールを追加しました", nginxModuleToggled: "モジュール状態を変更しました",
         haproxyLabel: "HAProxy 管理", haproxyStatus: "HAProxy 状態", haproxyWeb: "Web ロードバランス", haproxySql: "SQL Server ロードバランス", haproxyTest: "接続テスト",
         haproxyReload: "HAProxy Reload", haproxyRestart: "HAProxy Restart", haproxyInstalled: "インストール済み", haproxyService: "Service 状態",
         haproxyConfigPath: "設定ファイル", haproxyConfigValid: "設定検証", haproxyVersion: "バージョン", haproxyGenerate: "設定プレビュー生成",
@@ -1198,6 +2117,7 @@
         shellLabel: "Shell", aiLabel: "AI アシスタント", aiSend: "送信", aiInputPlaceholder: "リクエストを入力...",
         aiStatusIdle: "アイドル", aiStatusRunning: "実行中", aiStatusDone: "完了", aiStatusError: "エラー",
         aiCopy: "コピー", aiExecute: "実行", aiExecuted: "実行済み", aiCopyOk: "コピーしました", aiConfirmExec: "このコマンドを実行しますか？",
+        closeTab: "閉じる", closeAll: "すべて閉じる", closeLeft: "左を閉じる", closeRight: "右を閉じる",
       }
     };
 
@@ -1213,14 +2133,29 @@
       $(".ipc-title").text(t("title"));
       $("#docDropdownLabel").text(t("docAssistTitle"));
       var lng = i18n[currentLang];
-      $('#menuDashLabel').text(lng.dashLabel || 'Dashboard');
-      $('#menuTablesLabel').text(lng.tablesLabel || 'Tables');
-      $('#menuJuniperLabel').text(lng.juniperLabel || 'Juniper Settings');
-      $('#menuHaproxyLabel').text(lng.haproxyLabel || 'HAProxy Management');
-      $('#menuSysLabel').text(lng.systemLabel || 'System');
+      $('#menuGroupDashLabel').text(lng.menuGroupDash || '儀表板');
+      $('#menuDashLabel').text(lng.dashLabel || '一般性儀表板');
+      $('#menuSysLabel').text(lng.systemLabel || '系統現況');
+      $('#menuGroupNetLabel').text(lng.menuGroupNet || '網路工具');
+      $('#menuTablesLabel').text(lng.tablesLabel || '防火牆管理');
+      $('#menuHaproxyLabel').text(lng.haproxyLabel || 'HaProxy 管理');
+      $('#menuNginxLabel').text(lng.nginxLabel || 'Nginx 管理');
+      $('#menuNetplanLabel').text(lng.netplanLabel || 'Netplan 設定');
+      $('#menuJuniperLabel').text(lng.juniperLabel || 'Juniper 設定');
+      $('#menuGroupSysLabel').text(lng.menuGroupSys || '系統工具');
+      $('#menuToolsLabel').text(lng.toolsLabel || '系統工具');
       $('#menuShellLabel').text(lng.shellLabel || 'Shell');
-      $('#menuAILabel').text(lng.aiLabel || 'AI Assistant');
-      $('#menuDocLabel').text(lng.docLabel || 'Command Reference');
+      $('#menuGroupApiManLabel').text(lng.menuGroupApiMan || 'ApiMan');
+      $('#menuApiManNewLabel').text(lng.menuApiManNew || '新增工作區');
+      $('#menuGroupDbManLabel').text(lng.menuGroupDbMan || 'DbMan');
+      $('#menuDbManNewLabel').text(lng.menuDbManNew || '新增連線');
+      $('#menuGroupSecurityLabel').text(lng.menuGroupSecurity || '資安');
+      $('#menuSecurityCvsLabel').text(lng.menuSecurityCvs || 'CVS 資料庫');
+      $('#menuSecurityScanLabel').text(lng.menuSecurityScan || '網路掃描');
+      $('#menuGroupAILabel').text(lng.menuGroupAI || 'AI');
+      $('#menuAILabel').text(lng.aiLabel || 'AI 助手');
+      $('#menuGroupHelpLabel').text(lng.menuGroupHelp || '協助');
+      $('#menuDocLabel').text(lng.docLabel || '命令文件');
       $('#juniperInfoTabLabel,#juniperInfoTitle').text(lng.juniperInfo || 'Device Info');
       $('#juniperVlanTabLabel').text(lng.juniperVlan || 'VLAN Management');
       $('#juniperPortTabLabel,#juniperPortListTitle').text(lng.juniperPort || 'Port Management');
@@ -1787,11 +2722,30 @@
       $.post('/listRule', { table: tn, chain: '', protocol: protocol }, function (res) {
         dashLoading = false;
         if (res.code === 0) {
-          $('#dashKpiRow,#dashPortInOut,#dashProtocolDist,#dashTopSrc,#dashTopDst,#dashTargetDist,#dashTopPorts').empty();
+          $('#dashKpiRow,#dashPortInOut,#dashProtocolDist,#dashTopSrc,#dashTopDst,#dashTargetDist,#dashTopPorts,#dashActivityBody').empty();
           renderDash(res);
           logger.debug('Dashboard 更新', tn);
         }
       }, 'json');
+      // Load activity feed
+      $.get('/activity', function (res) {
+        if (res.code === 0 && res.data) {
+          var items = res.data || [];
+          var html = '<div style="display:flex;flex-direction:column;gap:2px">';
+          items.forEach(function (item) {
+            var time = (item.time || '').substring(0, 19).replace('T', ' ');
+            var icon = item.icon || 'bx-circle';
+            var statusCls = item.status === 'completed' || item.status === 'enabled' ? 'text-success' :
+              item.status === 'running' || item.status === 'pending' ? 'text-primary' : 'text-muted';
+            html += '<div class="d-flex align-items-center gap-2 py-1" style="border-bottom:1px solid var(--bs-border-color)">' +
+              '<i class="bx ' + icon + ' ' + statusCls + '"></i>' +
+              '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escHtml(item.label) + '</span>' +
+              '<small class="text-muted" style="flex-shrink:0">' + escHtml(time) + '</small></div>';
+          });
+          html += '</div>';
+          $('#dashActivityBody').html(html || '<div class="text-muted">尚無活動記錄</div>');
+        }
+      });
     }
 
     // ─── System Info ───
@@ -3204,12 +4158,512 @@
       return "-t " + tableName + " " + flag + " " + chainName + " " + val;
     }
 
+    // ─── DbMan ───
+    var dbmanCurrentConn = null;
+
+    function rebuildDbManMenu() {
+      $.get('/dbman/connections', function (res) {
+        if (res.code !== 0) return;
+        var conns = res.data || [];
+        var html = '';
+        conns.forEach(function (c) {
+          var icon = c.db_type === 'sqlite' ? 'bx-file' : c.db_type === 'mysql' ? 'bx-data' : 'bx-server';
+          html += '<li class="menu-item dbman-menu-conn" data-conn-id="' + c.id + '">' +
+            '<a href="#" class="menu-link dbman-menu-conn-link" data-conn-id="' + c.id + '">' +
+            '<i class="menu-icon tf-icons bx ' + icon + '"></i>' +
+            '<div class="text-truncate">' + escHtml(c.name) + '</div></a></li>';
+        });
+        $('#menuDbManConnItems').html(html);
+      });
+    }
+    function loadDbManConnections() {
+      $.get('/dbman/connections', function (res) {
+        if (res.code !== 0) return;
+        var conns = res.data || [];
+        var html = '';
+        conns.forEach(function (c) {
+          var icon = c.db_type === 'sqlite' ? 'bx-file' : c.db_type === 'mysql' ? 'bx-data' : 'bx-server';
+          html += '<div class="dbman-conn-item p-1 mb-1" data-conn-id="' + c.id + '" data-conn=\'' + JSON.stringify(c).replace(/'/g, '&#39;') + '\' style="cursor:pointer;border-radius:4px;background:var(--bs-tertiary-bg)">' +
+            '<div class="d-flex justify-content-between align-items-center px-2 py-1">' +
+            '<span style="font-size:.8125rem"><i class="bx ' + icon + ' me-1"></i>' + escHtml(c.name) + '<br><small class="text-muted">' + c.db_type + '</small></span>' +
+            '<button class="btn btn-sm btn-outline-danger dbman-del-conn" data-id="' + c.id + '"><i class="bx bx-trash"></i></button>' +
+            '</div></div>';
+        });
+        var emptyHtml = '<div class="text-muted text-center p-3" style="font-size:.8125rem">尚無連線<br><button class="btn btn-sm btn-outline-primary mt-2" id="dbmanShowAddForm"><i class="bx bx-plus me-1"></i>新增連線</button></div>' +
+          '<div class="mt-2"><button class="btn btn-sm btn-outline-info w-100" id="dbmanQuickConnectLocal"><i class="bx bx-plug me-1"></i>快速連線至本機資料庫</button></div>';
+        $('#dbmanConnList').html(html || emptyHtml);
+      });
+    }
+
+    function showDbManConnForm(conn) {
+      $('#dbmanConnView').hide();
+      $('#dbmanConnForm').show();
+      if (conn) {
+        $('#dbmanFormTitle').text('編輯連線');
+        $('#dbmanEditConnId').val(conn.id);
+        $('#dbmanFormName').val(conn.name);
+        $('#dbmanFormType').val(conn.db_type).trigger('change');
+        $('#dbmanFormFilePath').val(conn.file_path || '');
+        $('#dbmanFormHost').val(conn.host || '');
+        $('#dbmanFormPort').val(conn.port || '');
+        $('#dbmanFormDb').val(conn.database_name || '');
+        $('#dbmanFormUser').val(conn.username || '');
+        $('#dbmanFormPass').val('');
+        $('#dbmanFormTrustCert').prop('checked', conn.trust_server_cert);
+      } else {
+        $('#dbmanFormTitle').text('新增連線');
+        $('#dbmanEditConnId').val('');
+        $('#dbmanFormName').val('');
+        $('#dbmanFormType').val('sqlite').trigger('change');
+        $('#dbmanFormFilePath').val('');
+        $('#dbmanFormHost').val('');
+        $('#dbmanFormPort').val('');
+        $('#dbmanFormDb').val('');
+        $('#dbmanFormUser').val('');
+        $('#dbmanFormPass').val('');
+        $('#dbmanFormTrustCert').prop('checked', false);
+      }
+      $('#dbmanFormResult').empty();
+    }
+
+    // ─── Security ───
+    function loadSecurityCvsSources() {
+      $.get('/security/cvs/sources', function (res) {
+        if (res.code !== 0) return;
+        var sources = res.data || [];
+        var html = '';
+        sources.forEach(function (s) {
+          html += '<div class="p-1 mb-1" style="background:var(--bs-tertiary-bg);border-radius:4px">' +
+            '<div class="d-flex justify-content-between align-items-center px-2 py-1">' +
+            '<div style="font-size:.8125rem"><strong>' + escHtml(s.name) + '</strong><br><small class="text-muted">' + escHtml(s.url) + '</small></div>' +
+            '<button class="btn btn-sm btn-outline-danger security-del-cvs" data-id="' + s.id + '"><i class="bx bx-trash"></i></button></div></div>';
+        });
+        $('#secCvsSourceList').html(html || '<div class="text-muted p-2" style="font-size:.8125rem">尚無來源</div>');
+      });
+    }
+    function loadSecurityScanTasks() {
+      $.get('/security/scan/tasks', function (res) {
+        if (res.code !== 0) return;
+        var tasks = res.data || [];
+        var html = '<div class="table-responsive"><table class="table table-sm mb-0" style="font-size:.75rem"><thead><tr><th>名稱</th><th>目標</th><th>狀態</th><th>操作</th></tr></thead><tbody>';
+        tasks.forEach(function (t) {
+          var statusCls = t.status === 'completed' ? 'bg-label-success' : t.status === 'running' ? 'bg-label-primary' : t.status === 'failed' ? 'bg-label-danger' : 'bg-label-secondary';
+          html += '<tr><td>' + escHtml(t.name) + '</td><td><code>' + escHtml(t.target) + '</code></td><td><span class="badge ' + statusCls + '">' + t.status + '</span></td>' +
+            '<td>' + (t.status === 'completed' ? '<button class="btn btn-sm btn-outline-info security-view-results" data-id="' + t.id + '"><i class="bx bx-show"></i></button> ' : '') +
+            '<button class="btn btn-sm btn-outline-danger security-del-task" data-id="' + t.id + '"><i class="bx bx-trash"></i></button></td></tr>';
+        });
+        html += '</tbody></table></div>';
+        $('#secScanTaskList').html(html || '<div class="text-muted p-2">尚無掃描任務</div>');
+      });
+    }
+
+    // ─── ApiMan ───
+    var apimanBase = '/apiman';
+    var apimanCurrentNodeId = null;
+    var apimanWorkspaces = [];
+
+    function apimanUrl(path) { return apimanBase + path; }
+
+    function loadApiManWorkspaces(done) {
+      $.get(apimanUrl('/workspaces'), function (res) {
+        if (res.code === 0) {
+          apimanWorkspaces = res.data || [];
+          if (done) done(apimanWorkspaces);
+        }
+      });
+    }
+
+    function renderApiManTree() {
+      loadApiManWorkspaces(function (workspaces) {
+        var $tree = $('#apimanTreeBody');
+        if (!workspaces.length) {
+          $tree.html('<div class="text-muted text-center p-3" style="font-size:.8125rem">尚無工作區<br><button class="btn btn-sm btn-outline-primary mt-2" id="apimanCreateFirstWs"><i class="bx bx-plus me-1"></i>建立第一個工作區</button></div>');
+          return;
+        }
+        // Show workspace list as selectable tabs
+        var html = '<div class="d-flex justify-content-end gap-1 px-1 mb-1">' +
+          '<button class="btn btn-sm btn-outline-info" id="apimanImportBtn" title="匯入工作區"><i class="bx bx-import"></i></button></div>';
+        workspaces.forEach(function (ws) {
+          html += '<div class="apiman-ws-item p-1 mb-1" data-ws-id="' + ws.id + '" style="cursor:pointer;border-radius:4px;background:var(--bs-tertiary-bg)">' +
+            '<div class="d-flex justify-content-between align-items-center px-2 py-1">' +
+            '<strong style="font-size:.8125rem"><i class="bx bx-folder me-1"></i>' + escHtml(ws.name) + '</strong>' +
+            '<div><button class="btn btn-sm btn-outline-danger apiman-del-ws" data-id="' + ws.id + '" title="刪除工作區"><i class="bx bx-trash"></i></button></div>' +
+            '</div></div>';
+        });
+        $tree.html(html);
+      });
+    }
+
+    function renderApiManTreeForWs(wsId) {
+      apimanCurrentWsId = wsId;
+      loadApiManVars();
+      $.get(apimanUrl('/workspaces/' + wsId + '/nodes'), function (res) {
+        if (res.code !== 0) return;
+        var treeData = res.data || [];
+        var html = buildApiManTreeHtml(treeData, 0);
+        $('#apimanTreeBody').html(
+          '<div class="d-flex justify-content-between align-items-center px-1 mb-1">' +
+          '<strong style="font-size:.8125rem" id="apimanCurrentWsLabel"></strong>' +
+          '<div><button class="btn btn-sm btn-outline-info apiman-export-ws" data-ws="' + wsId + '"><i class="bx bx-export me-1"></i></button> ' +
+          '<button class="btn btn-sm btn-outline-secondary apiman-back-ws"><i class="bx bx-arrow-back"></i></button></div></div>' +
+          '<div class="mb-2">' +
+          '<button class="btn btn-sm btn-outline-primary apiman-add-folder" data-ws="' + wsId + '"><i class="bx bx-folder-plus me-1"></i>資料夾</button> ' +
+          '<button class="btn btn-sm btn-outline-success apiman-add-req" data-ws="' + wsId + '"><i class="bx bx-plus-circle me-1"></i>Request</button>' +
+          '</div>' +
+          (html || '<div class="text-muted p-2" style="font-size:.8125rem">空的</div>')
+        );
+      });
+    }
+
+    var apimanDragNodeId = null;
+    function buildApiManTreeHtml(nodes, depth) {
+      var html = '';
+      nodes.forEach(function (item) {
+        var indent = 'padding-left:' + (depth * 16 + 4) + 'px';
+        if (item.node.node_type === 'folder') {
+          html += '<div class="apiman-folder-item" style="' + indent + ';border-radius:4px">' +
+            '<div class="d-flex justify-content-between align-items-center px-1 py-1 apiman-folder-header" data-node-id="' + item.node.id + '" draggable="true" style="cursor:grab">' +
+            '<span style="font-size:.8125rem"><i class="bx bx-folder me-1"></i>' + escHtml(item.node.name) + '</span>' +
+            '<div><button class="btn btn-sm btn-outline-info apiman-copy-node me-1" data-id="' + item.node.id + '" title="複製"><i class="bx bx-copy"></i></button><button class="btn btn-sm btn-outline-danger apiman-del-node" data-id="' + item.node.id + '"><i class="bx bx-trash"></i></button></div>' +
+            '</div>' +
+            '<div class="apiman-children apiman-drop-zone" data-parent-id="' + item.node.id + '" style="min-height:4px">' + buildApiManTreeHtml(item.children, depth + 1) + '</div>' +
+            '</div>';
+        } else {
+          var method = item.request ? item.request.method : 'GET';
+          var methodClass = method === 'GET' ? 'text-success' : method === 'POST' ? 'text-warning' : method === 'DELETE' ? 'text-danger' : 'text-info';
+          html += '<div class="apiman-req-item px-1 py-1" style="' + indent + ';cursor:grab;border-radius:4px" data-node-id="' + item.node.id + '" draggable="true">' +
+            '<div class="d-flex justify-content-between align-items-center">' +
+            '<span style="font-size:.75rem"><span class="' + methodClass + ' fw-bold">' + method + '</span> <span class="text-truncate" style="max-width:150px;display:inline-block">' + escHtml(item.request ? item.request.url : '') + '</span></span>' +
+            '<div><button class="btn btn-sm btn-outline-info apiman-copy-node me-1" data-id="' + item.node.id + '" title="複製"><i class="bx bx-copy"></i></button><button class="btn btn-sm btn-outline-danger apiman-del-node" data-id="' + item.node.id + '"><i class="bx bx-trash"></i></button></div>' +
+            '</div></div>';
+        }
+      });
+      return html;
+    }
+
+      var apimanCurrentWsId = null;
+      function loadApiManVars() {
+        if (!apimanCurrentWsId) return;
+        $.get(apimanUrl('/variables/' + apimanCurrentWsId), function (res) {
+          if (res.code !== 0) return;
+          var vars = res.data || [];
+          $('#apimanVarBadge').text(vars.length);
+          // Variable hints
+          var hints = '';
+          vars.forEach(function (v) {
+            if (v.enabled !== false) hints += '<code style="background:var(--bs-tertiary-bg);padding:0 4px;border-radius:3px;cursor:pointer" class="apiman-var-insert" data-key="' + escHtml(v.key) + '">{{' + escHtml(v.key) + '}}</code> ';
+          });
+          $('#apimanVarHints').html(hints || '');
+          var $c = $('#apimanVarsList').empty();
+          if (!vars.length) {
+            $c.html('<div class="text-muted" style="font-size:.8125rem">尚無變數，請新增</div>');
+            return;
+          }
+          vars.forEach(function (v) {
+            $c.append(
+              '<div class="row g-1 mb-1 apiman-var-row">' +
+              '<div class="col-1"><input type="checkbox" class="form-check-input apiman-var-enabled" ' + (v.enabled !== false ? 'checked' : '') + '></div>' +
+              '<div class="col-4"><input type="text" class="form-control form-control-sm font-monospace apiman-var-key" value="' + escHtml(v.key) + '" placeholder="Key"></div>' +
+              '<div class="col-5"><input type="text" class="form-control form-control-sm font-monospace apiman-var-value" value="' + escHtml(v.value) + '" placeholder="Value"></div>' +
+              '<div class="col-2"><button class="btn btn-sm btn-outline-danger apiman-var-del" data-key="' + escHtml(v.key) + '"><i class="bx bx-x"></i></button></div>' +
+              '</div>'
+            );
+          });
+        });
+      }
+      function loadApiManRequest(nodeId) {
+        apimanCurrentNodeId = nodeId;
+        $.get(apimanUrl('/requests/' + nodeId), function (res) {
+          if (res.code !== 0) return;
+          var r = res.data;
+          $('#apimanMethod').val(r.method || 'GET');
+          $('#apimanUrl').val(r.url || '');
+          $('#apimanBodyType').val(r.body_type || 'none');
+          $('#apimanBody').val(r.body_content || '');
+          renderApiManKeyValue('#apimanParamsList', r.query_params, 'apimanParam');
+          renderApiManKeyValue('#apimanHeadersList', r.headers, 'apimanHeader');
+          // Load auth config
+          var auth = {};
+          try { auth = r.auth_config ? JSON.parse(r.auth_config) : {}; } catch(e) {}
+          loadApiManAuth(auth);
+          $('#apimanRequestCard').show();
+          $('#apimanEmptyState').hide();
+          // Show/hide history button
+          $('#apimanHistoryBtn').show();
+        });
+      }
+      function loadApiManAuth(auth) {
+        var t = auth.type || 'none';
+        $('#apimanAuthType').val(t);
+        $('#apimanAuthBadge').text(t === 'none' ? 'none' : t).removeClass('bg-label-secondary bg-label-warning bg-label-info bg-label-primary')
+          .addClass(t === 'none' ? 'bg-label-secondary' : 'bg-label-warning');
+        $('#apimanAuthBasic,#apimanAuthBearer,#apimanAuthApiKey').hide();
+        if (t === 'basic') { $('#apimanAuthBasic').show(); $('#apimanAuthBasicUser').val(auth.username || ''); $('#apimanAuthBasicPass').val(auth.password || ''); }
+        if (t === 'bearer') { $('#apimanAuthBearer').show(); $('#apimanAuthBearerToken').val(auth.token || ''); }
+        if (t === 'apikey') { $('#apimanAuthApiKey').show(); $('#apimanAuthApiKeyName').val(auth.key_name || 'X-API-Key'); $('#apimanAuthApiKeyValue').val(auth.key_value || ''); $('#apimanAuthApiKeyIn').val(auth.key_in || 'header'); }
+      }
+      function collectApiManAuth() {
+        var t = $('#apimanAuthType').val();
+        if (t === 'none') return null;
+        var auth = { type: t };
+        if (t === 'basic') { auth.username = $('#apimanAuthBasicUser').val(); auth.password = $('#apimanAuthBasicPass').val(); }
+        if (t === 'bearer') { auth.token = $('#apimanAuthBearerToken').val(); }
+        if (t === 'apikey') { auth.key_name = $('#apimanAuthApiKeyName').val(); auth.key_value = $('#apimanAuthApiKeyValue').val(); auth.key_in = $('#apimanAuthApiKeyIn').val(); }
+        return JSON.stringify(auth);
+      }
+      function applyApiManAuth(authConfig, headers, params) {
+        if (!authConfig) return;
+        var auth = (typeof authConfig === 'string') ? JSON.parse(authConfig) : authConfig;
+        if (auth.type === 'basic' && auth.username) {
+          var encoded = btoa(unescape(encodeURIComponent(auth.username + ':' + (auth.password || ''))));
+          headers.push({ key: 'Authorization', value: 'Basic ' + encoded, enabled: true });
+        } else if (auth.type === 'bearer' && auth.token) {
+          headers.push({ key: 'Authorization', value: 'Bearer ' + auth.token, enabled: true });
+        } else if (auth.type === 'apikey' && auth.key_name && auth.key_value) {
+          if (auth.key_in === 'query') {
+            params.push({ key: auth.key_name, value: auth.key_value, enabled: true });
+          } else {
+            headers.push({ key: auth.key_name, value: auth.key_value, enabled: true });
+          }
+        }
+      }
+      function loadApiManHistory(nodeId) {
+        $.get(apimanUrl('/requests/' + nodeId + '/history'), function (res) {
+          if (res.code !== 0) return;
+          var items = res.data || [];
+          if (!items.length) { layer.msg('尚無歷史紀錄', { icon: 2 }); return; }
+          var html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0" style="font-size:.75rem"><thead><tr><th>#</th><th>Status</th><th>Time</th><th>Elapsed</th><th></th></tr></thead><tbody>';
+          items.forEach(function (item) {
+            var statusCls = item.status >= 200 && item.status < 300 ? 'text-success' : item.status >= 400 ? 'text-danger' : 'text-warning';
+            html += '<tr><td>' + item.id + '</td><td class="' + statusCls + ' fw-bold">' + (item.status || '?') + '</td><td>' + escHtml(item.created_at) + '</td><td>' + (item.elapsed_ms || '-') + 'ms</td>' +
+              '<td><button class="btn btn-sm btn-outline-info apiman-view-history" data-id="' + item.id + '" data-body=\'' + escHtml(JSON.stringify(item).replace(/'/g,'&#39;')) + '\'><i class="bx bx-show"></i></button></td></tr>';
+          });
+          html += '</tbody></table></div>';
+          layer.open({ title: 'Response History', content: html, area: ['700px', '60vh'], btn: ['OK'] });
+        });
+      }
+
+    function renderApiManKeyValue(containerId, jsonData, prefix) {
+      var $c = $(containerId).empty();
+      var items = [];
+      try { items = jsonData ? JSON.parse(jsonData) : []; } catch(e) {}
+      if (!items.length) items = [{key:'', value:'', enabled:true}];
+      items.forEach(function (item, i) {
+        $c.append(
+          '<div class="row g-1 mb-1 apiman-kv-row">' +
+          '<div class="col-1"><input type="checkbox" class="form-check-input apiman-kv-enabled" ' + (item.enabled !== false ? 'checked' : '') + '></div>' +
+          '<div class="col-4"><input type="text" class="form-control form-control-sm font-monospace apiman-kv-key" value="' + escHtml(item.key) + '" placeholder="Key"></div>' +
+          '<div class="col-5"><input type="text" class="form-control form-control-sm font-monospace apiman-kv-value" value="' + escHtml(item.value || '') + '" placeholder="Value"></div>' +
+          '<div class="col-2"><button class="btn btn-sm btn-outline-danger apiman-kv-del"><i class="bx bx-x"></i></button></div>' +
+          '</div>'
+        );
+      });
+    }
+
+    function collectApiManKv(prefix) {
+      var items = [];
+      $('.' + prefix + '-kv-row').each(function () {
+        var key = $(this).find('.apiman-kv-key').val().trim();
+        if (!key) return;
+        items.push({
+          key: key,
+          value: $(this).find('.apiman-kv-value').val(),
+          enabled: $(this).find('.apiman-kv-enabled').is(':checked')
+        });
+      });
+      return items.length ? JSON.stringify(items) : null;
+    }
+
+    // ─── Netplan ───
+    var netplanBase = null;
+    var netplanBaseCandidates = ['/netplan', '/api/netplan'];
+    function netplanUrl(path) { return (netplanBase || '/netplan') + path; }
+    function detectNetplanApi(done) {
+      if (netplanBase) { if (done) done(); return; }
+      var candidates = netplanBaseCandidates.slice();
+      function tryNext() {
+        if (!candidates.length) { netplanBase = '/netplan'; if (done) done(); return; }
+        var base = candidates.shift();
+        $.ajax({ url: base + '/configs', dataType: 'json', method: 'GET' })
+          .done(function () { netplanBase = base; if (done) done(); })
+          .fail(function () { tryNext(); });
+      }
+      tryNext();
+    }
+    function loadNetplanInterfaces() {
+      $.get('/netplan/interfaces', function (res) {
+        var select = $('#netplanInterface');
+        var current = select.val();
+        select.empty();
+        if (Array.isArray(res)) {
+          res.forEach(function (iface) {
+            select.append('<option value="' + escHtml(iface) + '">' + escHtml(iface) + '</option>');
+          });
+          if (current && res.indexOf(current) !== -1) select.val(current);
+        }
+        loadNetplanIfaceInfo();
+      }, 'json');
+    }
+    function loadNetplanIfaceInfo() {
+      var iface = $('#netplanInterface').val();
+      if (!iface) { $('#netplanIfaceInfo').html('<div class="text-muted" style="font-size:.8125rem">請選擇網路介面</div>'); return; }
+      $.get('/netplan/interfaces/' + encodeURIComponent(iface) + '/current', function (res) {
+        var html = '<div style="font-size:.8125rem"><strong>介面: </strong><code>' + escHtml(iface) + '</code></div>';
+        if (res.ip_address) html += '<div style="font-size:.8125rem"><strong>IP: </strong><code>' + escHtml(res.ip_address) + '</code></div>';
+        if (res.netmask_prefix) html += '<div style="font-size:.8125rem"><strong>Prefix: </strong><code>' + res.netmask_prefix + '</code></div>';
+        if (!res.ip_address) html += '<div class="text-muted" style="font-size:.8125rem">無法取得目前 IP 設定</div>';
+        $('#netplanIfaceInfo').html(html);
+      }, 'json');
+    }
+    function loadNetplanHistory() {
+      detectNetplanApi(function () {
+        $.get(netplanUrl('/configs'), function (res) {
+          if (res.code !== 0) { $('#netplanHistoryBody').html('<div class="text-danger p-2">' + res.msg + '</div>'); return; }
+          var configs = res.data || [];
+          if (!configs.length) { $('#netplanHistoryBody').html('<div class="text-muted p-2">尚無歷史設定</div>'); return; }
+          var html = '<div class="table-responsive"><table class="table table-sm table-hover mb-0">' +
+            '<thead><tr><th>#</th><th>介面</th><th>DHCP</th><th>IP</th><th>閘道</th><th>時間</th><th>操作</th></tr></thead><tbody>';
+          configs.forEach(function (c) {
+            var dhcpLabel = c.dhcp ? '<span class="badge bg-label-success">DHCP</span>' : '<span class="badge bg-label-info">Static</span>';
+            var ip = c.dhcp ? '-' : (c.ip_address || '-') + '/' + (c.netmask_prefix || '');
+            html += '<tr><td>' + c.id + '</td><td><code>' + escHtml(c.interface_name) + '</code></td><td>' + dhcpLabel + '</td><td><code>' + escHtml(ip) + '</code></td><td><code>' + escHtml(c.gateway || '-') + '</code></td><td style="font-size:.7rem">' + escHtml(c.created_at) + '</td>' +
+              '<td><button class="btn btn-sm btn-outline-primary netplan-restore-config" data-id="' + c.id + '"><i class="bx bx-undo"></i></button></td></tr>';
+          });
+          html += '</tbody></table></div>';
+          $('#netplanHistoryBody').html(html);
+        });
+      });
+    }
+
+    // ─── Nginx ───
+    var nginxBase = null;
+    var nginxBaseCandidates = ['/nginx', '/api/nginx'];
+    function nginxUrl(path) { return (nginxBase || '/nginx') + path; }
+    function detectNginxApi(done) {
+      if (nginxBase) { if (done) done(); return; }
+      var candidates = nginxBaseCandidates.slice();
+      function tryNext() {
+        if (!candidates.length) { nginxBase = '/nginx'; if (done) done(); return; }
+        var base = candidates.shift();
+        $.ajax({ url: base + '/env', dataType: 'json', method: 'GET' })
+          .done(function () { nginxBase = base; if (done) done(); })
+          .fail(function () { tryNext(); });
+      }
+      tryNext();
+    }
+    function loadNginxEnv() {
+      detectNginxApi(function () {
+        $.get(nginxUrl('/env'), function (res) {
+          if (res.code !== 0) return;
+          var d = res.data || {};
+          $('#nginxBin').val(d.nginx_bin || 'nginx');
+          $('#nginxConfigDir').val(d.config_dir || '/etc/nginx');
+          $('#nginxSitesEnabledDir').val(d.sites_enabled_dir || '/etc/nginx/sites-enabled');
+          $('#nginxModulesEnabledDir').val(d.modules_enabled_dir || '/etc/nginx/modules-enabled');
+          $('#nginxConfDDir').val(d.conf_d_dir || '/etc/nginx/conf.d');
+          logger.debug('Nginx 環境設定已載入');
+        });
+      });
+    }
+    function loadNginxSites() {
+      $('#nginxSiteListBody').html('<div class="text-muted p-2">Loading...</div>');
+      detectNginxApi(function () {
+        $.get(nginxUrl('/sites'), function (res) {
+          if (res.code !== 0) { $('#nginxSiteListBody').html('<div class="text-danger p-2">' + res.msg + '</div>'); return; }
+          var sites = res.data || [];
+          if (!sites.length) { $('#nginxSiteListBody').html('<div class="text-muted p-2">' + (i18n[currentLang].dashNoData || 'No data') + '</div>'); return; }
+          var lang = i18n[currentLang];
+          var html = '<div class="table-responsive"><table class="table table-sm table-hover mb-0">' +
+            '<thead><tr><th>' + (lang.nginxSiteName || 'Site Name') + '</th><th>' + (lang.nginxServerName || 'Server Name') + '</th>' +
+            '<th>' + (lang.nginxType || 'Type') + '</th><th>' + (lang.nginxStatus || 'Status') + '</th><th>' + (lang.nginxActions || 'Actions') + '</th></tr></thead><tbody>';
+          sites.forEach(function (s) {
+            var enabled = s.enabled ? '<span class="badge bg-label-success">' + (lang.nginxEnabled || 'Enabled') + '</span>' : '<span class="badge bg-label-secondary">Disabled</span>';
+            var typeLabel = s.site_type === 'reverse_proxy' ? (lang.nginxReverseProxy || 'Reverse Proxy') : (lang.nginxStaticSite || 'Static Site');
+            html += '<tr data-name="' + escHtml(s.site_name) + '">' +
+              '<td><strong>' + escHtml(s.site_name) + '</strong></td>' +
+              '<td><code>' + escHtml(s.server_name) + '</code></td>' +
+              '<td>' + typeLabel + '</td>' +
+              '<td>' + enabled + '</td>' +
+              '<td><button class="btn btn-sm btn-outline-primary nginx-edit-site me-1"><i class="bx bx-edit"></i></button>' +
+              '<button class="btn btn-sm btn-outline-danger nginx-delete-site"><i class="bx bx-trash"></i></button></td></tr>';
+          });
+          html += '</tbody></table></div>';
+          $('#nginxSiteListBody').html(html);
+          logger.debug('Nginx 網站列表已載入', sites.length + ' sites');
+        });
+      });
+    }
+    function fillNginxSiteForm(site) {
+      $('#nginxEditSiteName').val(site.site_name || '');
+      $('#nginxSiteName').val(site.site_name || '').prop('readonly', true);
+      $('#nginxServerName').val(site.server_name || '_');
+      $('#nginxSiteType').val(site.site_type || 'server');
+      $('#nginxDocRoot').val(site.document_root || '/var/www/html');
+      $('#nginxProxyPass').val(site.reverse_proxy_pass || '');
+      $('#nginxSiteEnabled').prop('checked', site.enabled !== false);
+      $('#nginxSiteConfig').val(site.config_content || '');
+      $('#nginxDeleteSiteBtn').show();
+      toggleNginxSiteType();
+    }
+    function resetNginxSiteForm() {
+      $('#nginxEditSiteName').val('');
+      $('#nginxSiteName').val('').prop('readonly', false);
+      $('#nginxServerName').val('_');
+      $('#nginxSiteType').val('server');
+      $('#nginxDocRoot').val('/var/www/html');
+      $('#nginxProxyPass').val('http://127.0.0.1:3000');
+      $('#nginxSiteEnabled').prop('checked', true);
+      $('#nginxSiteConfig').val('');
+      $('#nginxDeleteSiteBtn').hide();
+      $('#nginxSitePreviewResult').empty();
+      toggleNginxSiteType();
+    }
+    function toggleNginxSiteType() {
+      var t = $('#nginxSiteType').val();
+      if (t === 'reverse_proxy') {
+        $('#nginxDocRootGroup').hide();
+        $('#nginxProxyPassGroup').show();
+      } else {
+        $('#nginxDocRootGroup').show();
+        $('#nginxProxyPassGroup').hide();
+      }
+    }
+    function loadNginxModules() {
+      $('#nginxModuleListBody').html('<div class="text-muted p-2">Loading...</div>');
+      detectNginxApi(function () {
+        $.get(nginxUrl('/modules'), function (res) {
+          if (res.code !== 0) { $('#nginxModuleListBody').html('<div class="text-danger p-2">' + res.msg + '</div>'); return; }
+          var modules = res.data || [];
+          if (!modules.length) { $('#nginxModuleListBody').html('<div class="text-muted p-2">' + (i18n[currentLang].dashNoData || 'No data') + '</div>'); return; }
+          var lang = i18n[currentLang];
+          var html = '<div class="table-responsive"><table class="table table-sm table-hover mb-0">' +
+            '<thead><tr><th>' + (lang.nginxModuleName || 'Module Name') + '</th><th>' + (lang.nginxStatus || 'Status') + '</th><th>' + (lang.nginxActions || 'Actions') + '</th></tr></thead><tbody>';
+          modules.forEach(function (m) {
+            var enabled = m.enabled;
+            html += '<tr><td><code>' + escHtml(m.module_name) + '</code></td>' +
+              '<td><label class="form-check form-switch haproxy-status-switch' + (enabled ? '' : ' is-off') + '">' +
+              '<input type="checkbox" class="form-check-input nginx-toggle-module" data-name="' + escHtml(m.module_name) + '"' + (enabled ? ' checked' : '') + '>' +
+              '<span class="form-check-label">' + (enabled ? 'Enabled' : 'Disabled') + '</span></label></td>' +
+              '<td></td></tr>';
+          });
+          html += '</tbody></table></div>';
+          $('#nginxModuleListBody').html(html);
+          logger.debug('Nginx 模組列表已載入', modules.length + ' modules');
+        });
+      });
+    }
+
     $(function () {
       // ─── Init ───
       logger.info('頁面初始化', 'Loading version info…');
       $.get("/version", function (res) {
         $(".ipc-version").text(res.data || "");
         logger.debug('版本資訊已取得', res.data);
+      });
+      $.get("/health", function (res) {
+        if (res.code === 0 && res.data) {
+          $("#footerVersion").text("v" + (res.data.version || "") + " | " + (res.data.platform || ""));
+        }
       });
       $.get("/platform", function (res) {
         if (res.code === 0 && res.data) {
@@ -3229,6 +4683,43 @@
 
       setLanguage(currentLang);
 
+      // Tab-aware view activation map (must be defined before tab restoration below)
+      var viewActivators = {
+        dashboard: function() { loadDash(); if (dashTimer) clearInterval(dashTimer); dashTimer = setInterval(loadDash, 5000); },
+        shell: function() { initTerminal(); setTimeout(function(){if(termFit){termFit.fit();sendResize();}focusTerminal();},100); },
+        ai: function() { setTimeout(function(){$('#aiInput').focus();},100); },
+        juniper: function() { loadJuniperAll(); },
+        haproxy: function() { ensureHaproxyDefaults(); loadHaproxyStatus(); loadHaproxySaved(); },
+        nginx: function() { loadNginxEnv(); },
+        netplan: function() { loadNetplanInterfaces(); },
+        apiman: function() { renderApiManTree(); },
+        dbman: function() { loadDbManConnections(); loadDbManSavedQueries(); },
+        security: function() { loadSecurityCvsSources(); },
+        tools: function() {},
+        system: function() { loadSystemInfo(); },
+        tables: function() { $('.action-buttons').show(); },
+      };
+      var viewMenuMap = {
+        dashboard: 'menuDash', tables: 'menuTables', juniper: 'menuJuniper',
+        haproxy: 'menuHaproxy', nginx: 'menuNginx', netplan: 'menuNetplan',
+        apiman: 'menuApiManNew', dbman: 'menuDbManNew', security: 'menuSecurityCvs',
+        tools: 'menuTools', system: 'menuSys', shell: 'menuShell', ai: 'menuAI',
+      };
+
+      // ─── Restore tabs from localStorage ───
+      loadTabs();
+      if (tabState.tabs.length > 0) {
+        renderTabs();
+        if (tabState.activeId && findTab(tabState.activeId) >= 0) {
+          switchView(tabState.activeId);
+        } else {
+          switchView(tabState.tabs[0].id);
+        }
+      }
+
+      // ─── Rebuild dynamic menus ───
+      rebuildDbManMenu();
+
       // ─── Logger toggle ───
       $('#logToggle').on('click', function () {
         $('#logContainer').toggleClass('open');
@@ -3237,144 +4728,64 @@
       });
       $('#logClear').on('click', function () { logger.clear(); });
 
+      function inactiveAllLeaf() {
+        $('#menuDash,#menuTables,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuSys,#menuTools,#menuShell,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
+      }
+      function hideAllViews() {
+        $('#dashboardView,#tablesView,#systemView,#juniperView,#haproxyView,#nginxView,#netplanView,#apimanView,#dbmanView,#securityView,#toolsView,#aiView,#shellView').hide();
+      }
       // ─── Dashboard view toggle & timer ───
       function switchView(mode) {
-        $('#juniperView').hide();
-        $('#haproxyView').hide();
-        $('#menuJuniper').removeClass('active');
-        $('#menuHaproxy').removeClass('active');
-        if (mode === 'dashboard') {
-          destroyTerminal();
-          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
-          $('#shellView').hide();
-          $('#aiView').hide();
-          $('#dashboardView').show();
-          $('#tablesView').hide();
-          $('#systemView').hide();
-          $('.action-buttons').hide();
-          $('#menuDash').addClass('active');
-          $('#menuTables').removeClass('active');
-          $('#menuSys').removeClass('active');
-          $('#menuShell').removeClass('active');
-          $('#menuAI').removeClass('active');
-          loadDash();
-          if (dashTimer) clearInterval(dashTimer);
-          dashTimer = setInterval(loadDash, 5000);
-          logger.info('切換至 Dashboard');
-        } else if (mode === 'shell') {
-          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
-          $('#aiView').hide();
-          $('#dashboardView').hide();
-          $('#tablesView').hide();
-          $('#systemView').hide();
-          $('#shellView').show();
-          $('.action-buttons').hide();
-          $('#menuShell').addClass('active');
-          $('#menuDash').removeClass('active');
-          $('#menuTables').removeClass('active');
-          $('#menuSys').removeClass('active');
-          $('#menuAI').removeClass('active');
-          if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
-          initTerminal();
-          setTimeout(function () { if (termFit) { termFit.fit(); sendResize(); } focusTerminal(); }, 100);
-          logger.info('切換至 Shell');
-        } else if (mode === 'ai') {
-          destroyTerminal();
-          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
-          $('#shellView').hide();
-          $('#dashboardView').hide();
-          $('#tablesView').hide();
-          $('#systemView').hide();
-          $('#aiView').show();
-          $('.action-buttons').hide();
-          $('#menuAI').addClass('active');
-          $('#menuDash').removeClass('active');
-          $('#menuTables').removeClass('active');
-          $('#menuSys').removeClass('active');
-          $('#menuShell').removeClass('active');
-          if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
-          setTimeout(function () { $('#aiInput').focus(); }, 100);
-          logger.info('切換至 AI 助手');
-        } else if (mode === 'juniper') {
-          destroyTerminal();
-          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
-          $('#shellView').hide();
-          $('#aiView').hide();
-          $('#dashboardView').hide();
-          $('#tablesView').hide();
-          $('#systemView').hide();
-          $('#juniperView').show();
-          $('.action-buttons').hide();
-          $('#menuJuniper').addClass('active');
-          $('#menuDash').removeClass('active');
-          $('#menuTables').removeClass('active');
-          $('#menuSys').removeClass('active');
-          $('#menuShell').removeClass('active');
-          $('#menuAI').removeClass('active');
-          if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
-          loadJuniperAll();
-          logger.info('切換至 Juniper 設定');
-        } else if (mode === 'haproxy') {
-          destroyTerminal();
-          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
-          $('#shellView').hide();
-          $('#aiView').hide();
-          $('#dashboardView').hide();
-          $('#tablesView').hide();
-          $('#systemView').hide();
-          $('#haproxyView').show();
-          $('.action-buttons').hide();
-          $('#menuHaproxy').addClass('active');
-          $('#menuDash').removeClass('active');
-          $('#menuTables').removeClass('active');
-          $('#menuSys').removeClass('active');
-          $('#menuShell').removeClass('active');
-          $('#menuAI').removeClass('active');
-          if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
-          ensureHaproxyDefaults();
-          loadHaproxyStatus();
-          loadHaproxySaved();
-          logger.info('切換至 HAProxy 管理');
-        } else if (mode === 'system') {
-          destroyTerminal();
-          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
-          $('#shellView').hide();
-          $('#aiView').hide();
-          $('#dashboardView').hide();
-          $('#tablesView').hide();
-          $('#systemView').show();
-          $('.action-buttons').hide();
-          $('#menuSys').addClass('active');
-          $('#menuDash').removeClass('active');
-          $('#menuTables').removeClass('active');
-          $('#menuShell').removeClass('active');
-          $('#menuAI').removeClass('active');
-          if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
-          loadSystemInfo();
-          logger.info('切換至 System');
-        } else {
-          destroyTerminal();
-          if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
-          $('#shellView').hide();
-          $('#aiView').hide();
-          $('#dashboardView').hide();
-          $('#tablesView').show();
-          $('#systemView').hide();
-          $('.action-buttons').show();
-          $('#menuTables').addClass('active');
-          $('#menuDash').removeClass('active');
-          $('#menuSys').removeClass('active');
-          $('#menuShell').removeClass('active');
-          $('#menuAI').removeClass('active');
-          if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
-          logger.info('切換至 Tables');
-        }
+        destroyTerminal();
+        if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
+        $('.action-buttons').hide();
+        if (dashTimer) { clearInterval(dashTimer); dashTimer = null; }
+        inactiveAllLeaf();
+
+        ensureTab(mode);
+        activateTabImpl(mode);
+
+        var menuId = viewMenuMap[mode];
+        if (menuId) $('#' + menuId).addClass('active');
+
+        var activator = viewActivators[mode];
+        if (activator) activator();
+
+        logger.info('切換至 ' + tabLabel(mode), 'tab=' + mode);
       }
       $('#menuDashLink').on('click', function (e) { e.preventDefault(); switchView('dashboard'); });
       $('#menuTablesLink').on('click', function (e) { e.preventDefault(); switchView('tables'); });
       $('#menuJuniperLink').on('click', function (e) { e.preventDefault(); switchView('juniper'); });
       $('#menuHaproxyLink').on('click', function (e) { e.preventDefault(); switchView('haproxy'); });
+      $('#menuNginxLink').on('click', function (e) { e.preventDefault(); switchView('nginx'); });
+      $('#menuNetplanLink').on('click', function (e) { e.preventDefault(); switchView('netplan'); });
+      $('#menuApiManNewLink').on('click', function (e) {
+        e.preventDefault();
+        switchView('apiman');
+        // Prompt to create workspace
+        var lang = i18n[currentLang];
+        var wsName = prompt('請輸入工作區名稱 (Workspace Name):');
+        if (wsName && wsName.trim()) {
+          $.post(apimanUrl('/workspaces'), { name: wsName.trim() }, function (res) {
+            if (res.code === 0) { renderApiManTree(); layer.msg('工作區已建立', { icon: 1 }); }
+            else { layer.alert(res.msg); }
+          });
+        }
+      });
+      $('#menuDbManNewLink').on('click', function (e) { e.preventDefault(); switchView('dbman'); });
+      $(document).on('click', '.dbman-menu-conn-link', function (e) {
+        e.preventDefault();
+        var connId = $(this).data('conn-id');
+        switchView('dbman');
+        // Find the connection and auto-select it
+        setTimeout(function () {
+          $('.dbman-conn-item[data-conn-id="' + connId + '"]').click();
+        }, 300);
+      });
+      $('#menuSecurityCvsLink').on('click', function (e) { e.preventDefault(); switchView('security'); });
+      $('#menuSecurityScanLink').on('click', function (e) { e.preventDefault(); switchView('security'); setTimeout(function () { $('#security-scan-tab').click(); }, 100); });
       $('#menuSysLink').on('click', function (e) { e.preventDefault(); switchView('system'); });
+      $('#menuToolsLink').on('click', function (e) { e.preventDefault(); switchView('tools'); });
       $('#menuShellLink').on('click', function (e) { e.preventDefault(); switchView('shell'); });
       $('#menuAILink').on('click', function (e) { e.preventDefault(); switchView('ai'); });
       $('#menuDocLink').on('click', function (e) {
@@ -3498,9 +4909,16 @@
         });
       }
 
-      // ─── Load initial ───
-      const initialTable = currentTableName();
-      loadListRule(initialTable);
+      // ─── Load initial (only if no tabs restored) ───
+      if (!tabState.tabs || tabState.tabs.length === 0) {
+        tabState.tabs.push({ id: 'tables' });
+        tabState.activeId = 'tables';
+        saveTabs();
+        renderTabs();
+        activateTabImpl('tables');
+        const initialTable = currentTableName();
+        loadListRule(initialTable);
+      }
       renderDocContent();
 
       // ─── Tab switch ───
@@ -3687,6 +5105,53 @@
           });
         });
       });
+      // ─── Tab event handlers ───
+      $(document).on('click', '.tab-item', function () {
+        var mode = $(this).data('mode');
+        if (mode) switchView(mode);
+      });
+      $(document).on('click', '.tab-close', function (e) {
+        e.stopPropagation();
+        closeTab($(this).data('mode'));
+      });
+      // Right-click context menu
+      var ctxMenu = $('<div class="tab-context-menu" style="display:none"></div>').appendTo('body');
+      ctxMenu.on('click', '.ctx-item', function () {
+        var action = $(this).data('action');
+        var mode = ctxMenu.data('mode');
+        ctxMenu.hide();
+        if (action === 'close') { closeTab(mode); return; }
+        loadTabs();
+        if (action === 'closeAll') {
+          tabState.tabs = []; tabState.activeId = null; saveTabs(); renderTabs();
+          // Unwrap all views and remove panes
+          $('.tab-content-pane').each(function () {
+            var $view = $(this).find('[id$=View]');
+            if ($view.length) { $view.unwrap(); $view.css('display', 'none'); }
+          });
+          $('.tab-content-pane').remove();
+          return;
+        }
+        var idx = findTab(mode);
+        if (idx < 0) return;
+        if (action === 'closeLeft') { tabState.tabs.splice(0, idx); saveTabs(); if (tabState.activeId && findTab(tabState.activeId) < 0) { tabState.activeId = tabState.tabs[0] ? tabState.tabs[0].id : null; } saveTabs(); renderTabs(); if (tabState.activeId) activateTabImpl(tabState.activeId); }
+        if (action === 'closeRight') { tabState.tabs.splice(idx + 1); saveTabs(); if (tabState.activeId && findTab(tabState.activeId) < 0) { tabState.activeId = tabState.tabs[tabState.tabs.length - 1] ? tabState.tabs[tabState.tabs.length - 1].id : null; } saveTabs(); renderTabs(); if (tabState.activeId) activateTabImpl(tabState.activeId); }
+      });
+      $(document).on('contextmenu', '.tab-item', function (e) {
+        e.preventDefault();
+        var mode = $(this).data('mode');
+        var lang = i18n[currentLang] || {};
+        ctxMenu.html(
+          '<div class="ctx-item" data-action="close"><i class="bx bx-x"></i> ' + (lang.closeTab || '關閉') + '</div>' +
+          '<div class="ctx-divider"></div>' +
+          '<div class="ctx-item" data-action="closeAll"><i class="bx bx-x-circle"></i> ' + (lang.closeAll || '關閉全部') + '</div>' +
+          '<div class="ctx-item" data-action="closeLeft"><i class="bx bx-chevron-left"></i> ' + (lang.closeLeft || '關閉左方') + '</div>' +
+          '<div class="ctx-item" data-action="closeRight"><i class="bx bx-chevron-right"></i> ' + (lang.closeRight || '關閉右方') + '</div>'
+        ).data('mode', mode).css({ left: e.clientX + 'px', top: e.clientY + 'px' }).show();
+        return false;
+      });
+      $(document).on('click', function (e) { if (!$(e.target).closest('.tab-context-menu').length) ctxMenu.hide(); });
+
       $("#languageDropdownMenu").on("click", ".dropdown-item", function (e) {
         e.preventDefault();
         var lang = $(this).data("lang");
@@ -3701,6 +5166,1135 @@
           e.preventDefault();
           sendAIPrompt();
         }
+      });
+
+      // ─── Netplan event handlers ───
+      $('#netplanDhcp').on('change', function () {
+        if ($(this).is(':checked')) {
+          $('#netplanStaticFields input').prop('disabled', true);
+          $('#netplanStaticFields').css('opacity', 0.5);
+        } else {
+          $('#netplanStaticFields input').prop('disabled', false);
+          $('#netplanStaticFields').css('opacity', 1);
+        }
+      });
+      $('#netplanRefreshIfaces').on('click', loadNetplanInterfaces);
+      $('#netplanInterface').on('change', loadNetplanIfaceInfo);
+      $('#netplanPreviewBtn').on('click', function () {
+        var data = {
+          interface_name: $('#netplanInterface').val(),
+          dhcp: $('#netplanDhcp').is(':checked') ? '1' : '0',
+          ip_address: $('#netplanIpAddress').val().trim(),
+          netmask_prefix: $('#netplanPrefix').val(),
+          gateway: $('#netplanGateway').val().trim(),
+          dns_servers: $('#netplanDns').val().trim()
+        };
+        if (!data.interface_name) { layer.msg('請選擇網路介面', { icon: 2 }); return; }
+        $.post('/netplan/preview', data, function (res) {
+          if (res.code !== 0) { layer.alert(res.msg); return; }
+          $('#netplanYaml').val(res.data.config || '');
+          logger.debug('Netplan YAML 已產生');
+        });
+      });
+      $('#netplanApplyBtn').on('click', function () {
+        var data = {
+          interface_name: $('#netplanInterface').val(),
+          dhcp: $('#netplanDhcp').is(':checked') ? '1' : '0',
+          ip_address: $('#netplanIpAddress').val().trim(),
+          netmask_prefix: $('#netplanPrefix').val(),
+          gateway: $('#netplanGateway').val().trim(),
+          dns_servers: $('#netplanDns').val().trim(),
+          config_yaml: $('#netplanYaml').val().trim()
+        };
+        if (!data.interface_name) { layer.msg('請選擇網路介面', { icon: 2 }); return; }
+        if (!data.config_yaml) { layer.msg('請先產生 YAML 設定', { icon: 2 }); return; }
+        logger.info('套用 Netplan 設定', data.interface_name);
+        $('#netplanResult').html('<div class="text-muted">套用中...</div>');
+        $.post('/netplan/apply', data, function (res) {
+          if (res.code !== 0) { $('#netplanResult').html('<div class="text-danger p-2" style="font-size:.8125rem">' + escHtml(res.msg) + '</div>'); return; }
+          $('#netplanResult').html('<pre class="text-success" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px">' + escHtml(res.data.output || '套用成功') + '</pre>');
+          logger.debug('Netplan 已套用');
+          loadNetplanHistory();
+        }, 'json');
+      });
+      $('#netplanRefreshHistory').on('click', loadNetplanHistory);
+      $(document).on('click', '.netplan-restore-config', function () {
+        var id = $(this).data('id');
+        if (!id) return;
+        detectNetplanApi(function () {
+          $.get(netplanUrl('/configs'), function (res) {
+            if (res.code !== 0) return;
+            var configs = res.data || [];
+            var cfg = configs.find(function (c) { return c.id === id; });
+            if (!cfg) { layer.msg('找不到該設定', { icon: 2 }); return; }
+            $('#netplanInterface').val(cfg.interface_name);
+            $('#netplanDhcp').prop('checked', !!cfg.dhcp).trigger('change');
+            $('#netplanIpAddress').val(cfg.ip_address || '');
+            $('#netplanPrefix').val(cfg.netmask_prefix || 24);
+            $('#netplanGateway').val(cfg.gateway || '');
+            $('#netplanDns').val(cfg.dns_servers || '');
+            $('#netplanYaml').val(cfg.config_yaml || '');
+            $('#netplanConfigTabLabel').click();
+            layer.msg('已載入歷史設定', { icon: 1 });
+          });
+        });
+      });
+      $(document).on('shown.bs.tab', '#netplanTabs .nav-link', function () {
+        if ($(this).attr('data-bs-target') === '#netplanHistoryPane') loadNetplanHistory();
+      });
+
+      // ─── Nginx event handlers ───
+      $('#nginxSiteType').on('change', toggleNginxSiteType);
+      $('#nginxSaveEnvBtn').on('click', function () {
+        var data = {
+          nginx_bin: $('#nginxBin').val().trim(),
+          config_dir: $('#nginxConfigDir').val().trim(),
+          sites_enabled_dir: $('#nginxSitesEnabledDir').val().trim(),
+          modules_enabled_dir: $('#nginxModulesEnabledDir').val().trim(),
+          conf_d_dir: $('#nginxConfDDir').val().trim()
+        };
+        logger.info('儲存 Nginx 環境設定');
+        detectNginxApi(function () {
+          $.post(nginxUrl('/env'), data, function (res) {
+            if (res.code !== 0) { layer.alert(res.msg); return; }
+            layer.msg(i18n[currentLang].nginxEnvSaved || 'Environment saved', { icon: 1 });
+            logger.debug('Nginx 環境設定已儲存');
+          });
+        });
+      });
+      $('#nginxTestBtn').on('click', function () {
+        logger.info('測試 Nginx 設定');
+        $('#nginxEnvResult').html('<div class="text-muted">Testing...</div>');
+        detectNginxApi(function () {
+          $.post(nginxUrl('/test'), {}, function (res) {
+            var output = res.data || res.msg || 'No output';
+            var cls = res.code === 0 ? 'text-success' : 'text-danger';
+            $('#nginxEnvResult').html('<pre class="' + cls + '" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px">' + escHtml(output) + '</pre>');
+            logger.debug('Nginx 設定測試結果', output);
+          });
+        });
+      });
+      $('#nginxReloadBtn').on('click', function () {
+        logger.info('重新載入 Nginx');
+        $('#nginxEnvResult').html('<div class="text-muted">Reloading...</div>');
+        detectNginxApi(function () {
+          $.post(nginxUrl('/reload'), {}, function (res) {
+            var output = res.data || res.msg || 'No output';
+            var cls = res.code === 0 ? 'text-success' : 'text-danger';
+            $('#nginxEnvResult').html('<pre class="' + cls + '" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px">' + escHtml(output) + '</pre>');
+            logger.debug('Nginx 重新載入結果', output);
+          });
+        });
+      });
+      $('#nginxSaveSiteBtn').on('click', function () {
+        var editName = $('#nginxEditSiteName').val();
+        var isEdit = !!editName;
+        var data = {
+          site_name: $('#nginxSiteName').val().trim(),
+          server_name: $('#nginxServerName').val().trim(),
+          site_type: $('#nginxSiteType').val(),
+          document_root: $('#nginxDocRoot').val().trim(),
+          reverse_proxy_pass: $('#nginxProxyPass').val().trim(),
+          enabled: $('#nginxSiteEnabled').is(':checked') ? '1' : '0',
+          config_content: $('#nginxSiteConfig').val().trim() || null
+        };
+        if (!data.site_name) { layer.msg('Site name required', { icon: 2 }); return; }
+        logger.info((isEdit ? '更新' : '新增') + ' Nginx 網站', data.site_name);
+        detectNginxApi(function () {
+          if (isEdit) {
+            $.post(nginxUrl('/sites/' + encodeURIComponent(editName)), data, function (res) {
+              if (res.code !== 0) { layer.alert(res.msg); return; }
+              layer.msg(i18n[currentLang].nginxSiteUpdated || 'Site updated', { icon: 1 });
+              loadNginxSites();
+            });
+          } else {
+            $.post(nginxUrl('/sites'), data, function (res) {
+              if (res.code !== 0) { layer.alert(res.msg); return; }
+              layer.msg(i18n[currentLang].nginxSiteAdded || 'Site added', { icon: 1 });
+              loadNginxSites();
+              fillNginxSiteForm(res.data);
+            });
+          }
+        });
+      });
+      $('#nginxPreviewSiteBtn').on('click', function () {
+        var name = $('#nginxSiteName').val().trim();
+        if (!name) { layer.msg('Site name required', { icon: 2 }); return; }
+        detectNginxApi(function () {
+          $.get(nginxUrl('/sites/' + encodeURIComponent(name) + '/preview'), function (res) {
+            if (res.code !== 0) { layer.alert(res.msg); return; }
+            $('#nginxSitePreviewResult').html('<pre class="haproxy-preview" style="max-height:200px">' + escHtml(res.data.config) + '</pre>');
+          });
+        });
+      });
+      $('#nginxDeleteSiteBtn').on('click', function () {
+        var name = $('#nginxEditSiteName').val();
+        if (!name) return;
+        if (!confirm(i18n[currentLang].nginxConfirmDelete || 'Confirm delete this site?')) return;
+        logger.info('刪除 Nginx 網站', name);
+        detectNginxApi(function () {
+          $.ajax({ url: nginxUrl('/sites/' + encodeURIComponent(name)), type: 'DELETE', dataType: 'json' })
+            .done(function (res) {
+              if (res.code !== 0) { layer.alert(res.msg); return; }
+              layer.msg(i18n[currentLang].nginxSiteDeleted || 'Site deleted', { icon: 1 });
+              resetNginxSiteForm();
+              loadNginxSites();
+            });
+        });
+      });
+      $('#nginxRefreshSites').on('click', function () { loadNginxSites(); });
+      $(document).on('click', '.nginx-edit-site', function () {
+        var name = $(this).closest('tr').data('name');
+        if (!name) return;
+        detectNginxApi(function () {
+          $.get(nginxUrl('/sites/' + encodeURIComponent(name)), function (res) {
+            if (res.code !== 0) { layer.alert(res.msg); return; }
+            fillNginxSiteForm(res.data);
+          });
+        });
+      });
+      $(document).on('click', '.nginx-delete-site', function () {
+        var name = $(this).closest('tr').data('name');
+        if (!name) return;
+        if (!confirm(i18n[currentLang].nginxConfirmDelete || 'Confirm delete this site?')) return;
+        logger.info('刪除 Nginx 網站', name);
+        detectNginxApi(function () {
+          $.ajax({ url: nginxUrl('/sites/' + encodeURIComponent(name)), type: 'DELETE', dataType: 'json' })
+            .done(function (res) {
+              if (res.code !== 0) { layer.alert(res.msg); return; }
+              layer.msg(i18n[currentLang].nginxSiteDeleted || 'Site deleted', { icon: 1 });
+              loadNginxSites();
+            });
+        });
+      });
+      $('#nginxAddModuleBtn').on('click', function () {
+        var name = $('#nginxModuleName').val().trim();
+        if (!name) { layer.msg('Module name required', { icon: 2 }); return; }
+        logger.info('新增 Nginx 模組', name);
+        detectNginxApi(function () {
+          $.post(nginxUrl('/modules'), { module_name: name }, function (res) {
+            if (res.code !== 0) { layer.alert(res.msg); return; }
+            layer.msg(i18n[currentLang].nginxModuleAdded || 'Module added', { icon: 1 });
+            $('#nginxModuleName').val('');
+            loadNginxModules();
+          });
+        });
+      });
+      $(document).on('change', '.nginx-toggle-module', function () {
+        var input = $(this);
+        var name = input.data('name');
+        var enabled = input.is(':checked');
+        logger.info('切換 Nginx 模組狀態', name + '=' + enabled);
+        detectNginxApi(function () {
+          $.post(nginxUrl('/modules/' + encodeURIComponent(name) + '/enabled'), { enabled: enabled ? '1' : '0' }, function (res) {
+            if (res.code !== 0) { input.prop('checked', !enabled); layer.alert(res.msg); return; }
+            layer.msg(i18n[currentLang].nginxModuleToggled || 'Module toggled', { icon: 1 });
+            loadNginxModules();
+          });
+        });
+      });
+      $('#nginxRefreshModules').on('click', function () { loadNginxModules(); });
+      $('#nginxScanModulesBtn').on('click', function () {
+        logger.info('掃描系統 Nginx 模組');
+        $('#nginxScanModulesResult').html('<div class="text-muted">Scanning...</div>');
+        detectNginxApi(function () {
+          $.get(nginxUrl('/modules/scan'), function (res) {
+            if (res.code !== 0) { $('#nginxScanModulesResult').html('<div class="text-danger">' + escHtml(res.msg) + '</div>'); return; }
+            var modules = res.data || [];
+            if (!modules.length) { $('#nginxScanModulesResult').html('<div class="text-muted">' + (i18n[currentLang].dashNoData || 'No modules found') + '</div>'); return; }
+            var html = '<div style="display:flex;flex-wrap:wrap;gap:.25rem">';
+            modules.forEach(function (m) {
+              html += '<span class="juniper-chip" style="cursor:pointer" data-name="' + escHtml(m) + '">' + escHtml(m) + '</span>';
+            });
+            html += '</div>';
+            $('#nginxScanModulesResult').html(html);
+            logger.debug('掃描到 ' + modules.length + ' 個系統模組');
+          });
+        });
+      });
+      $(document).on('click', '#nginxScanModulesResult .juniper-chip', function () {
+        var name = $(this).data('name');
+        if (name) $('#nginxModuleName').val(name);
+      });
+      // ─── DbMan saved queries ───
+      function loadDbManSavedQueries() {
+        $.get('/dbman/saved-queries', function (res) {
+          if (res.code !== 0) return;
+          var queries = res.data || [];
+          var html = '';
+          queries.forEach(function (q) {
+            html += '<div class="p-1 mb-1" style="font-size:.75rem;background:var(--bs-tertiary-bg);border-radius:4px;cursor:pointer" data-sql="' + escHtml(q.sql_text) + '">' +
+              '<div class="d-flex justify-content-between align-items-center">' +
+              '<strong>' + escHtml(q.name) + '</strong>' +
+              '<button class="btn btn-sm btn-outline-danger dbman-del-saved-query" data-id="' + q.id + '"><i class="bx bx-x"></i></button></div>' +
+              '<small class="text-muted" style="font-size:.65rem">' + escHtml(q.db_type) + '</small></div>';
+          });
+          $('#dbmanSavedQueries').html(html || '<div class="text-muted p-2" style="font-size:.75rem">尚無儲存查詢</div>');
+        });
+      }
+      $(document).on('click', '#dbmanSaveQueryBtn', function () {
+        var sql = $('#dbmanSql').val().trim();
+        if (!sql) { layer.msg('請輸入 SQL', { icon: 2 }); return; }
+        var name = prompt('查詢名稱:');
+        if (!name || !name.trim()) return;
+        var dbType = dbmanCurrentConn ? dbmanCurrentConn.db_type || 'sqlite' : 'sqlite';
+        $.post('/dbman/saved-queries', { name: name.trim(), sql_text: sql, db_type: dbType }, function (res) {
+          if (res.code === 0) { layer.msg('已儲存', { icon: 1 }); loadDbManSavedQueries(); }
+          else { layer.alert(res.msg); }
+        });
+      });
+      $(document).on('click', '#dbmanSavedQueries [data-sql]', function () {
+        $('#dbmanSql').val($(this).data('sql'));
+      });
+      $(document).on('click', '.dbman-del-saved-query', function (e) {
+        e.stopPropagation();
+        var id = $(this).data('id');
+        $.ajax({ url: '/dbman/saved-queries/' + id, type: 'DELETE', dataType: 'json' })
+          .done(function (r) { if (r.code === 0) loadDbManSavedQueries(); });
+      });
+
+      // ─── DbMan event handlers ───
+      $(document).on('click', '#dbmanShowAddForm, #dbmanAddConnBtn', function () { showDbManConnForm(null); });
+      $(document).on('click', '#dbmanQuickConnectLocal', function () {
+        var conn = {
+          id: 0, name: '本機資料庫 (firewall-man)', db_type: 'sqlite',
+          file_path: 'firewall-man.sqlite3', host: null, port: null,
+          username: null, password: null, database_name: null,
+          trust_server_cert: false, created_at: '', updated_at: ''
+        };
+        dbmanCurrentConn = conn;
+        $('#dbmanCurrentConnLabel').text('本機資料庫');
+        $('#dbmanConnForm').hide();
+        $('#dbmanConnView').show();
+        table_connect(conn);
+      });
+      function table_connect(conn) {
+        $('#dbmanTableList').html('<div class="text-muted p-2">載入中...</div>');
+        $.post('/dbman/tables', { db_type: 'sqlite', file_path: 'firewall-man.sqlite3' }, function (res) {
+          if (res.code !== 0) { $('#dbmanTableList').html('<div class="text-danger p-2">' + escHtml(res.msg) + '</div>'); return; }
+          var tables = res.data || [];
+          if (!tables.length) { $('#dbmanTableList').html('<div class="text-muted p-2">無資料表</div>'); return; }
+          var html = '<div style="display:flex;flex-wrap:wrap;gap:.25rem">';
+          tables.forEach(function (t) {
+            // Query row count
+            $.post('/dbman/query', { db_type: 'sqlite', file_path: 'firewall-man.sqlite3', sql: 'SELECT COUNT(*) AS cnt FROM "' + t.name + '"' }, function (cr) {
+              var cnt = '-';
+              if (cr.code === 0 && cr.data && cr.data.rows && cr.data.rows[0]) cnt = cr.data.rows[0][0];
+              $('.dbman-table-chip[data-table="' + escHtml(t.name) + '"]').append(' <small class="text-muted">(' + cnt + ')</small>');
+            });
+            html += '<span class="juniper-chip dbman-table-chip" data-table="' + escHtml(t.name) + '" style="cursor:pointer">' + escHtml(t.name) + '</span>';
+          });
+          html += '</div>';
+          $('#dbmanTableList').html(html);
+        });
+      }
+      $('#dbmanFormCancelBtn').on('click', function () { $('#dbmanConnForm').hide(); });
+      $('#dbmanFormType').on('change', function () {
+        var t = $(this).val();
+        if (t === 'sqlite') { $('#dbmanFormSqliteGroup').show(); $('#dbmanFormServerGroup').hide(); }
+        else { $('#dbmanFormSqliteGroup').hide(); $('#dbmanFormServerGroup').show(); if (t === 'mysql' && !$('#dbmanFormPort').val()) $('#dbmanFormPort').val('3306'); if (t === 'sqlserver' && !$('#dbmanFormPort').val()) $('#dbmanFormPort').val('1433'); }
+      });
+      $('#dbmanFormTestBtn').on('click', function () {
+        var data = {
+          db_type: $('#dbmanFormType').val(),
+          file_path: $('#dbmanFormFilePath').val().trim(),
+          host: $('#dbmanFormHost').val().trim(),
+          port: $('#dbmanFormPort').val(),
+          username: $('#dbmanFormUser').val().trim(),
+          password: $('#dbmanFormPass').val(),
+          database_name: $('#dbmanFormDb').val().trim(),
+          trust_server_cert: $('#dbmanFormTrustCert').is(':checked') ? '1' : '0'
+        };
+        logger.info('測試資料庫連線', data.db_type);
+        $('#dbmanFormResult').html('<div class="text-muted">測試中...</div>');
+        $.post('/dbman/test', data, function (res) {
+          if (res.code === 0) {
+            $('#dbmanFormResult').html('<div class="text-success">連線成功! 版本: ' + escHtml(res.data.version || '') + '</div>');
+          } else {
+            $('#dbmanFormResult').html('<div class="text-danger">' + escHtml(res.msg) + '</div>');
+          }
+        });
+      });
+      $('#dbmanFormSaveBtn').on('click', function () {
+        var editId = $('#dbmanEditConnId').val();
+        var data = {
+          name: $('#dbmanFormName').val().trim(),
+          db_type: $('#dbmanFormType').val(),
+          file_path: $('#dbmanFormFilePath').val().trim(),
+          host: $('#dbmanFormHost').val().trim(),
+          port: $('#dbmanFormPort').val(),
+          username: $('#dbmanFormUser').val().trim(),
+          password: $('#dbmanFormPass').val(),
+          database_name: $('#dbmanFormDb').val().trim(),
+          trust_server_cert: $('#dbmanFormTrustCert').is(':checked') ? '1' : '0'
+        };
+        if (!data.name) { layer.msg('請輸入名稱', { icon: 2 }); return; }
+        logger.info('儲存 DbMan 連線', data.name);
+        $.post('/dbman/connections', data, function (res) {
+          if (res.code === 0) { layer.msg('已儲存', { icon: 1 }); $('#dbmanConnForm').hide(); loadDbManConnections(); rebuildDbManMenu(); }
+          else { layer.alert(res.msg); }
+        });
+      });
+      $(document).on('click', '.dbman-del-conn', function (e) {
+        e.stopPropagation();
+        var id = $(this).data('id');
+        if (!confirm('確認刪除此連線？')) return;
+        $.ajax({ url: '/dbman/connections/' + id, type: 'DELETE', dataType: 'json' })
+          .done(function (res) { if (res.code === 0) { loadDbManConnections(); rebuildDbManMenu(); } });
+      });
+      $(document).on('click', '.dbman-conn-item', function () {
+        var conn = $(this).data('conn');
+        if (!conn) return;
+        dbmanCurrentConn = conn;
+        $('#dbmanCurrentConnLabel').text(conn.name + ' (' + conn.db_type + ')');
+        $('#dbmanConnForm').hide();
+        $('#dbmanConnView').show();
+        // Load tables
+        var data = { db_type: conn.db_type, file_path: conn.file_path || '' };
+        if (conn.db_type !== 'sqlite') {
+          data.host = conn.host; data.port = conn.port;
+          data.username = conn.username; data.password = conn.password;
+          data.database_name = conn.database_name;
+          data.trust_server_cert = conn.trust_server_cert ? '1' : '0';
+        }
+        $('#dbmanTableList').html('<div class="text-muted p-2">載入中...</div>');
+        $.post('/dbman/tables', data, function (res) {
+          if (res.code !== 0) { $('#dbmanTableList').html('<div class="text-danger p-2">' + escHtml(res.msg) + '</div>'); return; }
+          var tables = res.data || [];
+          if (!tables.length) { $('#dbmanTableList').html('<div class="text-muted p-2">無資料表</div>'); return; }
+          var html = '<div style="display:flex;flex-wrap:wrap;gap:.25rem">';
+           tables.forEach(function (t) {
+             html += '<span class="juniper-chip dbman-table-chip" data-table="' + escHtml(t.name) + '" style="cursor:pointer">' + escHtml(t.name) + '</span>';
+           });
+           html += '</div>';
+           $('#dbmanTableList').html(html);
+           // Load row counts asynchronously
+           tables.forEach(function (t) {
+             var cntData = { db_type: data.db_type, file_path: data.file_path || '', sql: 'SELECT COUNT(*) AS cnt FROM "' + t.name + '"' };
+             if (data.host) { cntData.host = data.host; cntData.port = data.port; cntData.username = data.username; cntData.password = data.password; cntData.database_name = data.database_name; cntData.trust_server_cert = data.trust_server_cert; }
+             $.post('/dbman/query', cntData, function (cr) {
+               if (cr.code === 0 && cr.data && cr.data.rows && cr.data.rows[0]) {
+                 $('.dbman-table-chip[data-table="' + escHtml(t.name) + '"]').append(' <small class="text-muted">(' + cr.data.rows[0][0] + ')</small>');
+               }
+             });
+           });
+         });
+       });
+       $('#dbmanDisconnectBtn').on('click', function () { $('#dbmanConnView').hide(); });
+      $(document).on('click', '.dbman-table-chip', function () {
+        var table = $(this).data('table');
+        if (!table || !dbmanCurrentConn) return;
+        dbmanCurrentTable = table;
+        var conn = dbmanCurrentConn;
+        var sql = 'SELECT * FROM "' + table + '" LIMIT 100';
+        $('#dbmanSql').val(sql);
+        var data = { db_type: conn.db_type, file_path: conn.file_path || '', sql: sql };
+        if (conn.db_type !== 'sqlite') {
+          data.host = conn.host; data.port = conn.port;
+          data.username = conn.username; data.password = conn.password;
+          data.database_name = conn.database_name;
+          data.trust_server_cert = conn.trust_server_cert ? '1' : '0';
+        }
+        $('#dbmanSqlResult').html('<div class="text-muted">查詢中...</div>');
+        $.post('/dbman/query', data, function (res) {
+          if (res.code !== 0) { $('#dbmanSqlResult').html('<div class="text-danger">' + escHtml(res.msg) + '</div>'); return; }
+          renderDbManResult(res.data);
+        });
+      });
+      var dbmanCurrentTable = null;
+      $('#dbmanRunSql').on('click', function () {
+        if (!dbmanCurrentConn) { layer.msg('請先連線資料庫', { icon: 2 }); return; }
+        var conn = dbmanCurrentConn;
+        var sqlRaw = $('#dbmanSql').val().trim();
+        if (!sqlRaw) { layer.msg('請輸入 SQL', { icon: 2 }); return; }
+        var data = { db_type: conn.db_type, file_path: conn.file_path || '', sql: sqlRaw };
+        if (conn.db_type !== 'sqlite') {
+          data.host = conn.host; data.port = conn.port;
+          data.username = conn.username; data.password = conn.password;
+          data.database_name = conn.database_name;
+          data.trust_server_cert = conn.trust_server_cert ? '1' : '0';
+        }
+        logger.info('DbMan 執行 SQL', sqlRaw.substring(0, 100));
+        $('#dbmanSqlResult').html('<div class="text-muted">執行中...</div>');
+
+        // Support multiple statements separated by semicolons
+        var statements = sqlRaw.split(';').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; });
+        if (statements.length > 1) {
+          // Execute each statement sequentially
+          var resultHtml = '';
+          function execNext(idx) {
+            if (idx >= statements.length) {
+              $('#dbmanSqlResult').html(resultHtml || '<div class="text-muted">全部執行完成</div>');
+              return;
+            }
+            data.sql = statements[idx];
+            resultHtml += '<div class="text-muted mt-1" style="font-size:.75rem">[' + (idx+1) + '] ' + escHtml(statements[idx].substring(0, 80)) + '...</div>';
+            $.post('/dbman/query', data, function (res2) {
+              if (res2.code === 0 && res2.data) {
+                resultHtml += '<div class="text-success" style="font-size:.75rem">✓ ' + (res2.data.row_count || 0) + ' 筆</div>';
+              } else {
+                resultHtml += '<div class="text-danger" style="font-size:.75rem">✗ ' + escHtml(res2.msg || 'error') + '</div>';
+              }
+              execNext(idx + 1);
+            });
+          }
+          execNext(0);
+        } else {
+          $.post('/dbman/query', data, function (res) {
+            if (res.code !== 0) { $('#dbmanSqlResult').html('<div class="text-danger">' + escHtml(res.msg) + '</div>'); return; }
+            renderDbManResult(res.data);
+          });
+        }
+      });
+      var dbManResultData = null;
+      function dbManCsvExport() {
+        if (!dbManResultData) return;
+        var csv = dbManResultData.columns.join(',') + '\n';
+        dbManResultData.rows.forEach(function (row) {
+          csv += row.map(function (v) {
+            if (v === null) return '';
+            var s = String(v).replace(/"/g, '""');
+            return '"' + s + '"';
+          }).join(',') + '\n';
+        });
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'query-result.csv'; a.click();
+      }
+      function dbmanSaveCell(table, colName, keyCol, keyVal, newVal, rowEl) {
+        if (!dbmanCurrentConn) return;
+        var conn = dbmanCurrentConn;
+        var quotedTable = '"' + table + '"';
+        var quotedKey = '"' + keyCol + '"';
+        var quotedCol = '"' + colName + '"';
+        var escapedVal = (typeof newVal === 'string') ? "'" + newVal.replace(/'/g, "''") + "'" : 'NULL';
+        var escapedKey = (typeof keyVal === 'string') ? "'" + keyVal.replace(/'/g, "''") + "'" : (keyVal === null ? 'NULL' : keyVal);
+        var sql = 'UPDATE ' + quotedTable + ' SET ' + quotedCol + ' = ' + escapedVal + ' WHERE ' + quotedKey + ' = ' + escapedKey;
+        var data = { db_type: conn.db_type, file_path: conn.file_path || '', sql: sql };
+        if (conn.db_type !== 'sqlite') {
+          data.host = conn.host; data.port = conn.port; data.username = conn.username;
+          data.password = conn.password; data.database_name = conn.database_name;
+          data.trust_server_cert = conn.trust_server_cert ? '1' : '0';
+        }
+        $.post('/dbman/query', data, function (res) {
+          if (res.code === 0) { $(rowEl).addClass('table-success').removeClass('table-warning'); }
+          else { $(rowEl).addClass('table-danger'); layer.msg(res.msg, { icon: 2 }); }
+        });
+      }
+      function renderDbManResult(data) {
+        dbManResultData = data;
+        if (!data || !data.columns || !data.columns.length) {
+          $('#dbmanSqlResult').html('<div class="text-muted">查詢完成，0 筆資料</div>');
+          return;
+        }
+        var table = dbmanCurrentTable || '';
+        var html = '<div class="d-flex justify-content-between align-items-center mb-1" style="font-size:.75rem">' +
+          '<span class="text-muted">回傳 ' + data.row_count + ' 筆 (' + data.elapsed_ms + 'ms)' + (table ? ' | 表: <code>' + escHtml(table) + '</code>' : '') + '</span>' +
+          '<span><button class="btn btn-sm btn-outline-info dbman-edit-toggle me-1" title="啟用/停用行內編輯"><i class="bx bx-edit-alt"></i></button>' +
+          '<button class="btn btn-sm btn-outline-success" onclick="dbManCsvExport()"><i class="bx bx-download me-1"></i>CSV</button></span></div>' +
+          '<div class="table-responsive" style="max-height:350px;overflow:auto"><table class="table table-sm table-bordered mb-0 dbman-result-table" style="font-size:.75rem"><thead><tr>';
+        data.columns.forEach(function (col, i) {
+          html += '<th class="dbman-sort-col" data-col="' + i + '" style="cursor:pointer;user-select:none">' + escHtml(col) + ' <span class="sort-icon" style="font-size:.6rem;opacity:.4">&#9650;&#9660;</span></th>';
+        });
+        html += '</tr></thead><tbody>';
+        data.rows.forEach(function (row, ri) {
+          html += '<tr class="dbman-row" data-row="' + ri + '">';
+          row.forEach(function (val, ci) {
+            var display = (val === null ? '<span class="text-muted">NULL</span>' : escHtml(String(val)));
+            html += '<td class="dbman-cell" data-row="' + ri + '" data-col="' + ci + '" data-val="' + (val === null ? '' : escHtml(String(val)).replace(/"/g, '&quot;')) + '">' + display + '</td>';
+          });
+          html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+        $('#dbmanSqlResult').html(html);
+      }
+      // Inline cell editing
+      $(document).on('dblclick', '.dbman-cell', function () {
+        if (!$('.dbman-edit-toggle').hasClass('active')) return;
+        var $td = $(this);
+        var currentVal = $td.data('val') || '';
+        var $input = $('<input type="text" class="form-control form-control-sm font-monospace" style="height:24px;min-width:80px" value="' + escHtml(String(currentVal)).replace(/"/g, '&quot;') + '">');
+        $td.html('').append($input);
+        $input.focus().select();
+        $input.on('blur', function () {
+          var newVal = $(this).val();
+          var $row = $td.closest('.dbman-row');
+          var rowIdx = $row.data('row');
+          var colIdx = $td.data('col');
+          if (newVal !== currentVal && dbmanCurrentTable && dbManResultData && dbManResultData.columns) {
+            var colName = dbManResultData.columns[colIdx];
+            var keyVal = dbManResultData.rows[rowIdx][0]; // First col as key
+            var keyCol = dbManResultData.columns[0];
+            $row.addClass('table-warning');
+            dbmanSaveCell(dbmanCurrentTable, colName, keyCol, keyVal, newVal, $row);
+            dbManResultData.rows[rowIdx][colIdx] = newVal;
+            $td.data('val', newVal);
+          }
+          $td.html(newVal === '' || newVal === null ? '<span class="text-muted">NULL</span>' : escHtml(String(newVal)));
+        });
+        $input.on('keydown', function (e) {
+          if (e.key === 'Enter') { $(this).blur(); }
+          if (e.key === 'Escape') { $td.html(currentVal === '' ? '<span class="text-muted">NULL</span>' : escHtml(currentVal)); }
+        });
+      });
+      // Toggle edit mode
+      $(document).on('click', '.dbman-edit-toggle', function () {
+        $(this).toggleClass('active').toggleClass('btn-outline-info btn-info');
+        layer.msg($(this).hasClass('active') ? '行內編輯已啟用 (雙擊儲存格)' : '行內編輯已停用', { icon: 1, time: 1200 });
+      });
+      // SQL editor expand/fullscreen
+      $(document).on('click', '.dbman-sql-expand', function () {
+        var $textarea = $('#dbmanSql');
+        var $modal = $('<div class="dbman-sql-modal"><div class="modal-header"><strong>SQL 編輯器</strong><button class="btn btn-sm btn-outline-secondary dbman-sql-close">&times;</button></div><textarea class="font-monospace">' + escHtml($textarea.val()) + '</textarea><div class="modal-footer"><button class="btn btn-sm btn-primary dbman-sql-modal-run">執行 (Ctrl+Enter)</button></div></div>');
+        $('body').append($modal);
+        var $modalTextarea = $modal.find('textarea');
+        $modalTextarea.focus();
+        $modal.find('.dbman-sql-close').on('click', function () {
+          $textarea.val($modalTextarea.val());
+          $modal.remove();
+        });
+        $modal.find('.dbman-sql-modal-run').on('click', function () {
+          $textarea.val($modalTextarea.val());
+          $modal.remove();
+          $('#dbmanRunSql').click();
+        });
+        $modalTextarea.on('keydown', function (e) {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            $modal.find('.dbman-sql-modal-run').click();
+          }
+          if (e.key === 'Escape') {
+            $textarea.val($modalTextarea.val());
+            $modal.remove();
+          }
+        });
+      });
+      // Sort by column click
+      $(document).on('click', '.dbman-sort-col', function () {
+        if (!dbManResultData) return;
+        var col = parseInt($(this).data('col'));
+        var ascending = $(this).hasClass('sorted-asc');
+        // Remove existing sort indicators
+        $('.dbman-sort-col').removeClass('sorted-asc sorted-desc').find('.sort-icon').html('&#9650;&#9660;');
+        $(this).addClass(ascending ? 'sorted-desc' : 'sorted-asc');
+        $(this).find('.sort-icon').html(ascending ? '&#9660;' : '&#9650;');
+        // Sort data
+        dbManResultData.rows.sort(function (a, b) {
+          var va = a[col], vb = b[col];
+          if (va === null && vb === null) return 0;
+          if (va === null) return 1; if (vb === null) return -1;
+          var sa = String(va), sb = String(vb);
+          var na = parseFloat(sa), nb = parseFloat(sb);
+          var cmp = (!isNaN(na) && !isNaN(nb)) ? na - nb : sa.localeCompare(sb);
+          return ascending ? -cmp : cmp;
+        });
+        renderDbManResult(dbManResultData);
+      });
+
+      // ─── Security event handlers ───
+      $('#secCvsPreviewBtn').on('click', function () {
+        var url = $('#secCvsUrl').val().trim();
+        if (!url) { layer.msg('請輸入 URL', { icon: 2 }); return; }
+        var data = { url: url, table_name: $('#secCvsTable').val().trim(), delimiter: $('#secCvsDelimiter').val(), has_header: $('#secCvsHeader').is(':checked') ? '1' : '0' };
+        logger.info('CVS 預覽', url);
+        $('#secCvsResult').html('<div class="text-muted">下載中...</div>');
+        $.post('/security/cvs/import', data, function (res) {
+          if (res.code !== 0) { $('#secCvsResult').html('<div class="text-danger">' + escHtml(res.msg) + '</div>'); return; }
+          var d = res.data;
+          var html = '<div class="text-success mb-1">共 ' + d.row_count + ' 筆, ' + d.columns.length + ' 欄</div><div class="table-responsive" style="max-height:300px;overflow:auto"><table class="table table-sm table-bordered mb-0" style="font-size:.7rem"><thead><tr>';
+          d.columns.forEach(function (c) { html += '<th>' + escHtml(c) + '</th>'; });
+          html += '</tr></thead><tbody>';
+          (d.preview || []).forEach(function (row) {
+            html += '<tr>';
+            row.forEach(function (v) { html += '<td>' + (v === null ? '<span class="text-muted">NULL</span>' : escHtml(String(v))) + '</td>'; });
+            html += '</tr>';
+          });
+          html += '</tbody></table></div>';
+          $('#secCvsResult').html(html);
+        });
+      });
+      $('#secCvsImportBtn').on('click', function () {
+        var url = $('#secCvsUrl').val().trim();
+        if (!url) { layer.msg('請輸入 URL', { icon: 2 }); return; }
+        var data = { url: url, table_name: $('#secCvsTable').val().trim(), delimiter: $('#secCvsDelimiter').val(), has_header: $('#secCvsHeader').is(':checked') ? '1' : '0' };
+        logger.info('CVS 匯入', url);
+        $('#secCvsResult').html('<div class="text-muted">下載並匯入中...</div>');
+        $.post('/security/cvs/save', data, function (res) {
+          if (res.code !== 0) { $('#secCvsResult').html('<div class="text-danger">' + escHtml(res.msg) + '</div>'); return; }
+          var d = res.data;
+          $('#secCvsResult').html('<div class="text-success">已匯入 ' + d.imported + ' 筆至資料表 ' + escHtml(d.table) + '</div>');
+        });
+      });
+      $('#secCvsSaveSourceBtn').on('click', function () {
+        var data = { name: $('#secCvsName').val().trim(), url: $('#secCvsUrl').val().trim(), table_name: $('#secCvsTable').val().trim(), delimiter: $('#secCvsDelimiter').val(), has_header: $('#secCvsHeader').is(':checked') ? '1' : '0' };
+        if (!data.name || !data.url) { layer.msg('請輸入名稱和 URL', { icon: 2 }); return; }
+        $.post('/security/cvs/sources', data, function (res) {
+          if (res.code === 0) { layer.msg('已儲存', { icon: 1 }); loadSecurityCvsSources(); }
+          else { layer.alert(res.msg); }
+        });
+      });
+      $(document).on('click', '.security-del-cvs', function () {
+        var id = $(this).data('id');
+        if (!confirm('確認刪除？')) return;
+        $.ajax({ url: '/security/cvs/sources/' + id, type: 'DELETE', dataType: 'json' }).done(function (r) { if (r.code === 0) { loadSecurityCvsSources(); } });
+      });
+      $('#secCvsRefreshSources').on('click', loadSecurityCvsSources);
+      // Scan
+      $('#secScanCreateBtn').on('click', function () {
+        var name = $('#secScanName').val().trim();
+        var target = $('#secScanTarget').val().trim();
+        var ports = $('#secScanPorts').val().trim();
+        var scanType = $('#secScanType').val();
+        if (!name || !target) { layer.msg('請輸入名稱和目標', { icon: 2 }); return; }
+        logger.info('建立掃描任務', name + ' -> ' + target);
+        $('#secScanResult').html('<div class="text-muted">建立中...</div>');
+        $.post('/security/scan/tasks', { name: name, target: target, ports: ports, scan_type: scanType }, function (res) {
+          if (res.code !== 0) { $('#secScanResult').html('<div class="text-danger">' + escHtml(res.msg) + '</div>'); return; }
+          var taskId = res.data.id;
+          $('#secScanResult').html('<div class="text-muted">掃描中...</div>');
+          $.post('/security/scan/tasks/' + taskId + '/run', {}, function (res2) {
+            if (res2.code !== 0) { $('#secScanResult').html('<div class="text-danger">' + escHtml(res2.msg) + '</div>'); return; }
+            var summary = res2.data.summary || '';
+            var results = res2.data.results || [];
+            var openResults = results.filter(function (r) { return r.state === 'open'; });
+            var html = '<div class="text-success mb-1">掃描完成！摘要: ' + escHtml(summary) + '</div>';
+            if (openResults.length) {
+              html += '<div class="table-responsive" style="max-height:300px;overflow:auto"><table class="table table-sm table-bordered mb-0" style="font-size:.7rem"><thead><tr><th>IP</th><th>Port</th><th>Service</th><th>Banner</th></tr></thead><tbody>';
+              openResults.forEach(function (r) {
+                html += '<tr><td><code>' + escHtml(r.ip) + '</code></td><td>' + r.port + '</td><td>' + escHtml(r.service || '-') + '</td><td>' + escHtml((r.banner || '').substring(0, 80)) + '</td></tr>';
+              });
+              html += '</tbody></table></div>';
+            }
+            $('#secScanResult').html(html);
+            loadSecurityScanTasks();
+          });
+        });
+      });
+      $(document).on('dblclick', '.dbman-conn-item', function () {
+        var conn = $(this).data('conn');
+        if (conn) showDbManConnForm(conn);
+      });
+      $(document).on('click', '.security-view-results', function () {
+        var id = $(this).data('id');
+        $.get('/security/scan/tasks/' + id + '/results', function (res) {
+          if (res.code !== 0) return;
+          var results = res.data || [];
+          var html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0" style="font-size:.7rem"><thead><tr><th>IP</th><th>Port</th><th>Protocol</th><th>Service</th><th>State</th><th>Banner</th></tr></thead><tbody>';
+          results.forEach(function (r) {
+            var stateCls = r.state === 'open' ? 'text-success' : r.state === 'filtered' ? 'text-warning' : 'text-muted';
+            html += '<tr><td><code>' + escHtml(r.ip) + '</code></td><td>' + r.port + '</td><td>' + r.protocol + '</td><td>' + escHtml(r.service || '-') + '</td><td class="' + stateCls + ' fw-bold">' + r.state + '</td><td>' + escHtml((r.banner || '').substring(0, 100)) + '</td></tr>';
+          });
+          html += '</tbody></table></div>';
+          var exportBtn = '<a href="/security/scan/tasks/' + id + '/export" class="btn btn-sm btn-outline-success mt-2 me-2" target="_blank"><i class="bx bx-download me-1"></i>匯出 CSV</a>';
+          var correlateBtn = '<button class="btn btn-sm btn-outline-warning mt-2 security-correlate-threats" data-task-id="' + id + '"><i class="bx bx-shield me-1"></i>比對威脅情資</button>';
+          layer.open({ title: '掃描結果', content: exportBtn + correlateBtn + html, area: ['860px', '70vh'], btn: ['OK'] });
+        });
+      });
+      $(document).on('click', '.security-correlate-threats', function () {
+        var taskId = $(this).data('task-id');
+        var btn = $(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>比對中...');
+        $.get('/security/scan/tasks/' + taskId + '/correlate', function (res) {
+          btn.remove();
+          if (res.code !== 0) { layer.msg(res.msg, { icon: 2 }); return; }
+          var matches = res.data || [];
+          if (!matches.length) { layer.msg('無相符威脅情資', { icon: 1 }); return; }
+          var html = '<div class="table-responsive"><table class="table table-sm table-bordered mb-0" style="font-size:.75rem"><thead><tr><th>IP</th><th>Port</th><th>Service</th><th>比對來源</th></tr></thead><tbody>';
+          matches.forEach(function (m) {
+            html += '<tr><td><code>' + escHtml(m.ip) + '</code></td><td>' + m.port + '</td><td>' + escHtml(m.service || '-') + '</td><td><span class="badge bg-label-danger">' + escHtml((m.matched_sources || []).join(', ')) + '</span></td></tr>';
+          });
+          html += '</tbody></table></div>';
+          layer.open({ title: '威脅情資比對結果 (' + matches.length + ' 項)', content: html, area: ['700px', '60vh'], btn: ['OK'] });
+        });
+      });
+      $(document).on('click', '.security-del-task', function () {
+        var id = $(this).data('id'); if (!confirm('確認刪除？')) return;
+        $.ajax({ url: '/security/scan/tasks/' + id, type: 'DELETE', dataType: 'json' }).done(function (r) { if (r.code === 0) loadSecurityScanTasks(); });
+      });
+      $('#secScanRefreshTasks').on('click', loadSecurityScanTasks);
+      $(document).on('shown.bs.tab', '#securityTabs .nav-link', function () {
+        if ($(this).attr('data-bs-target') === '#securityCvsPane') loadSecurityCvsSources();
+        if ($(this).attr('data-bs-target') === '#securityScanPane') loadSecurityScanTasks();
+      });
+
+      // ─── ApiMan event handlers ───
+      $(document).on('click', '#apimanCreateFirstWs', function () {
+        var name = prompt('請輸入工作區名稱:');
+        if (name && name.trim()) {
+          $.post(apimanUrl('/workspaces'), { name: name.trim() }, function (res) {
+            if (res.code === 0) { renderApiManTree(); layer.msg('工作區已建立', { icon: 1 }); }
+            else { layer.alert(res.msg); }
+          });
+        }
+      });
+      $(document).on('click', '.apiman-del-ws', function () {
+        var id = $(this).data('id');
+        if (!confirm('確認刪除此工作區及所有內容？')) return;
+        $.ajax({ url: apimanUrl('/workspaces/' + id), type: 'DELETE', dataType: 'json' })
+          .done(function (res) { if (res.code === 0) { renderApiManTree(); layer.msg('已刪除', { icon: 1 }); } });
+      });
+      $(document).on('click', '.apiman-ws-item', function () {
+        var wsId = $(this).data('ws-id');
+        var name = $(this).find('strong').text();
+        $('#apimanCurrentWsLabel').text(name);
+        renderApiManTreeForWs(wsId);
+      });
+      $(document).on('click', '.apiman-back-ws', function () { apimanCurrentWsId = null; renderApiManTree(); });
+
+      // ─── ApiMan export/import ───
+      $(document).on('click', '.apiman-export-ws', function () {
+        var wsId = $(this).data('ws');
+        $.get('/apiman/workspaces/export/' + wsId, function (res) {
+          if (res.code !== 0) { layer.alert(res.msg); return; }
+          var json = JSON.stringify(res.data, null, 2);
+          copyText($, json);
+          layer.open({
+            title: '匯出工作區',
+            content: '<pre class="modal-pre">' + escHtml(json.substring(0, 2000)) + (json.length > 2000 ? '\n... (已複製至剪貼簿)' : '') + '</pre>',
+            btn: ['下載 JSON', '確定'],
+            btn1: function () {
+              var blob = new Blob([json], { type: 'application/json' });
+              var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'workspace.json'; a.click();
+              _hideModal();
+            },
+            btn2: function () { _hideModal(); }
+          });
+          logger.debug('ApiMan workspace exported', wsId);
+        });
+      });
+      $(document).on('click', '#apimanImportBtn', function () {
+        var input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+        input.onchange = function (e) {
+          var file = e.target.files[0]; if (!file) return;
+          var reader = new FileReader();
+          reader.onload = function (ev) {
+            var data = ev.target.result;
+            $.post('/apiman/workspaces/import', { data: data }, function (res) {
+              if (res.code === 0) { layer.msg('工作區已匯入', { icon: 1 }); renderApiManTree(); }
+              else { layer.alert(res.msg); }
+            });
+          };
+          reader.readAsText(file);
+        };
+        input.click();
+      });
+
+      // ─── ApiMan Auth toggle ───
+      $('#apimanAuthType').on('change', function () {
+        var t = $(this).val();
+        $('#apimanAuthBadge').text(t === 'none' ? 'none' : t).removeClass('bg-label-secondary bg-label-warning bg-label-info bg-label-primary')
+          .addClass(t === 'none' ? 'bg-label-secondary' : 'bg-label-warning');
+        $('#apimanAuthBasic,#apimanAuthBearer,#apimanAuthApiKey').hide();
+        if (t === 'basic') $('#apimanAuthBasic').show();
+        if (t === 'bearer') $('#apimanAuthBearer').show();
+        if (t === 'apikey') $('#apimanAuthApiKey').show();
+      });
+
+      // ─── ApiMan variable event handlers ───
+      $(document).on('click', '#apimanAddVar', function () {
+        $('#apimanVarsList').append(
+          '<div class="row g-1 mb-1 apiman-var-row">' +
+          '<div class="col-1"><input type="checkbox" class="form-check-input apiman-var-enabled" checked></div>' +
+          '<div class="col-4"><input type="text" class="form-control form-control-sm font-monospace apiman-var-key" placeholder="Key"></div>' +
+          '<div class="col-5"><input type="text" class="form-control form-control-sm font-monospace apiman-var-value" placeholder="Value"></div>' +
+          '<div class="col-2"><button class="btn btn-sm btn-outline-danger apiman-var-del"><i class="bx bx-x"></i></button></div></div>'
+        );
+      });
+      $(document).on('click', '.apiman-var-del', function () {
+        var key = $(this).data('key');
+        if (key && apimanCurrentWsId) {
+          $.ajax({ url: apimanUrl('/variables/' + apimanCurrentWsId + '/' + encodeURIComponent(key)), type: 'DELETE', dataType: 'json' })
+            .done(function () { loadApiManVars(); });
+        } else {
+          $(this).closest('.apiman-var-row').remove();
+        }
+      });
+      $('#apimanSaveVars').on('click', function () {
+        if (!apimanCurrentWsId) { layer.msg('請先選擇工作區', { icon: 2 }); return; }
+        var rows = $('.apiman-var-row');
+        var count = 0;
+        rows.each(function () {
+          var key = $(this).find('.apiman-var-key').val().trim();
+          if (!key) return;
+          var value = $(this).find('.apiman-var-value').val();
+          var enabled = $(this).find('.apiman-var-enabled').is(':checked') ? '1' : '0';
+          $.ajax({
+            url: apimanUrl('/variables/' + apimanCurrentWsId),
+            type: 'POST',
+            data: { key: key, value: value, enabled: enabled },
+            dataType: 'json',
+            async: false
+          });
+          count++;
+        });
+        loadApiManVars();
+        layer.msg('已儲存 ' + count + ' 個變數', { icon: 1 });
+        logger.debug('ApiMan 變數已儲存', count + ' vars');
+      });
+
+      // ─── ApiMan click variable hint to insert into URL ───
+      $(document).on('click', '.apiman-var-insert', function () {
+        var key = $(this).data('key');
+        var input = document.getElementById('apimanUrl');
+        var start = input.selectionStart || 0;
+        var val = input.value;
+        input.value = val.substring(0, start) + '{{' + key + '}}' + val.substring(input.selectionEnd || start);
+        input.focus();
+        var pos = start + key.length + 4;
+        input.setSelectionRange(pos, pos);
+      });
+
+      // ─── ApiMan inline rename (double-click to rename folders) ───
+      $(document).on('dblclick', '.apiman-folder-header > span', function () {
+        var $item = $(this).closest('[data-node-id]');
+        var nodeId = $item.data('node-id');
+        var currentText = $(this).text().trim();
+        var $input = $('<input type="text" class="form-control form-control-sm font-monospace" style="height:24px;font-size:.8125rem;width:140px;display:inline-block" value="' + escHtml(currentText) + '">');
+        var $span = $(this);
+        $input.on('blur', function () {
+          var newName = $(this).val().trim();
+          if (newName && newName !== currentText) {
+            $.ajax({ url: '/apiman/nodes/' + nodeId, type: 'PUT', data: { name: newName }, dataType: 'json' })
+              .done(function (res) { if (res.code === 0) { var wsId = $('.apiman-add-req').data('ws'); if (wsId) renderApiManTreeForWs(wsId); } });
+          } else {
+            $span.text(currentText);
+          }
+        });
+        $input.on('keydown', function (e) {
+          if (e.key === 'Enter') { $(this).blur(); }
+          if (e.key === 'Escape') { $span.text(currentText); $(this).remove(); }
+        });
+        $span.empty().append($input);
+        $input.focus().select();
+      });
+
+      // ─── ApiMan drag & drop ───
+      $(document).on('dragstart', '.apiman-folder-header, .apiman-req-item', function (e) {
+        apimanDragNodeId = $(this).closest('[data-node-id]').data('node-id');
+        e.originalEvent.dataTransfer.effectAllowed = 'move';
+        e.originalEvent.dataTransfer.setData('text/plain', String(apimanDragNodeId));
+        $(this).closest('[data-node-id]').css('opacity', '0.4');
+      });
+      $(document).on('dragend', '.apiman-folder-header, .apiman-req-item', function () {
+        $('[data-node-id]').css('opacity', '');
+        $('.apiman-drop-zone').css({'background':'','outline':''});
+        apimanDragNodeId = null;
+      });
+      $(document).on('dragover', '.apiman-drop-zone, .apiman-folder-header, .apiman-req-item', function (e) {
+        e.preventDefault();
+        e.originalEvent.dataTransfer.dropEffect = 'move';
+        var $target = $(this).closest('.apiman-drop-zone').length ? $(this).closest('.apiman-drop-zone') : $(this);
+        $target.css({'background':'rgba(13,110,253,0.08)','outline':'2px dashed #0d6efd'});
+      });
+      $(document).on('dragleave', '.apiman-drop-zone, .apiman-folder-header, .apiman-req-item', function () {
+        $(this).closest('.apiman-drop-zone').css({'background':'','outline':''});
+      });
+      $(document).on('drop', '.apiman-drop-zone, .apiman-folder-header, .apiman-req-item', function (e) {
+        e.preventDefault();
+        $('.apiman-drop-zone').css({'background':'','outline':''});
+        var draggedId = apimanDragNodeId;
+        if (!draggedId) return;
+
+        // Determine target parent
+        var $zone = $(this).closest('.apiman-drop-zone');
+        var newParentId = $zone.data('parent-id') || null;
+        if (newParentId && newParentId == draggedId) return; // Can't drop on self
+
+        // Get workspace id from the add-req button
+        var wsId = $('.apiman-add-req').data('ws');
+        if (!wsId) return;
+
+        logger.info('ApiMan 移動節點', 'node=' + draggedId + ' -> parent=' + newParentId);
+        $.post('/apiman/nodes/' + draggedId + '/move', { parent_id: newParentId || '', sort_order: 0 }, function (res) {
+          if (res.code === 0) { renderApiManTreeForWs(wsId); }
+          else { layer.alert(res.msg); }
+        });
+        apimanDragNodeId = null;
+      });
+      $(document).on('click', '.apiman-add-folder', function () {
+        var wsId = $(this).data('ws');
+        var name = prompt('資料夾名稱:');
+        if (name && name.trim()) {
+          $.post(apimanUrl('/nodes'), { workspace_id: wsId, name: name.trim(), node_type: 'folder' }, function (res) {
+            if (res.code === 0) { renderApiManTreeForWs(wsId); }
+            else { layer.alert(res.msg); }
+          });
+        }
+      });
+      $(document).on('click', '.apiman-add-req', function () {
+        var wsId = $(this).data('ws');
+        var name = prompt('Request 名稱:');
+        if (name && name.trim()) {
+          $.post(apimanUrl('/nodes'), { workspace_id: wsId, name: name.trim(), node_type: 'request' }, function (res) {
+            if (res.code === 0) { renderApiManTreeForWs(wsId); }
+            else { layer.alert(res.msg); }
+          });
+        }
+      });
+      $(document).on('click', '.apiman-req-item', function () {
+        var nodeId = $(this).data('node-id');
+        loadApiManRequest(nodeId);
+      });
+      $(document).on('click', '.apiman-copy-node', function (e) {
+        e.stopPropagation();
+        var id = $(this).data('id');
+        $.post(apimanUrl('/nodes/' + id + '/copy'), {}, function (res) {
+          if (res.code === 0) {
+            var wsId = $('.apiman-add-req').data('ws');
+            if (wsId) renderApiManTreeForWs(wsId);
+            layer.msg('已複製', { icon: 1 });
+          } else { layer.alert(res.msg); }
+        });
+      });
+      $(document).on('click', '.apiman-del-node', function (e) {
+        e.stopPropagation();
+        var id = $(this).data('id');
+        if (!confirm('確認刪除？')) return;
+        $.ajax({ url: apimanUrl('/nodes/' + id), type: 'DELETE', dataType: 'json' })
+          .done(function (res) { if (res.code === 0) { if (apimanCurrentNodeId === id) { $('#apimanRequestCard').hide(); $('#apimanEmptyState').show(); } renderApiManTreeForWs($('.apiman-add-req').data('ws')); } });
+      });
+      $(document).on('click', '#apimanAddParam', function () { addApiManKvRow('#apimanParamsList', 'apimanParam'); });
+      $(document).on('click', '#apimanAddHeader', function () { addApiManKvRow('#apimanHeadersList', 'apimanHeader'); });
+      function addApiManKvRow(containerId, prefix) {
+        $(containerId).append(
+          '<div class="row g-1 mb-1 apiman-kv-row">' +
+          '<div class="col-1"><input type="checkbox" class="form-check-input apiman-kv-enabled" checked></div>' +
+          '<div class="col-4"><input type="text" class="form-control form-control-sm font-monospace apiman-kv-key" placeholder="Key"></div>' +
+          '<div class="col-5"><input type="text" class="form-control form-control-sm font-monospace apiman-kv-value" placeholder="Value"></div>' +
+          '<div class="col-2"><button class="btn btn-sm btn-outline-danger apiman-kv-del"><i class="bx bx-x"></i></button></div></div>'
+        );
+      }
+      $(document).on('click', '.apiman-kv-del', function () { $(this).closest('.apiman-kv-row').remove(); });
+      $('#apimanHistoryBtn').on('click', function () { if (apimanCurrentNodeId) loadApiManHistory(apimanCurrentNodeId); });
+      $(document).on('click', '.apiman-view-history', function () {
+        try {
+          var data = JSON.parse($(this).data('body'));
+          var html = '<div class="mb-1"><strong>Status:</strong> ' + data.status + '</div>' +
+            (data.headers ? '<div class="mb-1"><strong>Headers:</strong><pre style="font-size:.7rem;max-height:150px;overflow:auto">' + escHtml(data.headers) + '</pre></div>' : '') +
+            (data.body ? '<div><strong>Body:</strong><pre style="font-size:.7rem;max-height:300px;overflow:auto">' + escHtml(data.body) + '</pre></div>' : '');
+          layer.open({ title: 'Response #' + data.id, content: html, area: ['700px', '70vh'], btn: ['OK'] });
+        } catch(e) { layer.msg('Error loading response'); }
+      });
+      $('#apimanSaveReqBtn').on('click', function () {
+        var nodeId = apimanCurrentNodeId;
+        if (!nodeId) return;
+        var data = {
+          method: $('#apimanMethod').val(),
+          url: $('#apimanUrl').val().trim(),
+          query_params: collectApiManKv('apimanParam'),
+          headers: collectApiManKv('apimanHeader'),
+          body_type: $('#apimanBodyType').val(),
+          body_content: $('#apimanBody').val(),
+          auth_config: collectApiManAuth()
+        };
+        logger.info('儲存 ApiMan Request', data.method + ' ' + data.url);
+        $.ajax({ url: apimanUrl('/requests/' + nodeId), type: 'PUT', data: data, dataType: 'json' })
+          .done(function (res) { if (res.code === 0) { layer.msg('已儲存', { icon: 1 }); } else { layer.alert(res.msg); } });
+      });
+      $('#apimanSendBtn').on('click', function () {
+        var nodeId = apimanCurrentNodeId;
+        if (!nodeId) return;
+        var data = {
+          method: $('#apimanMethod').val(),
+          url: $('#apimanUrl').val().trim(),
+          query_params: collectApiManKv('apimanParam'),
+          headers: collectApiManKv('apimanHeader'),
+          body_type: $('#apimanBodyType').val(),
+          body_content: $('#apimanBody').val(),
+          auth_config: collectApiManAuth()
+        };
+        // Save first, then send
+        $.ajax({ url: apimanUrl('/requests/' + nodeId), type: 'PUT', data: data, dataType: 'json' })
+          .done(function () {
+            logger.info('送出 ApiMan Request', data.method + ' ' + data.url);
+            $('#apimanResponse').html('<div class="text-muted">發送中...</div>');
+            $.post(apimanUrl('/requests/' + nodeId + '/send'), {}, function (res) {
+              if (res.code !== 0) { $('#apimanResponse').html('<pre class="text-danger p-2" style="font-size:.75rem">' + escHtml(res.msg) + '</pre>'); return; }
+              var r = res.data;
+              var statusCls = r.status >= 200 && r.status < 300 ? 'text-success' : r.status >= 400 ? 'text-danger' : 'text-warning';
+              var html = '<div class="border rounded p-2 mt-2" style="font-size:.75rem;background:var(--bs-tertiary-bg)">' +
+                '<div class="mb-1"><strong>Status: </strong><span class="' + statusCls + ' fw-bold">' + (r.status || '?') + '</span></div>' +
+                (r.headers ? '<div class="mb-1"><strong>Headers:</strong><pre style="font-size:.6875rem;max-height:150px;overflow:auto">' + escHtml(r.headers) + '</pre></div>' : '') +
+                (r.body ? '<div><strong>Body:</strong><pre style="font-size:.6875rem;max-height:300px;overflow:auto">' + escHtml(r.body) + '</pre></div>' : '') +
+                '</div>';
+              $('#apimanResponse').html(html);
+              logger.debug('ApiMan Response', 'Status=' + r.status);
+            });
+          });
+      });
+
+      // ─── Tools event handlers ───
+      function toolsRun(endpoint, data, outputId) {
+        var $out = $(outputId);
+        $out.text('執行中...');
+        var base = '/tools';
+        $.post(base + '/' + endpoint, data, function (res) {
+          var text = res.output || res.error || JSON.stringify(res, null, 2);
+          $out.text(text);
+          logger.debug('工具執行結果: ' + endpoint, text.substring(0, 200));
+        }, 'json').fail(function (xhr) {
+          $out.text('請求失敗: ' + (xhr.responseText || xhr.statusText));
+        });
+      }
+      $('#toolsPingBtn').on('click', function () {
+        var host = $('#toolsPingHost').val().trim();
+        if (!host) { layer.msg('請輸入目標主機', { icon: 2 }); return; }
+        toolsRun('ping', { host: host, count: $('#toolsPingCount').val(), timeout: $('#toolsPingTimeout').val() }, '#toolsPingOutput');
+      });
+      $('#toolsLsofBtn').on('click', function () {
+        toolsRun('lsof', { port: $('#toolsLsofPort').val() || '', protocol: $('#toolsLsofProtocol').val() }, '#toolsLsofOutput');
+      });
+      $('#toolsTracerouteBtn').on('click', function () {
+        var host = $('#toolsTraceHost').val().trim();
+        if (!host) { layer.msg('請輸入目標主機', { icon: 2 }); return; }
+        toolsRun('traceroute', { host: host, max_hops: $('#toolsTraceHops').val() }, '#toolsTracerouteOutput');
+      });
+      $('#toolsNslookupBtn').on('click', function () {
+        var domain = $('#toolsNslookupDomain').val().trim();
+        if (!domain) { layer.msg('請輸入網域名稱', { icon: 2 }); return; }
+        toolsRun('nslookup', { domain: domain, dns_server: $('#toolsNslookupDns').val().trim() || '' }, '#toolsNslookupOutput');
+      });
+      $('#toolsIpLocBtn').on('click', function () {
+        var ip = $('#toolsIpLocIp').val().trim();
+        var base = '/tools';
+        $.post(base + '/ip-location', { ip: ip || '' }, function (res) {
+          if (res.data) {
+            var d = res.data;
+            var status = d.status === 'success' ? '<span class="badge bg-label-success">成功</span>' : '<span class="badge bg-label-danger">失敗</span>';
+            $('#toolsIpLocResult').html(
+              '<div class="card"><div class="card-body p-3">' +
+                '<div class="row g-2">' +
+                  '<div class="col-12">狀態: ' + status + '</div>' +
+                  (d.country ? '<div class="col-md-4"><strong>國家</strong><br>' + d.country + '</div>' : '') +
+                  (d.regionName ? '<div class="col-md-4"><strong>區域</strong><br>' + d.regionName + '</div>' : '') +
+                  (d.city ? '<div class="col-md-4"><strong>城市</strong><br>' + d.city + '</div>' : '') +
+                  (d.isp ? '<div class="col-md-4"><strong>ISP</strong><br>' + d.isp + '</div>' : '') +
+                  (d.org ? '<div class="col-md-4"><strong>組織</strong><br>' + d.org + '</div>' : '') +
+                  (d.as ? '<div class="col-md-4"><strong>AS</strong><br>' + d.as + '</div>' : '') +
+                  (d.query ? '<div class="col-md-4"><strong>查詢 IP</strong><br><code>' + d.query + '</code></div>' : '') +
+                '</div>' +
+              '</div></div>'
+            );
+          } else {
+            $('#toolsIpLocResult').html('<pre class="tools-output" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px">' + escHtml(res.error || JSON.stringify(res, null, 2)) + '</pre>');
+          }
+          logger.debug('IP 位置查詢結果', JSON.stringify(res.data || res));
+        }, 'json');
+      });
+      $('#toolsNetstatBtn').on('click', function () {
+        var $out = $('#toolsNetstatOutput');
+        $out.text('執行中...');
+        $.post('/tools/netstat', {}, function (res) {
+          var text = res.output || res.error || JSON.stringify(res, null, 2);
+          $out.text(text);
+          if (res.command) $('.tools-netstat-cmd-badge').text('命令: ' + res.command);
+          logger.debug('Netstat 執行結果', (res.command || '') + ' ' + text.substring(0, 200));
+        }, 'json');
+      });
+
+      $(document).on('shown.bs.tab', '#nginxTabs .nav-link', function () {
+        var target = $(this).attr('data-bs-target');
+        if (target === '#nginxEnvPane') loadNginxEnv();
+        if (target === '#nginxSitesPane') { resetNginxSiteForm(); loadNginxSites(); }
+        if (target === '#nginxModulesPane') loadNginxModules();
       });
     });
 

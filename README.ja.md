@@ -1,4 +1,4 @@
-# MiCopa ファイアウォール管理コンソール
+# Miitai ファイアウォール管理コンソール
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -66,8 +66,8 @@ cd backend && cargo build --release
 ## Docker
 
 ```bash
-docker build -t micopa/firewall-man:0.1.0 .
-docker run -d --network host --privileged micopa/firewall-man:0.1.0
+docker build -t Miitai/firewall-man:0.1.0 .
+docker run -d --network host --privileged Miitai/firewall-man:0.1.0
 ```
 
 > 注: `--privileged` または `CAP_NET_ADMIN` ケイパビリティが必要です。これらがないとファイアウォールコマンドが拒否されます。
@@ -111,7 +111,7 @@ docker run -d --network host --privileged micopa/firewall-man:0.1.0
 ## ディレクトリ構成
 
 ```
-89.MiCopa-firewall-admin/
+89.Miitai-firewall-admin/
 ├── Cargo.toml            # Rust プロジェクト設定
 ├── build.rs              # ビルドスクリプト（バージョン情報）
 ├── src/
@@ -208,7 +208,7 @@ make test
 make check
 
 # Docker イメージ（Linux のみ）
-docker build -t micopa/firewall-man:0.1.0 .
+docker build -t Miitai/firewall-man:0.1.0 .
 ```
 
 > **注**: macOS では pfctl 操作に `sudo` 権限が必要です。Windows では PowerShell NetSecurity コマンドレットに管理者権限が必要です。

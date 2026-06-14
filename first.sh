@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ============================================================
-# first.sh — MiCopa firewall-man 一次性安裝編譯腳本 (Ubuntu)
+# first.sh — Miitai firewall-man 一次性安裝編譯腳本 (Ubuntu)
 # ============================================================
 # 用法:
 #   chmod +x first.sh && sudo ./first.sh
@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "========================================"
-echo " MiCopa firewall-man 安裝腳本"
+echo " Miitai firewall-man 安裝腳本"
 echo " 目標目錄: $SCRIPT_DIR"
 echo "========================================"
 echo ""

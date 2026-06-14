@@ -1,4 +1,4 @@
-# MiCopa Firewall Management Platform User Guide
+# Miitai Firewall Management Platform User Guide
 
 This guide is intended for administrators who need to deploy and use the firewall management platform on a daily basis. It covers the system features, installation methods, configuration, and basic operation procedures for both the Web UI and REST API.
 
@@ -47,7 +47,7 @@ docker run -d \
 
 ```bash
 git clone <repository-url>
-cd 89.MiCopa-firewall-admin
+cd 89.Miitai-firewall-admin
 cd backend && cargo build --release   # produces backend/target/release/firewall-man
 sudo ./firewall-man -a :10001 -u admin -p admin
 ```

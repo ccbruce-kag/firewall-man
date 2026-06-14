@@ -1,4 +1,4 @@
-# MiCopa 防火牆管理平臺
+# Miitai 網路與安全工具管理平臺
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -68,8 +68,8 @@ cd backend && cargo build --release
 ## Docker
 
 ```bash
-docker build -t micopa/firewall-man:0.1.0 .
-docker run -d --network host --privileged micopa/firewall-man:0.1.0
+docker build -t Miitai/firewall-man:0.1.0 .
+docker run -d --network host --privileged Miitai/firewall-man:0.1.0
 ```
 
 > 注意：需使用 `--privileged` 或以 `CAP_NET_ADMIN` 執行，否則防火牆命令將被拒絕。

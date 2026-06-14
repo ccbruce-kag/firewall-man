@@ -1,6 +1,6 @@
-# MiCopa 防火牆管理平臺使用說明
+# Miitai 網路與安全工具管理平臺使用說明
 
-本文面向需要部署和日常使用防火牆管理平臺的管理員，介紹系統功能、安裝方式、配置方法以及 Web/REST 接口的基本操作流程。
+本文面向需要部署和日常使用網路與安全工具管理平臺的管理員，介紹系統功能、安裝方式、配置方法以及 Web/REST 接口的基本操作流程。
 
 ## 1. 功能概覽
 
@@ -47,7 +47,7 @@ docker run -d \
 
 ```bash
 git clone &lt;repository-url&gt;
-cd 89.MiCopa-firewall-admin
+cd 89.Miitai-firewall-admin
 make release   # 生成 ./firewall-man
 sudo ./firewall-man -a :10001 -u admin -p admin
 ```

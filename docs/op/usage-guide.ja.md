@@ -1,4 +1,4 @@
-# MiCopa ファイアウォール管理プラットフォーム ユーザーガイド
+# Miitai ファイアウォール管理プラットフォーム ユーザーガイド
 
 本ガイドは、ファイアウォール管理プラットフォームを日常的に運用・管理する管理者向けのドキュメントです。システム機能、インストール方法、設定方法、Web UI と REST API の基本的な操作手順を説明します。
 
@@ -47,7 +47,7 @@ docker run -d \
 
 ```bash
 git clone <repository-url>
-cd 89.MiCopa-firewall-admin
+cd 89.Miitai-firewall-admin
 cd backend && cargo build --release   # backend/target/release/firewall-man を生成
 sudo ./firewall-man -a :10001 -u admin -p admin
 ```

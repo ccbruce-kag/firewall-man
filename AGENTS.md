@@ -2,7 +2,7 @@
 
 ## 專案定位
 
-`89.MiCopa-firewall-man` 為 MiCopa 系統中的防火牆網頁管理工具，以 Rust 實作替代原 Golang 版本。
+`89.Miitai-firewall-man` 為 Miitai 系統中的防火牆網頁管理工具，以 Rust 實作替代原 Golang 版本。
 支援 **Linux (iptables)**、**macOS (pfctl)** 與 **Windows (PowerShell NetSecurity)** 三平台。
 
 - 提供 Web GUI 管理防火牆規則。
@@ -16,13 +16,15 @@
 ## 目錄結構
 
 ```
-89.MiCopa-firewall-man/
+89.Miitai-firewall-man/
 ├── backend/
 │   ├── Cargo.toml        # Rust 專案設定
 │   ├── build.rs          # 建置腳本（版本資訊）
 │   ├── src/
 │   │   ├── main.rs       # 程式入口：CLI 參數、環境變數、平台偵測、初始化
 │   │   ├── server.rs     # HTTP 路由、中間層、請求處理（通用 FirewallCmd trait）
+│   │   ├── nginx/
+│   │   │   └── mod.rs    # Nginx 設定管理（環境、網站、模組）
 │   │   ├── system.rs     # 系統資訊收集（hostname, memory, disk, process）
 │   │   ├── firewall/
 │   │   │   └── mod.rs    # FirewallCmd trait 定義（通用防火牆抽象介面）

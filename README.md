@@ -1,4 +1,4 @@
-# MiCopa Firewall Admin Console
+# Miitai Firewall Admin Console
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -66,8 +66,8 @@ After starting, open your browser and visit `http://<host-ip>:10001`.
 ## Docker
 
 ```bash
-docker build -t micopa/firewall-man:0.1.0 .
-docker run -d --network host --privileged micopa/firewall-man:0.1.0
+docker build -t Miitai/firewall-man:0.1.0 .
+docker run -d --network host --privileged Miitai/firewall-man:0.1.0
 ```
 
 > Note: Requires `--privileged` or `CAP_NET_ADMIN` capability, otherwise firewall commands will be rejected.
@@ -111,7 +111,7 @@ docker run -d --network host --privileged micopa/firewall-man:0.1.0
 ## Directory Structure
 
 ```
-89.MiCopa-firewall-admin/
+89.Miitai-firewall-admin/
 ├── Cargo.toml            # Rust project configuration
 ├── build.rs              # Build script (version info)
 ├── src/
@@ -208,7 +208,7 @@ make test
 make check
 
 # Docker image (Linux only)
-docker build -t micopa/firewall-man:0.1.0 .
+docker build -t Miitai/firewall-man:0.1.0 .
 ```
 
 > **Note**: macOS requires `sudo` for pfctl operations; Windows requires Administrator privileges for PowerShell NetSecurity cmdlets.
