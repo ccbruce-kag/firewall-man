@@ -32,7 +32,7 @@ use std::sync::Arc;
 static ARGS_VERIFY: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[0-9A-z-_]+$").unwrap());
 
 #[derive(RustEmbed)]
-#[folder = "../web"]
+#[folder = "../run/web"]
 struct WebAssets;
 
 #[derive(RustEmbed)]
@@ -2491,7 +2491,7 @@ async fn handle_health() -> Json<Value> {
 
 // ---- Static File Handlers ----
 
-async fn handle_web_assets(Path(path): Path<String>) -> impl IntoResponse {
+fn embedded_asset_response(path: &str) -> Response {
     let path = path.trim_start_matches('/');
     match WebAssets::get(path) {
         Some(content) => {
@@ -2515,6 +2515,22 @@ async fn handle_web_assets(Path(path): Path<String>) -> impl IntoResponse {
         }
         None => (StatusCode::NOT_FOUND, "Not Found").into_response(),
     }
+}
+
+async fn handle_web_assets(Path(path): Path<String>) -> Response {
+    embedded_asset_response(&path)
+}
+
+async fn handle_assets(Path(path): Path<String>) -> Response {
+    embedded_asset_response(&format!("assets/{path}"))
+}
+
+async fn handle_sneat_assets(Path(path): Path<String>) -> Response {
+    embedded_asset_response(&format!("sneat/{path}"))
+}
+
+async fn handle_layui_assets(Path(path): Path<String>) -> Response {
+    embedded_asset_response(&format!("layui/{path}"))
 }
 
 async fn handle_index() -> impl IntoResponse {
@@ -2589,12 +2605,35 @@ async fn handle_favicon() -> impl IntoResponse {
     StatusCode::OK
 }
 
+async fn handle_app_js() -> Response {
+    embedded_asset_response("app.js")
+}
+
+async fn handle_env_js() -> Response {
+    embedded_asset_response("env.js")
+}
+
+async fn handle_icons_svg() -> Response {
+    embedded_asset_response("icons.svg")
+}
+
+async fn handle_favicon_svg() -> Response {
+    embedded_asset_response("favicon.svg")
+}
+
 // ---- Router Builder ----
 
 pub fn build_router(state: Arc<AppState>) -> Router {
     // Split routes into API (prefixed) and Web (non-prefixed)
     let web_routes = Router::new()
         .route("/web/*path", get(handle_web_assets))
+        .route("/assets/*path", get(handle_assets))
+        .route("/sneat/*path", get(handle_sneat_assets))
+        .route("/layui/*path", get(handle_layui_assets))
+        .route("/app.js", get(handle_app_js))
+        .route("/env.js", get(handle_env_js))
+        .route("/icons.svg", get(handle_icons_svg))
+        .route("/favicon.svg", get(handle_favicon_svg))
         .route("/health", get(handle_health))
         .route("/activity", get(handle_activity))
         .route("/platform", get(handle_platform))

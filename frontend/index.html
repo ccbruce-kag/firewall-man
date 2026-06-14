@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh" class="layout-menu-fixed layout-compact" data-assets-path="/sneat/">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+  <title>網路與安全工具管理平臺</title>
+  <link rel="icon" type="image/x-icon" href="/sneat/assets/img/favicon/favicon.ico" />
+  <link rel="stylesheet" href="/sneat/assets/vendor/fonts/iconify-icons.css" />
+  <link rel="stylesheet" href="/sneat/assets/vendor/css/core.css" />
+  <link rel="stylesheet" href="/sneat/assets/css/demo.css" />
+  <link rel="stylesheet" href="/sneat/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+  <link rel="stylesheet" href="/sneat/libs/xterm/xterm.min.css" />
+  <script src="/env.js"></script>
+  <script>
+    (function () {
+      if (window.__fwmMenuFallbackInstalled) return;
+      window.__fwmMenuFallbackInstalled = true;
+      document.addEventListener('click', function (event) {
+        var target = event.target && event.target.closest ? event.target.closest('#layout-menu .menu-toggle') : null;
+        if (!target) return;
+        event.preventDefault();
+        event.stopPropagation();
+        var item = target.closest('.menu-item');
+        if (!item) return;
+        var root = item.parentElement;
+        if (root && root.classList.contains('menu-inner')) {
+          root.querySelectorAll(':scope > .menu-item.open').forEach(function (openItem) {
+            if (openItem !== item) openItem.classList.remove('open');
+          });
+        }
+        item.classList.toggle('open');
+        console.log('[fwm-menu] toggled', target.textContent.trim(), item.classList.contains('open'));
+      }, true);
+      var menuViews = {
+        menuDashLink: ['dashboard', '一般性儀表板', 'bx-bar-chart-alt-2'],
+        menuTablesLink: ['tables', '防火牆管理', 'bx-shield-quarter'],
+        menuJuniperLink: ['juniper', 'Juniper 設定', 'bx-network-chart'],
+        menuHaproxyLink: ['haproxy', 'HaProxy 管理', 'bx-transfer'],
+        menuNginxLink: ['nginx', 'Nginx 管理', 'bx-windows'],
+        menuNetplanLink: ['netplan', 'Netplan 設定', 'bx-wifi'],
+        menuSysLink: ['system', '系統現況', 'bx-desktop'],
+        menuToolsLink: ['tools', '工具集合', 'bx-wrench'],
+        menuShellLink: ['shell', 'Shell', 'bx-terminal'],
+        menuAILink: ['ai', 'AI 助手', 'bx-bot'],
+        menuApiManNewLink: ['apiman', 'ApiMan', 'bx-link'],
+        menuDbManNewLink: ['dbman', 'DbMan', 'bx-data'],
+        menuSecurityCvsLink: ['security', '資安', 'bx-shield'],
+        menuSecurityScanLink: ['security', '資安', 'bx-shield']
+      };
+      function directSwitchView(mode, label, icon, linkId) {
+        if (typeof window.fwmSwitchView === 'function') {
+          window.fwmSwitchView(mode);
+          return;
+        }
+        var tabBar = document.getElementById('tabBar');
+        var view = document.getElementById(mode + 'View');
+        if (!tabBar || !view) {
+          console.warn('[fwm-menu] view not ready', mode);
+          return;
+        }
+        document.querySelectorAll('.tab-content-pane').forEach(function (pane) {
+          pane.classList.remove('active');
+          pane.style.display = 'none';
+        });
+        [
+          'dashboard','tables','system','juniper','haproxy','nginx','netplan',
+          'apiman','dbman','security','tools','ai','shell'
+        ].forEach(function (viewMode) {
+          var el = document.getElementById(viewMode + 'View');
+          if (el) el.style.display = 'none';
+        });
+        var paneId = 'tabView_' + mode;
+        var pane = document.getElementById(paneId);
+        if (!pane) {
+          pane = document.createElement('div');
+          pane.id = paneId;
+          pane.className = 'tab-content-pane';
+          view.parentNode.insertBefore(pane, view);
+          pane.appendChild(view);
+        }
+        pane.classList.add('active');
+        pane.style.display = 'block';
+        view.style.display = '';
+        document.querySelectorAll('#tabBar .tab-item').forEach(function (tab) {
+          tab.classList.remove('active');
+        });
+        var tab = tabBar.querySelector('.tab-item[data-mode="' + mode + '"]');
+        if (!tab) {
+          tab = document.createElement('div');
+          tab.className = 'tab-item';
+          tab.dataset.mode = mode;
+          tab.title = label;
+          tab.innerHTML = '<i class="bx ' + icon + '"></i> ' + label + '<span class="tab-close" data-mode="' + mode + '">&times;</span>';
+          tabBar.appendChild(tab);
+        }
+        tab.classList.add('active');
+        document.querySelectorAll('#layout-menu .menu-item.active').forEach(function (item) {
+          item.classList.remove('active');
+        });
+        var link = document.getElementById(linkId);
+        if (link && link.closest('.menu-item')) link.closest('.menu-item').classList.add('active');
+        try {
+          var raw = localStorage.getItem('fwm_tabs');
+          var state = raw ? JSON.parse(raw) : { tabs: [], activeId: null };
+          if (!state.tabs.some(function (entry) { return entry.id === mode; })) state.tabs.push({ id: mode });
+          state.activeId = mode;
+          localStorage.setItem('fwm_tabs', JSON.stringify(state));
+        } catch (_e) {}
+        console.log('[fwm-menu] direct tab switched', mode);
+      }
+      document.addEventListener('click', function (event) {
+        var link = event.target && event.target.closest ? event.target.closest('#layout-menu .menu-link:not(.menu-toggle)') : null;
+        if (!link || !menuViews[link.id]) return;
+        event.preventDefault();
+        event.stopPropagation();
+        var meta = menuViews[link.id];
+        directSwitchView(meta[0], meta[1], meta[2], link.id);
+        if (link.id === 'menuSecurityScanLink') {
+          setTimeout(function () {
+            var scanTab = document.getElementById('security-scan-tab');
+            if (scanTab) scanTab.click();
+          }, 100);
+        }
+      }, true);
+      console.log('[fwm-menu] delegated fallback installed');
+    })();
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>
