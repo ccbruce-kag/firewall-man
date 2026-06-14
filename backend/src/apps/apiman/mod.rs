@@ -66,6 +66,23 @@ pub struct ApiManReportInput {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+pub struct ApiManForm {
+    pub id: i64,
+    pub name: String,
+    pub description: Option<String>,
+    pub form_schema_json: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct ApiManFormInput {
+    pub name: String,
+    pub description: Option<String>,
+    pub form_schema_json: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ApiManWorkspace {
     pub id: i64,
     pub name: String,

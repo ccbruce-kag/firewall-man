@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import 'reportbro-designer/dist/reportbro.css'
 import { getApiBase } from '../../../../utils/api'
 
@@ -13,6 +13,7 @@ export type ReportRecord = {
 
 type Props = {
   record: ReportRecord | null
+  visible: boolean
   onSaved: () => void
   onClose: () => void
 }
@@ -68,8 +69,8 @@ async function reportApi<T = unknown>(path: string, options: RequestInit = {}): 
   return json.data as T
 }
 
-export default function ReportEditorModal({ record, onSaved, onClose }: Props) {
-  const containerRef = useRef<HTMLDivElement | null>(null)
+export default function ReportEditorModal({ record, visible, onSaved, onClose }: Props) {
+  const wrapperId = useMemo(() => `rbro-wrapper-${Date.now()}-${Math.random().toString(36).slice(2)}`, [])
   const reportRef = useRef<ReportBroInstance | null>(null)
   const [name, setName] = useState(record?.name || '')
   const [description, setDescription] = useState(record?.description || '')
@@ -78,32 +79,36 @@ export default function ReportEditorModal({ record, onSaved, onClose }: Props) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    if (!visible) return
     let isMounted = true
     let instance: ReportBroInstance | null = null
-    ;(async () => {
+    let containerEl: HTMLDivElement | null = null
+    const timeout = setTimeout(async () => {
+      const wrapper = document.getElementById(wrapperId)
+      if (!wrapper || !isMounted) return
+      containerEl = document.createElement('div')
+      containerEl.style.cssText = 'width:100%;height:100%;overflow:auto;'
+      wrapper.appendChild(containerEl)
       try {
         await loadReportBroScript()
-        if (!isMounted || !containerRef.current || !window.ReportBro) return
-        instance = new window.ReportBro(containerRef.current)
+        if (!isMounted || !window.ReportBro) return
+        instance = new window.ReportBro(containerEl)
         reportRef.current = instance
         if (record?.report_xml) {
           try { instance.setData(record.report_xml) } catch { /* ignore */ }
         }
         setReady(true)
       } catch (err) {
-        if (isMounted) {
-          setErrMsg(err instanceof Error ? err.message : String(err))
-        }
+        if (isMounted) setErrMsg(err instanceof Error ? err.message : String(err))
       }
-    })()
+    }, 50)
     return () => {
-      isMounted = false
-      if (instance && typeof instance.destroy === 'function') {
-        try { instance.destroy() } catch { /* ignore */ }
-      }
+      isMounted = false; clearTimeout(timeout)
+      if (instance && typeof instance.destroy === 'function') try { instance.destroy() } catch { /* ignore */ }
+      if (containerEl && containerEl.parentNode) containerEl.parentNode.removeChild(containerEl)
       reportRef.current = null
     }
-  }, [record?.id, record?.report_xml])
+  }, [visible, record?.id, record?.report_xml, wrapperId])
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -147,9 +152,11 @@ export default function ReportEditorModal({ record, onSaved, onClose }: Props) {
   }, [name])
 
   return (
+    <>
+    <div className="modal-backdrop fade show" style={{ display: visible ? undefined : 'none' }}></div>
     <div
-      className="modal fade show d-block"
-      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+      className={`modal fade${visible ? ' show' : ''}`}
+      style={{ display: visible ? 'block' : 'none' }}
       tabIndex={-1}
     >
       <div className="modal-dialog modal-xl" style={{ maxWidth: '95vw' }}>
@@ -183,7 +190,7 @@ export default function ReportEditorModal({ record, onSaved, onClose }: Props) {
               <div className="alert alert-danger py-1 mb-2" style={{ fontSize: '.75rem' }}>{errMsg}</div>
             )}
             <div
-              ref={containerRef}
+              id={wrapperId}
               style={{
                 flexGrow: 1,
                 minHeight: 480,
@@ -216,5 +223,6 @@ export default function ReportEditorModal({ record, onSaved, onClose }: Props) {
         </div>
       </div>
     </div>
+  </>
   )
 }

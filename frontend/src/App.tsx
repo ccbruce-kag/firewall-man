@@ -36,9 +36,42 @@ const SCRIPTS = [
   '/app.js',
 ];
 
+const GLOBAL_SCRIPTS = new Set([
+  '/sneat/assets/vendor/libs/jquery/jquery.js',
+  '/sneat/assets/vendor/libs/popper/popper.js',
+  '/sneat/assets/vendor/js/bootstrap.js',
+  '/sneat/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.js',
+  '/sneat/assets/vendor/js/helpers.js',
+  '/sneat/assets/js/config.js',
+  '/sneat/assets/vendor/js/menu.js',
+  '/sneat/libs/xterm/xterm.min.js',
+  '/sneat/libs/xterm-addon-fit/xterm-addon-fit.min.js',
+]);
+
 function loadScripts(urls: string[]): Promise<void> {
   return urls.reduce((p, src) => p.then(() => new Promise<void>((resolve) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+    if (document.querySelector(`script[src="${src}"]`) || document.querySelector(`script[data-src="${src}"]`)) { resolve(); return; }
+    if (GLOBAL_SCRIPTS.has(src)) {
+      fetch(src)
+        .then((res) => {
+          if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+          return res.text();
+        })
+        .then((code) => {
+          const marker = document.createElement('script');
+          marker.type = 'application/x-kyklos-loaded';
+          marker.dataset.src = src;
+          document.body.appendChild(marker);
+          Function('define', `${code}\n//# sourceURL=${src}`)(undefined);
+          console.log('[boot] loaded:', src.split('/').pop());
+          resolve();
+        })
+        .catch((err) => {
+          console.warn('[boot] fail (non-fatal):', src, err);
+          resolve();
+        });
+      return;
+    }
     const s = document.createElement('script');
     s.src = src;
     s.onload = () => { console.log('[boot] loaded:', src.split('/').pop()); resolve(); };

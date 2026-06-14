@@ -211,13 +211,12 @@ export default function WireframeView() {
           </div>
         </div>
       </div>
-      {showModal && (
-        <WireframeEditorModal
-          record={editing}
-          onSaved={handleSaved}
-          onClose={closeModal}
-        />
-      )}
+      <WireframeEditorModal
+        record={editing}
+        onSaved={handleSaved}
+        onClose={closeModal}
+        visible={showModal}
+      />
     </>
   )
 }

@@ -33,6 +33,7 @@
       }, true);
       var menuViews = {
         menuDashLink: ['dashboard', 'General Dashboard', 'bx-bar-chart-alt-2'],
+        menuWorkflowLink: ['workflow', 'Workflow Designer', 'bx-sitemap'],
         menuFirewallManLink: ['firewallMan', 'Tables', 'bx-shield-quarter'],
         menuJuniperLink: ['juniper', 'Juniper Settings', 'bx-network-chart'],
         menuHaproxyLink: ['haproxy', 'HAProxy Management', 'bx-transfer'],
@@ -42,6 +43,7 @@
         menuSnmpLink: ['snmp', 'SNMP', 'bx-analyse'],
         menuSambaLink: ['samba', 'Samba', 'bx-folder'],
         menuSftpLink: ['sftp', 'SFTP', 'bx-folder'],
+        menuNetArchLink: ['netArch', 'Network Architecture Designer', 'bx-network-chart'],
         menuSysLink: ['system', 'System', 'bx-desktop'],
         menuToolsLink: ['tools', 'Tools', 'bx-wrench'],
         menuShellLink: ['shell', 'Shell', 'bx-terminal'],
@@ -50,6 +52,15 @@
         menuCrontabLink: ['crontab', 'Crontab', 'bx-time-five'],
         menuAILink: ['ai', 'AI Assistant', 'bx-bot'],
         menuDbManNewLink: ['dbman', 'DbMan', 'bx-data'],
+        menuErdDiagramLink: ['erdDiagram', 'ER-Diagram', 'bx-sitemap'],
+        menuWireframeLink: ['wireframe', 'Wireframe Designer', 'bx-pen'],
+        menuReportEditorLink: ['reportEditor', 'Report Designer', 'bx-file'],
+        menuFormEditorLink: ['formEditor', 'Form Designer', 'bx-list-check'],
+        menuRoleLink: ['role', 'Role Maintenance', 'bx-id-card'],
+        menuUnitLink: ['unit', 'Unit Maintenance', 'bx-buildings'],
+        menuUserLink: ['user', 'User Maintenance', 'bx-user'],
+        menuDictionaryLink: ['dictionary', 'Data Dictionary Maintenance', 'bx-book'],
+        menuSystemSettingLink: ['systemSetting', 'System Settings Maintenance', 'bx-slider'],
         menuSecurityCvsLink: ['security', 'Security', 'bx-shield'],
         menuSecurityScanLink: ['security', 'Security', 'bx-shield']
       };
@@ -69,7 +80,9 @@
           pane.style.display = 'none';
         });
         [
-          'dashboard','firewallMan','system','juniper','haproxy','nginx','netplan',
+          'dashboard','workflow','netArch','erdDiagram','wireframe','reportEditor','formEditor',
+          'role','unit','user','dictionary','systemSetting',
+          'firewallMan','system','juniper','haproxy','nginx','netplan',
           'apiman','dbman','sftp','samba','snmp','pcap','security','tools','ai','shell','widgets','logViewer','crontab'
         ].forEach(function (viewMode) {
           var el = document.getElementById(viewMode + 'View');
@@ -131,8 +144,9 @@
       console.log('[fwm-menu] delegated fallback installed');
     })();
   </script>
-  <script type="module" crossorigin src="/assets/index-_xMNJZrA.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-zxUkEYLv.css">
+  <script type="module" crossorigin src="/assets/index-C6n1z6Ht.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/chunk-aKtaBQYM.js">
+  <link rel="stylesheet" crossorigin href="/assets/index-D_yu3JP0.css">
 </head>
 <body>
   <div id="root"></div>

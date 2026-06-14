@@ -91,7 +91,7 @@ var _orig_ready = $;
     const TAB_STORAGE_KEY = "fwm_tabs";
     const TAB_VIEW_PREFIX = "tabView_";
     const WORK_VIEW_MODES = [
-      'dashboard', 'workflow', 'netArch', 'erdDiagram', 'wireframe', 'reportEditor',
+      'dashboard', 'workflow', 'netArch', 'erdDiagram', 'wireframe', 'reportEditor', 'formEditor',
       'role', 'unit', 'user', 'dictionary', 'systemSetting',
       'firewallMan', 'system', 'juniper', 'haproxy', 'nginx', 'netplan',
       'pcap', 'snmp', 'sftp', 'samba', 'apiman', 'dbman', 'security', 'tools', 'ai',
@@ -128,6 +128,7 @@ var _orig_ready = $;
         erdDiagram: lang.erdDiagramLabel || 'ER-Diagram',
         wireframe: lang.wireframeLabel || 'Wireframe Designer',
         reportEditor: lang.reportEditorLabel || 'Report Designer',
+        formEditor: lang.formEditorLabel || 'Form Designer',
         role: lang.roleLabel || 'Role Maintenance',
         unit: lang.unitLabel || 'Unit Maintenance',
         user: lang.userLabel || 'User Maintenance',
@@ -154,7 +155,7 @@ var _orig_ready = $;
       var map = {
         firewallMan: 'bx-shield-quarter', dashboard: 'bx-bar-chart-alt-2', system: 'bx-desktop',
         workflow: 'bx-sitemap', netArch: 'bx-network-chart', erdDiagram: 'bx-sitemap',
-        wireframe: 'bx-pen', reportEditor: 'bx-file',
+        wireframe: 'bx-pen', reportEditor: 'bx-file', formEditor: 'bx-list-check',
         role: 'bx-id-card', unit: 'bx-buildings', user: 'bx-user',
         dictionary: 'bx-book', systemSetting: 'bx-slider',
         shell: 'bx-terminal', widgets: 'bx-cube', logViewer: 'bx-file', crontab: 'bx-time-five', ai: 'bx-bot', tools: 'bx-wrench', haproxy: 'bx-transfer',
@@ -377,6 +378,8 @@ var _orig_ready = $;
         wireframeNoData: "尚無 Wireframe，點擊「新增 Wireframe」開始設計。",
         reportEditorLabel: "Report 編輯器", reportEditorNew: "新增 Report", reportEditorEdit: "編輯 Report", reportEditorDelete: "刪除 Report",
         reportEditorNoData: "尚無 Report，點擊「新增 Report」開始設計。",
+        formEditorLabel: "Form 編輯器", formEditorNew: "新增 Form", formEditorEdit: "編輯 Form", formEditorDelete: "刪除 Form",
+        formEditorNoData: "尚無 Form，點擊「新增 Form」開始設計。",
         menuApiManNew: "新增工作區", menuDbManNew: "新增連線",
         menuSecurityCvs: "CVS 資料庫", menuSecurityScan: "網路掃描",
         menuGroupAI: "AI", menuGroupHelp: "協助", systemLabel: "系統現況", docLabel: "命令文件",
@@ -474,6 +477,8 @@ var _orig_ready = $;
         wireframeNoData: "No wireframes yet. Click \"New Wireframe\" to start designing.",
         reportEditorLabel: "Report Designer", reportEditorNew: "New Report", reportEditorEdit: "Edit Report", reportEditorDelete: "Delete Report",
         reportEditorNoData: "No reports yet. Click \"New Report\" to start designing.",
+        formEditorLabel: "Form Designer", formEditorNew: "New Form", formEditorEdit: "Edit Form", formEditorDelete: "Delete Form",
+        formEditorNoData: "No forms yet. Click \"New Form\" to start designing.",
         menuApiManNew: "New Workspace", menuDbManNew: "New Connection",
         menuSecurityCvs: "CVS Database", menuSecurityScan: "Network Scan",
         menuGroupAI: "AI", menuGroupHelp: "Help", systemLabel: "System", docLabel: "Command Reference",
@@ -570,6 +575,8 @@ var _orig_ready = $;
         wireframeNoData: "ワイヤーフレームがありません。「新規ワイヤーフレーム」をクリックして作成してください。",
         reportEditorLabel: "レポートエディタ", reportEditorNew: "新規レポート", reportEditorEdit: "レポート編集", reportEditorDelete: "レポート削除",
         reportEditorNoData: "レポートがありません。「新規レポート」をクリックして作成してください。",
+        formEditorLabel: "フォームエディタ", formEditorNew: "新規フォーム", formEditorEdit: "フォーム編集", formEditorDelete: "フォーム削除",
+        formEditorNoData: "フォームがありません。「新規フォーム」をクリックして作成してください。",
         menuApiManNew: "新規ワークスペース", menuDbManNew: "新規接続",
         menuSecurityCvs: "CVS データベース", menuSecurityScan: "ネットワークスキャン",
         menuGroupAI: "AI", menuGroupHelp: "ヘルプ", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
@@ -663,6 +670,7 @@ var _orig_ready = $;
       $('#menuErdDiagramLabel').text(lng.erdDiagramLabel || 'ER-Diagram');
       $('#menuWireframeLabel').text(lng.wireframeLabel || 'Wireframe 設計');
       $('#menuReportEditorLabel').text(lng.reportEditorLabel || 'Report 編輯器');
+      $('#menuFormEditorLabel').text(lng.formEditorLabel || 'Form 編輯器');
       $('#menuGroupSettingsLabel').text(lng.menuGroupSettings || '設定');
       $('#menuRoleLabel').text(lng.roleLabel || '角色資料維護');
       $('#menuUnitLabel').text(lng.unitLabel || '單位資料維護');
@@ -795,10 +803,12 @@ var _orig_ready = $;
         let html = `<span class="log-time">[${time}]</span><span class="log-msg">${msg}</span>`;
         if (cmd) html += `<span class="log-cmd">&#8594; ${cmd}</span>`;
         entry.innerHTML = html;
-        document.getElementById('logContent').appendChild(entry);
-        document.getElementById('logBadge').textContent = logCount;
+        const logContent = document.getElementById('logContent');
+        if (logContent) logContent.appendChild(entry);
+        const logBadge = document.getElementById('logBadge');
+        if (logBadge) logBadge.textContent = logCount;
         const c = document.getElementById('logContainer');
-        if (c.classList.contains('open')) c.scrollTop = c.scrollHeight;
+        if (c && c.classList.contains('open')) c.scrollTop = c.scrollHeight;
         // Mirror to browser developer console
         if (typeof console !== 'undefined') {
           const tag = '%c[' + cls + '][' + time + ']';
@@ -824,9 +834,11 @@ var _orig_ready = $;
       warn(msg, cmd) { this._append(LOG_LEVELS.WARN, msg, cmd); },
       error(msg, cmd) { this._append(LOG_LEVELS.ERROR, msg, cmd); },
       clear() {
-        document.getElementById('logContent').innerHTML = '';
+        const logContent = document.getElementById('logContent');
+        if (logContent) logContent.innerHTML = '';
         logCount = 0;
-        document.getElementById('logBadge').textContent = '0';
+        const logBadge = document.getElementById('logBadge');
+        if (logBadge) logBadge.textContent = '0';
         if (typeof console !== 'undefined' && console.clear) console.clear();
       }
     };

@@ -1,5 +1,5 @@
 use crate::ai;
-use crate::apps::apiman::{ApiManNodeInput, ApiManReportInput, ApiManRequestInput, ApiManWireframeInput, ApiManWorkspaceInput};
+use crate::apps::apiman::{ApiManFormInput, ApiManNodeInput, ApiManReportInput, ApiManRequestInput, ApiManWireframeInput, ApiManWorkspaceInput};
 use crate::apps::dbman::{DbConnectionInput, ErdDiagramInput};
 use crate::apps::network::NetworkArchitectureInput;
 use crate::apps::settings::{
@@ -3785,6 +3785,35 @@ async fn handle_apiman_report_delete(
     }
 }
 
+// ---- ApiMan: Forms ----
+
+async fn handle_apiman_form_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_forms() {
+        Ok(items) => utils::output(None, Some(json!({ "forms": items }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_apiman_form_get(State(state): State<Arc<AppState>>, Path(id): Path<i64>) -> Json<Value> {
+    match state.db.form(id) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "form": item }))),
+        Ok(None) => utils::output(Some("form not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_apiman_form_create(State(state): State<Arc<AppState>>, Json(input): Json<ApiManFormInput>) -> Json<Value> {
+    match state.db.create_form(input) { Ok(item) => utils::output(None, Some(json!({ "form": item }))), Err(e) => utils::output(Some(&e), None) }
+}
+
+async fn handle_apiman_form_update(State(state): State<Arc<AppState>>, Path(id): Path<i64>, Json(input): Json<ApiManFormInput>) -> Json<Value> {
+    match state.db.update_form(id, input) { Ok(Some(item)) => utils::output(None, Some(json!({ "form": item }))), Ok(None) => utils::output(Some("form not found"), None), Err(e) => utils::output(Some(&e), None) }
+}
+
+async fn handle_apiman_form_delete(State(state): State<Arc<AppState>>, Path(id): Path<i64>) -> Json<Value> {
+    match state.db.delete_form(id) { Ok(true) => utils::output(None, Some(json!({ "deleted": true }))), Ok(false) => utils::output(Some("form not found"), None), Err(e) => utils::output(Some(&e), None) }
+}
+
 // ---- ApiMan: Export/Import Workspace ----
 
 async fn handle_apiman_export_workspace(
@@ -4485,6 +4514,26 @@ pub fn build_router(state: Arc<AppState>) -> Router {
             get(handle_apiman_report_get)
                 .put(handle_apiman_report_update)
                 .delete(handle_apiman_report_delete),
+        )
+        .route(
+            "/apiman/forms",
+            get(handle_apiman_form_list).post(handle_apiman_form_create),
+        )
+        .route(
+            "/apiman/forms/:id",
+            get(handle_apiman_form_get)
+                .put(handle_apiman_form_update)
+                .delete(handle_apiman_form_delete),
+        )
+        .route(
+            "/api/apiman/forms",
+            get(handle_apiman_form_list).post(handle_apiman_form_create),
+        )
+        .route(
+            "/api/apiman/forms/:id",
+            get(handle_apiman_form_get)
+                .put(handle_apiman_form_update)
+                .delete(handle_apiman_form_delete),
         )
         .route(
             "/workflows",

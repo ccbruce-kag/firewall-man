@@ -14,3 +14,4 @@ backend/Cargo.lock
 # Build output
 kyklos
 .private
+run/web

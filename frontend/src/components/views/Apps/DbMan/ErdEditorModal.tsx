@@ -316,11 +316,14 @@ function EditorInner({ record, connections, onSaved, onClose }: Props) {
   }
 
   return (
+    <>
+    <div className="modal-backdrop fade show"></div>
     <div
-      className="modal fade"
+      className="modal fade show"
       id="erdEditorModal"
       tabIndex={-1}
       aria-hidden="true"
+      style={{ display: 'block' }}
       data-bs-backdrop="static"
     >
       <div className="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -672,6 +675,7 @@ function EditorInner({ record, connections, onSaved, onClose }: Props) {
         </div>
       </div>
     </div>
+    </>
   )
 }
 

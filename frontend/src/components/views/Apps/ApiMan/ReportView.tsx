@@ -214,13 +214,12 @@ export default function ReportView() {
           </div>
         </div>
       </div>
-      {showModal && (
-        <ReportEditorModal
-          record={editing}
-          onSaved={handleSaved}
-          onClose={closeModal}
-        />
-      )}
+      <ReportEditorModal
+        record={editing}
+        onSaved={handleSaved}
+        onClose={closeModal}
+        visible={showModal}
+      />
     </>
   )
 }

@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Excalidraw } from '@excalidraw/excalidraw'
 import '@excalidraw/excalidraw/index.css'
 import { getApiBase } from '../../../../utils/api'
@@ -15,6 +16,7 @@ export type WireframeRecord = {
 
 type Props = {
   record: WireframeRecord | null
+  visible: boolean
   onSaved: () => void
   onClose: () => void
 }
@@ -61,7 +63,7 @@ function parseInitialScene(sceneJson: string | null | undefined): ExcalidrawInit
   return { elements: [], appState: {} }
 }
 
-export default function WireframeEditorModal({ record, onSaved, onClose }: Props) {
+export default function WireframeEditorModal({ record, visible, onSaved, onClose }: Props) {
   const apiRef = useRef<{
     getSceneElements: () => readonly ExcalidrawElement[]
     getAppState: () => ExcalidrawAppState
@@ -137,12 +139,14 @@ export default function WireframeEditorModal({ record, onSaved, onClose }: Props
     }
   }
 
-  return (
-    <div
-      className="modal fade show d-block"
-      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-      tabIndex={-1}
-    >
+  return createPortal(
+    <>
+      <div className="modal-backdrop fade show" style={{ display: visible ? undefined : 'none' }}></div>
+      <div
+        className={`modal fade${visible ? ' show' : ''}`}
+        style={{ display: visible ? 'block' : 'none' }}
+        tabIndex={-1}
+      >
       <div className="modal-dialog modal-xl" style={{ maxWidth: '95vw' }}>
         <div className="modal-content" style={{ height: '92vh' }}>
           <div className="modal-header py-2">
@@ -172,7 +176,8 @@ export default function WireframeEditorModal({ record, onSaved, onClose }: Props
               <div className="alert alert-danger py-1 mb-2" style={{ fontSize: '.75rem' }}>{errMsg}</div>
             )}
             <div style={{ flexGrow: 1, position: 'relative', border: '1px solid #e5e7eb', borderRadius: 4, overflow: 'hidden' }}>
-              <Excalidraw
+              {visible && (
+                <Excalidraw
                 excalidrawAPI={setExcalidrawApi as never}
                 initialData={initialData as never}
                 onChange={onExcalidrawChange as never}
@@ -182,7 +187,8 @@ export default function WireframeEditorModal({ record, onSaved, onClose }: Props
                 UIOptions={{
                   canvasActions: { saveAsImage: true, loadScene: false },
                 }}
-              />
+                />
+              )}
             </div>
           </div>
           <div className="modal-footer py-2">
@@ -200,5 +206,7 @@ export default function WireframeEditorModal({ record, onSaved, onClose }: Props
         </div>
       </div>
     </div>
+  </>,
+    document.body
   )
 }

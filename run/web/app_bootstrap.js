@@ -91,7 +91,9 @@ var _orig_ready = $;
     const TAB_STORAGE_KEY = "fwm_tabs";
     const TAB_VIEW_PREFIX = "tabView_";
     const WORK_VIEW_MODES = [
-      'dashboard', 'firewallMan', 'system', 'juniper', 'haproxy', 'nginx', 'netplan',
+      'dashboard', 'workflow', 'netArch', 'erdDiagram', 'wireframe', 'reportEditor', 'formEditor',
+      'role', 'unit', 'user', 'dictionary', 'systemSetting',
+      'firewallMan', 'system', 'juniper', 'haproxy', 'nginx', 'netplan',
       'pcap', 'snmp', 'sftp', 'samba', 'apiman', 'dbman', 'security', 'tools', 'ai',
       'shell', 'widgets', 'logViewer', 'crontab'
     ];
@@ -121,6 +123,17 @@ var _orig_ready = $;
       var map = {
         firewallMan: lang.firewallManLabel || 'FirewallMan',
         dashboard: lang.dashLabel || 'General Dashboard',
+        workflow: lang.workflowLabel || 'Workflow Designer',
+        netArch: lang.netArchLabel || 'Network Architecture Designer',
+        erdDiagram: lang.erdDiagramLabel || 'ER-Diagram',
+        wireframe: lang.wireframeLabel || 'Wireframe Designer',
+        reportEditor: lang.reportEditorLabel || 'Report Designer',
+        formEditor: lang.formEditorLabel || 'Form Designer',
+        role: lang.roleLabel || 'Role Maintenance',
+        unit: lang.unitLabel || 'Unit Maintenance',
+        user: lang.userLabel || 'User Maintenance',
+        dictionary: lang.dictionaryLabel || 'Data Dictionary Maintenance',
+        systemSetting: lang.systemSettingLabel || 'System Settings Maintenance',
         system: lang.systemLabel || 'System',
         shell: lang.shellLabel || 'Shell',
         widgets: lang.widgetsLabel || 'Widgets',
@@ -141,6 +154,10 @@ var _orig_ready = $;
     function tabIcon(mode) {
       var map = {
         firewallMan: 'bx-shield-quarter', dashboard: 'bx-bar-chart-alt-2', system: 'bx-desktop',
+        workflow: 'bx-sitemap', netArch: 'bx-network-chart', erdDiagram: 'bx-sitemap',
+        wireframe: 'bx-pen', reportEditor: 'bx-file', formEditor: 'bx-list-check',
+        role: 'bx-id-card', unit: 'bx-buildings', user: 'bx-user',
+        dictionary: 'bx-book', systemSetting: 'bx-slider',
         shell: 'bx-terminal', widgets: 'bx-cube', logViewer: 'bx-file', crontab: 'bx-time-five', ai: 'bx-bot', tools: 'bx-wrench', haproxy: 'bx-transfer',
         nginx: 'bx-windows', juniper: 'bx-network-chart', netplan: 'bx-wifi',
         apiman: 'bx-link', dbman: 'bx-data', security: 'bx-shield',
@@ -351,7 +368,18 @@ var _orig_ready = $;
         clearConfirmPrefix: "確認清除", allRulesSuffix: "所有規則？", chainRulesSuffix: " 鏈的所有規則？",
         allMetricsSuffix: "所有統計數據？", ruleMetricsPrefix: "第 ", ruleMetricsSuffix: " 條規則的統計數據？",
         ruleNumberPrefix: "第", ruleNumberSuffix: "條規則", clearEmptyPrompt: "確認清除用戶自定義的所有空鏈？",
-        menuGroupDash: "儀表板", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", firewallManLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "工具集合", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
+        menuGroupDash: "儀表板與工作流程", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", firewallManLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "工具集合", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
+        workflowLabel: "工作流程設計", workflowTitle: "工作流程設計", workflowNew: "新增流程", workflowRefresh: "重新整理",
+        netArchLabel: "網路架構編輯", netArchTitle: "網路架構編輯", netArchNew: "新增架構", netArchRefresh: "重新整理",
+        erdDiagramLabel: "ER-Diagram", menuGroupSettings: "設定",
+        roleLabel: "角色資料維護", unitLabel: "單位資料維護", userLabel: "使用者資料維護",
+        dictionaryLabel: "資料字典資料維護", systemSettingLabel: "系統設定資料維護",
+        wireframeLabel: "Wireframe 設計", wireframeNew: "新增 Wireframe", wireframeEdit: "編輯 Wireframe", wireframeDelete: "刪除 Wireframe",
+        wireframeNoData: "尚無 Wireframe，點擊「新增 Wireframe」開始設計。",
+        reportEditorLabel: "Report 編輯器", reportEditorNew: "新增 Report", reportEditorEdit: "編輯 Report", reportEditorDelete: "刪除 Report",
+        reportEditorNoData: "尚無 Report，點擊「新增 Report」開始設計。",
+        formEditorLabel: "Form 編輯器", formEditorNew: "新增 Form", formEditorEdit: "編輯 Form", formEditorDelete: "刪除 Form",
+        formEditorNoData: "尚無 Form，點擊「新增 Form」開始設計。",
         menuApiManNew: "新增工作區", menuDbManNew: "新增連線",
         menuSecurityCvs: "CVS 資料庫", menuSecurityScan: "網路掃描",
         menuGroupAI: "AI", menuGroupHelp: "協助", systemLabel: "系統現況", docLabel: "命令文件",
@@ -439,7 +467,18 @@ var _orig_ready = $;
         clearConfirmPrefix: "Confirm to clear", allRulesSuffix: "all rules?", chainRulesSuffix: " chain rules?",
         allMetricsSuffix: "all counters?", ruleMetricsPrefix: "Rule #", ruleMetricsSuffix: " counters?",
         ruleNumberPrefix: "Rule #", ruleNumberSuffix: "", clearEmptyPrompt: "Clear all empty custom chains?",
-        menuGroupDash: "Dashboard", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", firewallManLabel: "FirewallMan",         menuGroupSys: "System Tools", toolsLabel: "Tools", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
+        menuGroupDash: "Dashboard & Workflow", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", firewallManLabel: "FirewallMan",         menuGroupSys: "System Tools", toolsLabel: "Tools", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
+        workflowLabel: "Workflow Designer", workflowTitle: "Workflow Designer", workflowNew: "New Workflow", workflowRefresh: "Refresh",
+        netArchLabel: "Network Architecture Designer", netArchTitle: "Network Architecture Designer", netArchNew: "New Architecture", netArchRefresh: "Refresh",
+        erdDiagramLabel: "ER-Diagram", menuGroupSettings: "Settings",
+        roleLabel: "Role Maintenance", unitLabel: "Unit Maintenance", userLabel: "User Maintenance",
+        dictionaryLabel: "Data Dictionary Maintenance", systemSettingLabel: "System Settings Maintenance",
+        wireframeLabel: "Wireframe Designer", wireframeNew: "New Wireframe", wireframeEdit: "Edit Wireframe", wireframeDelete: "Delete Wireframe",
+        wireframeNoData: "No wireframes yet. Click \"New Wireframe\" to start designing.",
+        reportEditorLabel: "Report Designer", reportEditorNew: "New Report", reportEditorEdit: "Edit Report", reportEditorDelete: "Delete Report",
+        reportEditorNoData: "No reports yet. Click \"New Report\" to start designing.",
+        formEditorLabel: "Form Designer", formEditorNew: "New Form", formEditorEdit: "Edit Form", formEditorDelete: "Delete Form",
+        formEditorNoData: "No forms yet. Click \"New Form\" to start designing.",
         menuApiManNew: "New Workspace", menuDbManNew: "New Connection",
         menuSecurityCvs: "CVS Database", menuSecurityScan: "Network Scan",
         menuGroupAI: "AI", menuGroupHelp: "Help", systemLabel: "System", docLabel: "Command Reference",
@@ -526,7 +565,18 @@ var _orig_ready = $;
         clearConfirmPrefix: "確認", allRulesSuffix: "すべてのルールをクリアしますか？", chainRulesSuffix: " チェインの全ルールをクリアしますか？",
         allMetricsSuffix: "すべての統計データをクリアしますか？", ruleMetricsPrefix: "ルール #", ruleMetricsSuffix: " の統計データをクリアしますか？",
         ruleNumberPrefix: "ルール #", ruleNumberSuffix: "", clearEmptyPrompt: "空のカスタムチェインをすべて削除しますか？",
-        menuGroupDash: "ダッシュボード", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", firewallManLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "ツール集", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
+        menuGroupDash: "ダッシュボードとワークフロー", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", firewallManLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "ツール集", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
+        workflowLabel: "ワークフロー設計", workflowTitle: "ワークフロー設計", workflowNew: "新規ワークフロー", workflowRefresh: "更新",
+        netArchLabel: "ネットワークアーキテクチャ設計", netArchTitle: "ネットワークアーキテクチャ設計", netArchNew: "新規アーキテクチャ", netArchRefresh: "更新",
+        erdDiagramLabel: "ER-Diagram", menuGroupSettings: "設定",
+        roleLabel: "ロール保守", unitLabel: "組織保守", userLabel: "ユーザー保守",
+        dictionaryLabel: "データ辞書保守", systemSettingLabel: "システム設定保守",
+        wireframeLabel: "ワイヤーフレーム設計", wireframeNew: "新規ワイヤーフレーム", wireframeEdit: "ワイヤーフレーム編集", wireframeDelete: "ワイヤーフレーム削除",
+        wireframeNoData: "ワイヤーフレームがありません。「新規ワイヤーフレーム」をクリックして作成してください。",
+        reportEditorLabel: "レポートエディタ", reportEditorNew: "新規レポート", reportEditorEdit: "レポート編集", reportEditorDelete: "レポート削除",
+        reportEditorNoData: "レポートがありません。「新規レポート」をクリックして作成してください。",
+        formEditorLabel: "フォームエディタ", formEditorNew: "新規フォーム", formEditorEdit: "フォーム編集", formEditorDelete: "フォーム削除",
+        formEditorNoData: "フォームがありません。「新規フォーム」をクリックして作成してください。",
         menuApiManNew: "新規ワークスペース", menuDbManNew: "新規接続",
         menuSecurityCvs: "CVS データベース", menuSecurityScan: "ネットワークスキャン",
         menuGroupAI: "AI", menuGroupHelp: "ヘルプ", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
@@ -611,6 +661,22 @@ var _orig_ready = $;
       var lng = i18n[currentLang];
       $('#menuGroupDashLabel').text(lng.menuGroupDash || '儀表板');
       $('#menuDashLabel').text(lng.dashLabel || 'General Dashboard');
+      $('#menuWorkflowLabel').text(lng.workflowLabel || '工作流程設計');
+      $('#workflowTitle').text(lng.workflowTitle || '工作流程設計');
+      $('#workflowNewLabel').text(lng.workflowNew || '新增流程');
+      $('#workflowRefreshLabel').text(lng.workflowRefresh || '重新整理');
+      $('#menuNetArchLabel').text(lng.netArchLabel || '網路架構編輯');
+      $('#netArchTitle').text(lng.netArchTitle || '網路架構編輯');
+      $('#menuErdDiagramLabel').text(lng.erdDiagramLabel || 'ER-Diagram');
+      $('#menuWireframeLabel').text(lng.wireframeLabel || 'Wireframe 設計');
+      $('#menuReportEditorLabel').text(lng.reportEditorLabel || 'Report 編輯器');
+      $('#menuFormEditorLabel').text(lng.formEditorLabel || 'Form 編輯器');
+      $('#menuGroupSettingsLabel').text(lng.menuGroupSettings || '設定');
+      $('#menuRoleLabel').text(lng.roleLabel || '角色資料維護');
+      $('#menuUnitLabel').text(lng.unitLabel || '單位資料維護');
+      $('#menuUserLabel').text(lng.userLabel || '使用者資料維護');
+      $('#menuDictionaryLabel').text(lng.dictionaryLabel || '資料字典資料維護');
+      $('#menuSystemSettingLabel').text(lng.systemSettingLabel || '系統設定資料維護');
       $('#menuSysLabel').text(lng.systemLabel || 'System');
       $('#menuGroupNetLabel').text(lng.menuGroupNet || 'Network Tools');
       $('#menuFirewallManLabel').text(lng.firewallManLabel || 'FirewallMan');
@@ -737,10 +803,12 @@ var _orig_ready = $;
         let html = `<span class="log-time">[${time}]</span><span class="log-msg">${msg}</span>`;
         if (cmd) html += `<span class="log-cmd">&#8594; ${cmd}</span>`;
         entry.innerHTML = html;
-        document.getElementById('logContent').appendChild(entry);
-        document.getElementById('logBadge').textContent = logCount;
+        const logContent = document.getElementById('logContent');
+        if (logContent) logContent.appendChild(entry);
+        const logBadge = document.getElementById('logBadge');
+        if (logBadge) logBadge.textContent = logCount;
         const c = document.getElementById('logContainer');
-        if (c.classList.contains('open')) c.scrollTop = c.scrollHeight;
+        if (c && c.classList.contains('open')) c.scrollTop = c.scrollHeight;
         // Mirror to browser developer console
         if (typeof console !== 'undefined') {
           const tag = '%c[' + cls + '][' + time + ']';
@@ -766,9 +834,11 @@ var _orig_ready = $;
       warn(msg, cmd) { this._append(LOG_LEVELS.WARN, msg, cmd); },
       error(msg, cmd) { this._append(LOG_LEVELS.ERROR, msg, cmd); },
       clear() {
-        document.getElementById('logContent').innerHTML = '';
+        const logContent = document.getElementById('logContent');
+        if (logContent) logContent.innerHTML = '';
         logCount = 0;
-        document.getElementById('logBadge').textContent = '0';
+        const logBadge = document.getElementById('logBadge');
+        if (logBadge) logBadge.textContent = '0';
         if (typeof console !== 'undefined' && console.clear) console.clear();
       }
     };

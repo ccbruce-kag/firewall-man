@@ -7,6 +7,9 @@ const wsProxyToBackend = { target: backend, changeOrigin: true, ws: true }
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    global: 'globalThis',
+  },
   server: {
     port: 5173,
     proxy: {
@@ -38,6 +41,10 @@ export default defineConfig({
       '/dbman/': proxyToBackend,
       '/security/': proxyToBackend,
       '/tools/': proxyToBackend,
+      '/erd-diagrams/': proxyToBackend,
+      '/workflows/': proxyToBackend,
+      '/network-architectures/': proxyToBackend,
+      '/settings/': proxyToBackend,
       '/shell': wsProxyToBackend,
       '/ai': wsProxyToBackend,
       '/ai/': wsProxyToBackend,
@@ -46,5 +53,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+  },
+  css: {
+    lightningcss: {
+      errorRecovery: true,
+    },
   },
 })

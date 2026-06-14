@@ -13,14 +13,14 @@ export default function Sidebar() {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="36" height="36">
               <g>
                 <linearGradient id="shieldLeft" x1="100%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#a855f7" />
-                  <stop offset="100%" stop-color="#4f46e5" />
+                  <stop offset="0%" stopColor="#a855f7" />
+                  <stop offset="100%" stopColor="#4f46e5" />
                 </linearGradient>
                 <path d="M 18,2 C 11,2 2,4.5 2,8.5 L 2,18 C 2,26.5 11,31.5 18,34 Z" fill="url(#shieldLeft)" />
 
                 <linearGradient id="shieldRight" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#c084fc" />
-                  <stop offset="100%" stop-color="#a855f7" />
+                  <stop offset="0%" stopColor="#c084fc" />
+                  <stop offset="100%" stopColor="#a855f7" />
                 </linearGradient>
                 <path d="M 18,2 C 25,2 34,4.5 34,8.5 L 34,18 C 34,26.5 25,31.5 18,34 Z" fill="url(#shieldRight)" />
 
@@ -201,6 +201,12 @@ export default function Sidebar() {
               <a href="#" className="menu-link" id="menuReportEditorLink">
                 <i className="menu-icon tf-icons bx bx-file"></i>
                 <div className="text-truncate" id="menuReportEditorLabel">Report 編輯器</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuFormEditor">
+              <a href="#" className="menu-link" id="menuFormEditorLink">
+                <i className="menu-icon tf-icons bx bx-list-check"></i>
+                <div className="text-truncate" id="menuFormEditorLabel">Form 編輯器</div>
               </a>
             </li>
             <div id="menuApiManWsItems"></div>

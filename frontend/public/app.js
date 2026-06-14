@@ -7,15 +7,26 @@ console.log('[app.js] loader loaded, readyState=', document.readyState);
     '/app_juniper.js',
     '/app_services.js',
     '/app_data_modules.js',
+    '/app_firewall_helpers.js',
     '/app_runtime_core.js',
     '/app_network_events.js',
     '/app_dbman_events.js',
     '/app_security_events.js',
     '/app_apiman_events.js',
     '/app_tools_capture.js',
-    '/app_firewall_helpers.js',
     '/app_menu.js'
   ];
+
+  function waitForJQuery() {
+    return new Promise(function (resolve, reject) {
+      var started = Date.now();
+      (function check() {
+        if (window.jQuery && window.$) { resolve(); return; }
+        if (Date.now() - started > 5000) { reject(new Error('jQuery is not available for app split loader')); return; }
+        setTimeout(check, 25);
+      })();
+    });
+  }
 
   function loadScript(src) {
     return new Promise(function (resolve, reject) {
@@ -28,9 +39,11 @@ console.log('[app.js] loader loaded, readyState=', document.readyState);
     });
   }
 
-  scripts.reduce(function (chain, src) {
+  waitForJQuery().then(function () {
+    return scripts.reduce(function (chain, src) {
     return chain.then(function () { return loadScript(src); });
-  }, Promise.resolve()).catch(function (err) {
+    }, Promise.resolve());
+  }).catch(function (err) {
     console.error('[app.js] split loader failed', err);
   });
 })();

@@ -1,0 +1,11 @@
+/* FormEngine Designer 自訂佈局：確保撐滿容器並隱藏 rsuite 浮水印 */
+/* FormEngine 內建 CSS 會自行處理三欄佈局 */
+
+.rbro-form-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+.rbro-form-layout .wx-s2aE1xdZ {
+  height: 100%;
+}

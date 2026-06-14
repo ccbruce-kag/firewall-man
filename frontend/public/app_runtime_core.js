@@ -58,7 +58,7 @@
         firewallMan: function() { $('.action-buttons').show(); loadListRule(currentTableName()); },
       };
       var viewMenuMap = {
-        dashboard: 'menuDash', workflow: 'menuWorkflow', netArch: 'menuNetArch', erdDiagram: 'menuErdDiagram', wireframe: 'menuWireframe', reportEditor: 'menuReportEditor',
+        dashboard: 'menuDash', workflow: 'menuWorkflow', netArch: 'menuNetArch', erdDiagram: 'menuErdDiagram', wireframe: 'menuWireframe', reportEditor: 'menuReportEditor', formEditor: 'menuFormEditor',
         role: 'menuRole', unit: 'menuUnit', user: 'menuUser', dictionary: 'menuDictionary', systemSetting: 'menuSystemSetting',
         firewallMan: 'menuFirewallMan', juniper: 'menuJuniper',
         haproxy: 'menuHaproxy', nginx: 'menuNginx', netplan: 'menuNetplan',
@@ -76,7 +76,7 @@
       });
       $('#logClear').on('click', function () { logger.clear(); });
       function inactiveAllLeaf() {
-        $('#menuDash,#menuWorkflow,#menuNetArch,#menuErdDiagram,#menuWireframe,#menuReportEditor,#menuRole,#menuUnit,#menuUser,#menuDictionary,#menuSystemSetting,#menuFirewallMan,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuPcap,#menuSnmp,#menuSys,#menuTools,#menuShell,#menuWidgets,#menuLogViewer,#menuCrontab,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
+        $('#menuDash,#menuWorkflow,#menuNetArch,#menuErdDiagram,#menuWireframe,#menuReportEditor,#menuFormEditor,#menuRole,#menuUnit,#menuUser,#menuDictionary,#menuSystemSetting,#menuFirewallMan,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuPcap,#menuSnmp,#menuSys,#menuTools,#menuShell,#menuWidgets,#menuLogViewer,#menuCrontab,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
       }
       function hideAllViews() {
         hideAllWorkViews();
@@ -111,6 +111,7 @@
             menuErdDiagramLink: 'erdDiagram',
             menuWireframeLink: 'wireframe',
             menuReportEditorLink: 'reportEditor',
+            menuFormEditorLink: 'formEditor',
             menuRoleLink: 'role',
             menuUnitLink: 'unit',
             menuUserLink: 'user',
