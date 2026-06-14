@@ -3732,6 +3732,59 @@ async fn handle_apiman_wireframe_delete(
     }
 }
 
+// ---- ApiMan: Reports ----
+
+async fn handle_apiman_report_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_reports() {
+        Ok(items) => utils::output(None, Some(json!({ "reports": items }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_apiman_report_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.report(id) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "report": item }))),
+        Ok(None) => utils::output(Some("report not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_apiman_report_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<ApiManReportInput>,
+) -> Json<Value> {
+    match state.db.create_report(input) {
+        Ok(item) => utils::output(None, Some(json!({ "report": item }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_apiman_report_update(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<ApiManReportInput>,
+) -> Json<Value> {
+    match state.db.update_report(id, input) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "report": item }))),
+        Ok(None) => utils::output(Some("report not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_apiman_report_delete(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.delete_report(id) {
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
+        Ok(false) => utils::output(Some("report not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
 // ---- ApiMan: Export/Import Workspace ----
 
 async fn handle_apiman_export_workspace(
@@ -4412,6 +4465,26 @@ pub fn build_router(state: Arc<AppState>) -> Router {
             get(handle_apiman_wireframe_get)
                 .put(handle_apiman_wireframe_update)
                 .delete(handle_apiman_wireframe_delete),
+        )
+        .route(
+            "/apiman/reports",
+            get(handle_apiman_report_list).post(handle_apiman_report_create),
+        )
+        .route(
+            "/apiman/reports/:id",
+            get(handle_apiman_report_get)
+                .put(handle_apiman_report_update)
+                .delete(handle_apiman_report_delete),
+        )
+        .route(
+            "/api/apiman/reports",
+            get(handle_apiman_report_list).post(handle_apiman_report_create),
+        )
+        .route(
+            "/api/apiman/reports/:id",
+            get(handle_apiman_report_get)
+                .put(handle_apiman_report_update)
+                .delete(handle_apiman_report_delete),
         )
         .route(
             "/workflows",

@@ -197,6 +197,12 @@ export default function Sidebar() {
                 <div className="text-truncate" id="menuWireframeLabel">Wireframe 設計</div>
               </a>
             </li>
+            <li className="menu-item" id="menuReportEditor">
+              <a href="#" className="menu-link" id="menuReportEditorLink">
+                <i className="menu-icon tf-icons bx bx-file"></i>
+                <div className="text-truncate" id="menuReportEditorLabel">Report 編輯器</div>
+              </a>
+            </li>
             <div id="menuApiManWsItems"></div>
           </ul>
         </li>
