@@ -5,7 +5,7 @@ In the context of network servers and infrastructure, “Kyklos” can be applie
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A Rust-based cross-platform firewall web management tool supporting **Linux (iptables)**, **macOS (pfctl)**, and **Windows (PowerShell NetSecurity)**.
+A Rust-based cross-platform web management platform (**Kyklos**) for network and security infrastructure, covering firewall (iptables / pfctl / NetSecurity), HAProxy, Nginx, Juniper switches, Netplan, PCAP capture, SNMP monitoring, Samba / SFTP file services, system status, and an AI assistant — on **Linux**, **macOS**, and **Windows**.
 
 <br/>
 <p align="center"><img width="256" alt="rustoauth2" src="docs/logo.svg" /></p>
@@ -14,16 +14,18 @@ A Rust-based cross-platform firewall web management tool supporting **Linux (ipt
 ## Features
 <img width="256" alt="rustoauth2" src="docs/op/screenshot.png" />
 
-- **Cross-platform**: Linux uses iptables/ip6tables, macOS uses pfctl, Windows uses PowerShell NetSecurity – auto-detected at startup
+- **Cross-platform**: Linux (iptables/ip6tables), macOS (pfctl), Windows (PowerShell NetSecurity) — auto-detected at startup
+- **Multi-module management**: Firewall, HAProxy, Nginx, Juniper, Netplan, PCAP, SNMP, Samba, SFTP, system status, AI assistant
 - **IPv4 / IPv6 Dual Stack**: Manage both IPv4 and IPv6 firewall rules (Linux only)
-- **Platform-aware UI**: The frontend auto-detects the platform and dynamically switches command names and operation hints
-- **Web GUI**: Sneat Bootstrap 5 responsive interface with intuitive table-based rule browsing and operations
-- **Rule Management**: View, add, insert, delete, and flush rules
-- **Counter Management**: Zero out rule or table statistics (iptables only)
-- **Import / Export**: Batch import and export rules
+- **Platform-aware UI**: The frontend auto-detects the platform and dynamically switches command names, layouts, and operation hints
+- **Dashboard**: Real-time traffic trend (Canvas), Top source/destination IPs, protocol / port / target distribution, system KPIs
+- **System Status**: Hostname, OS, uptime, IP, memory / swap, disks, process table with sortable columns
+- **Web GUI**: Sneat Bootstrap 5 responsive interface with multi-tab workspace, table-based browsing, and an in-page logger panel
+- **Rule Management**: View, add, insert, delete, flush, and zero rule / table counters (iptables only)
+- **Import / Export**: Batch import and export rules in platform-native formats
 - **Custom Commands**: Execute arbitrary firewall commands directly
 - **Security**: HTTP Basic Auth with parameter injection filtering
-- **Bilingual UI**: Traditional Chinese / English instant switch
+- **Bilingual UI**: Traditional Chinese / English / Japanese instant switch
 
 ## Quick Start
 

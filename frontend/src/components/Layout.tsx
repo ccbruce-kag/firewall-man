@@ -66,7 +66,7 @@ export default function Layout() {
               <div className="container-xxl">
                 <div className="footer-container d-flex align-items-center justify-content-between py-3 flex-md-row flex-column">
                   <div className="d-flex align-items-center gap-2">
-                    <small>MiCopa 網路與安全工具管理平臺 &copy; {new Date().getFullYear()}</small>
+                    <small>Kyklos 網路與安全工具管理平臺 &copy; {new Date().getFullYear()}</small>
                     <small className="badge bg-label-info rounded-pill" id="footerVersion">-</small>
                   </div>
                 </div>
