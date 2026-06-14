@@ -29,6 +29,9 @@
       // Tab-aware view activation map (must be defined before tab restoration below)
       var viewActivators = {
         dashboard: function() { loadDash(); if (dashTimer) clearInterval(dashTimer); dashTimer = setInterval(loadDash, 5000); },
+        workflow: function() { logger.debug('工作流程設計視圖啟動'); },
+        netArch: function() { logger.debug('網路架構編輯視圖啟動'); },
+        erdDiagram: function() { logger.debug('ER-Diagram 視圖啟動'); },
         shell: function() { initTerminal(); setTimeout(function(){if(termFit){termFit.fit();sendResize();}focusTerminal();},100); },
         ai: function() { setTimeout(function(){$('#aiInput').focus();},100); },
         juniper: function() { loadJuniperAll(); },
@@ -55,7 +58,9 @@
         firewallMan: function() { $('.action-buttons').show(); loadListRule(currentTableName()); },
       };
       var viewMenuMap = {
-        dashboard: 'menuDash', firewallMan: 'menuFirewallMan', juniper: 'menuJuniper',
+        dashboard: 'menuDash', workflow: 'menuWorkflow', netArch: 'menuNetArch', erdDiagram: 'menuErdDiagram',
+        role: 'menuRole', unit: 'menuUnit', user: 'menuUser', dictionary: 'menuDictionary', systemSetting: 'menuSystemSetting',
+        firewallMan: 'menuFirewallMan', juniper: 'menuJuniper',
         haproxy: 'menuHaproxy', nginx: 'menuNginx', netplan: 'menuNetplan',
         pcap: 'menuPcap', snmp: 'menuSnmp', apiman: 'menuApiManNew', dbman: 'menuDbManNew', security: 'menuSecurityCvs',
         tools: 'menuTools', system: 'menuSys', shell: 'menuShell', widgets: 'menuWidgets', logViewer: 'menuLogViewer', crontab: 'menuCrontab', ai: 'menuAI',
@@ -71,7 +76,7 @@
       });
       $('#logClear').on('click', function () { logger.clear(); });
       function inactiveAllLeaf() {
-        $('#menuDash,#menuFirewallMan,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuPcap,#menuSnmp,#menuSys,#menuTools,#menuShell,#menuWidgets,#menuLogViewer,#menuCrontab,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
+        $('#menuDash,#menuWorkflow,#menuNetArch,#menuErdDiagram,#menuRole,#menuUnit,#menuUser,#menuDictionary,#menuSystemSetting,#menuFirewallMan,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuPcap,#menuSnmp,#menuSys,#menuTools,#menuShell,#menuWidgets,#menuLogViewer,#menuCrontab,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
       }
       function hideAllViews() {
         hideAllWorkViews();
@@ -101,6 +106,14 @@
           if (!link) return;
           var viewMap = {
             menuDashLink: 'dashboard',
+            menuWorkflowLink: 'workflow',
+            menuNetArchLink: 'netArch',
+            menuErdDiagramLink: 'erdDiagram',
+            menuRoleLink: 'role',
+            menuUnitLink: 'unit',
+            menuUserLink: 'user',
+            menuDictionaryLink: 'dictionary',
+            menuSystemSettingLink: 'systemSetting',
             menuFirewallManLink: 'firewallMan',
             menuJuniperLink: 'juniper',
             menuHaproxyLink: 'haproxy',

@@ -27,6 +27,9 @@ interface Window {
   PerfectScrollbar?: new (el: Element) => unknown;
   bootstrap?: {
     Tooltip: new (el: Element) => unknown;
+    Modal: {
+      getOrCreateInstance: (el: Element) => { show: () => void; hide: () => void; };
+    };
   };
   setLanguage?: (lang: string, persist?: boolean) => void;
   loadIptables?: () => void;

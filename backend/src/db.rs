@@ -2,7 +2,13 @@ use crate::apps::apiman::{
     ApiManNode, ApiManNodeInput, ApiManRequest, ApiManRequestInput, ApiManWorkspace,
     ApiManWorkspaceInput,
 };
-use crate::apps::dbman::{DbConnection, DbConnectionInput};
+use crate::apps::dbman::{DbConnection, DbConnectionInput, ErdDiagram, ErdDiagramInput};
+use crate::apps::network::{NetworkArchitecture, NetworkArchitectureInput};
+use crate::apps::settings::{
+    DictionaryEntry, DictionaryInput, Role, RoleInput, SystemSetting, SystemSettingInput, Unit,
+    UnitInput, User, UserInput,
+};
+use crate::apps::workflow::{Workflow, WorkflowInput};
 use crate::net::juniper::JuniperConfig;
 use crate::net::netplan::NetplanConfig;
 use crate::net::nginx::{NginxModule, NginxSettings, NginxSite, NginxSiteUpdate};
@@ -648,6 +654,99 @@ impl AppDb {
                 error TEXT,
                 duration_ms INTEGER,
                 FOREIGN KEY (job_id) REFERENCES cron_jobs(id) ON DELETE CASCADE
+            );
+            CREATE TABLE IF NOT EXISTS workflows (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT NOT NULL DEFAULT '',
+                trigger TEXT NOT NULL DEFAULT 'manual',
+                status TEXT NOT NULL DEFAULT 'active',
+                nodes_json TEXT NOT NULL DEFAULT '[]',
+                edges_json TEXT NOT NULL DEFAULT '[]',
+                viewport_json TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+            CREATE TABLE IF NOT EXISTS network_architectures (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT NOT NULL DEFAULT '',
+                nodes_json TEXT NOT NULL DEFAULT '[]',
+                edges_json TEXT NOT NULL DEFAULT '[]',
+                viewport_json TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+            CREATE TABLE IF NOT EXISTS erd_diagrams (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                connection_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                nodes_json TEXT NOT NULL DEFAULT '[]',
+                edges_json TEXT NOT NULL DEFAULT '[]',
+                viewport_json TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                FOREIGN KEY (connection_id) REFERENCES dbman_connections(id) ON DELETE CASCADE
+            );
+            CREATE TABLE IF NOT EXISTS roles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                enabled INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+            );
+            CREATE TABLE IF NOT EXISTS units (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                code TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                parent_id INTEGER,
+                description TEXT NOT NULL DEFAULT '',
+                enabled INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                FOREIGN KEY (parent_id) REFERENCES units(id) ON DELETE SET NULL
+            );
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                display_name TEXT NOT NULL DEFAULT '',
+                email TEXT,
+                phone TEXT,
+                password_hash TEXT NOT NULL,
+                unit_id INTEGER,
+                role_codes TEXT NOT NULL DEFAULT '[]',
+                enabled INTEGER NOT NULL DEFAULT 1,
+                last_login_at TEXT,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE SET NULL
+            );
+            CREATE TABLE IF NOT EXISTS data_dictionary (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category TEXT NOT NULL,
+                code TEXT NOT NULL,
+                label TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                extra_json TEXT,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                UNIQUE(category, code)
+            );
+            CREATE TABLE IF NOT EXISTS system_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT NOT NULL UNIQUE,
+                value TEXT NOT NULL DEFAULT '',
+                category TEXT NOT NULL DEFAULT 'general',
+                data_type TEXT NOT NULL DEFAULT 'string',
+                description TEXT NOT NULL DEFAULT '',
+                is_secret INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
+                updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
             );",
         )
         .map_err(|e| format!("initialize database schema failed: {e}"))?;
@@ -1425,7 +1524,7 @@ impl AppDb {
         Ok(affected > 0)
     }
 
-    fn get_dbman_connection(&self, id: i64) -> Result<Option<DbConnection>, String> {
+    pub fn get_dbman_connection(&self, id: i64) -> Result<Option<DbConnection>, String> {
         let conn = self.connect()?;
         conn.query_row(
             "SELECT id, name, db_type, file_path, host, port, username, password, database_name, trust_server_cert, created_at, updated_at FROM dbman_connections WHERE id = ?1",
@@ -2297,4 +2396,1256 @@ fn validate_cron_job_input(input: &CronJobInput) -> Result<(), String> {
         return Err("env_json must be a JSON object".to_string());
     }
     Ok(())
+}
+
+// ---- Workflows ----
+
+fn map_workflow_row(row: &rusqlite::Row) -> rusqlite::Result<Workflow> {
+    Ok(Workflow {
+        id: row.get(0)?,
+        name: row.get(1)?,
+        description: row.get(2)?,
+        trigger: row.get(3)?,
+        status: row.get(4)?,
+        nodes_json: row.get(5)?,
+        edges_json: row.get(6)?,
+        viewport_json: row.get(7)?,
+        created_at: row.get(8)?,
+        updated_at: row.get(9)?,
+    })
+}
+
+fn validate_workflow_input(input: &WorkflowInput) -> Result<(), String> {
+    let name = input.name.trim();
+    if name.is_empty() || name.len() > 128 {
+        return Err("workflow name is required and must be 128 characters or less".to_string());
+    }
+    let trigger = input.trigger.as_deref().unwrap_or("manual").trim();
+    if !matches!(trigger, "manual" | "schedule" | "webhook" | "event") {
+        return Err("workflow trigger must be manual, schedule, webhook, or event".to_string());
+    }
+    let status = input.status.as_deref().unwrap_or("active").trim();
+    if !matches!(status, "active" | "paused" | "draft" | "archived") {
+        return Err("workflow status must be active, paused, draft, or archived".to_string());
+    }
+    let _: serde_json::Value = serde_json::from_str(input.nodes_json.trim())
+        .map_err(|e| format!("nodes_json is invalid JSON: {e}"))?;
+    let _: serde_json::Value = serde_json::from_str(input.edges_json.trim())
+        .map_err(|e| format!("edges_json is invalid JSON: {e}"))?;
+    if let Some(vp) = input.viewport_json.as_deref() {
+        if !vp.trim().is_empty() {
+            let _: serde_json::Value = serde_json::from_str(vp.trim())
+                .map_err(|e| format!("viewport_json is invalid JSON: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+impl AppDb {
+    pub fn list_workflows(&self) -> Result<Vec<Workflow>, String> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, name, description, trigger, status, nodes_json, edges_json,
+                        viewport_json, created_at, updated_at
+                 FROM workflows
+                 ORDER BY status = 'archived' ASC, status = 'active' DESC, updated_at DESC, id DESC",
+            )
+            .map_err(|e| format!("prepare workflow list failed: {e}"))?;
+        let rows = stmt
+            .query_map([], map_workflow_row)
+            .map_err(|e| format!("query workflows failed: {e}"))?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row.map_err(|e| format!("read workflow row failed: {e}"))?);
+        }
+        Ok(items)
+    }
+
+    pub fn workflow(&self, id: i64) -> Result<Option<Workflow>, String> {
+        let conn = self.connect()?;
+        conn.query_row(
+            "SELECT id, name, description, trigger, status, nodes_json, edges_json,
+                    viewport_json, created_at, updated_at
+             FROM workflows WHERE id = ?1",
+            params![id],
+            map_workflow_row,
+        )
+        .optional()
+        .map_err(|e| format!("load workflow failed: {e}"))
+    }
+
+    pub fn create_workflow(&self, input: WorkflowInput) -> Result<Workflow, String> {
+        validate_workflow_input(&input)?;
+        let conn = self.connect()?;
+        let existing: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM workflows WHERE name = ?1",
+                params![input.name.trim()],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup workflow by name failed: {e}"))?;
+        if existing.is_some() {
+            return Err(format!("workflow name already exists: {}", input.name.trim()));
+        }
+        conn.execute(
+            "INSERT INTO workflows (name, description, trigger, status, nodes_json, edges_json, viewport_json)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                input.name.trim(),
+                input.description.unwrap_or_default().trim(),
+                input.trigger.unwrap_or_else(|| "manual".to_string()).trim(),
+                input.status.unwrap_or_else(|| "active".to_string()).trim(),
+                input.nodes_json,
+                input.edges_json,
+                input.viewport_json,
+            ],
+        )
+        .map_err(|e| format!("insert workflow failed: {e}"))?;
+        let id = conn.last_insert_rowid();
+        self.workflow(id)?
+            .ok_or_else(|| "created workflow not found".to_string())
+    }
+
+    pub fn update_workflow(&self, id: i64, input: WorkflowInput) -> Result<Option<Workflow>, String> {
+        validate_workflow_input(&input)?;
+        let conn = self.connect()?;
+        let affected = conn
+            .execute(
+                "UPDATE workflows
+                 SET name = ?1, description = ?2, trigger = ?3, status = ?4,
+                     nodes_json = ?5, edges_json = ?6, viewport_json = ?7,
+                     updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?8",
+                params![
+                    input.name.trim(),
+                    input.description.unwrap_or_default().trim(),
+                    input.trigger.unwrap_or_else(|| "manual".to_string()).trim(),
+                    input.status.unwrap_or_else(|| "active".to_string()).trim(),
+                    input.nodes_json,
+                    input.edges_json,
+                    input.viewport_json,
+                    id,
+                ],
+            )
+            .map_err(|e| format!("update workflow failed: {e}"))?;
+        if affected == 0 {
+            return Ok(None);
+        }
+        self.workflow(id)
+    }
+
+    pub fn delete_workflow(&self, id: i64) -> Result<bool, String> {
+        let conn = self.connect()?;
+        let affected = conn
+            .execute("DELETE FROM workflows WHERE id = ?1", params![id])
+            .map_err(|e| format!("delete workflow failed: {e}"))?;
+        Ok(affected > 0)
+    }
+
+    pub fn set_workflow_status(&self, id: i64, status: &str) -> Result<Option<Workflow>, String> {
+        let status = status.trim();
+        if !matches!(status, "active" | "paused" | "draft" | "archived") {
+            return Err("workflow status must be active, paused, draft, or archived".to_string());
+        }
+        let conn = self.connect()?;
+        let affected = conn
+            .execute(
+                "UPDATE workflows SET status = ?1, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now') WHERE id = ?2",
+                params![status, id],
+            )
+            .map_err(|e| format!("update workflow status failed: {e}"))?;
+        if affected == 0 {
+            return Ok(None);
+        }
+        self.workflow(id)
+    }
+}
+
+// ---- Network Architectures ----
+
+fn map_network_row(row: &rusqlite::Row) -> rusqlite::Result<NetworkArchitecture> {
+    Ok(NetworkArchitecture {
+        id: row.get(0)?,
+        name: row.get(1)?,
+        description: row.get(2)?,
+        nodes_json: row.get(3)?,
+        edges_json: row.get(4)?,
+        viewport_json: row.get(5)?,
+        created_at: row.get(6)?,
+        updated_at: row.get(7)?,
+    })
+}
+
+fn validate_network_input(input: &NetworkArchitectureInput) -> Result<(), String> {
+    let name = input.name.trim();
+    if name.is_empty() || name.len() > 128 {
+        return Err("network architecture name is required and must be 128 characters or less".to_string());
+    }
+    let _: serde_json::Value = serde_json::from_str(input.nodes_json.trim())
+        .map_err(|e| format!("nodes_json is invalid JSON: {e}"))?;
+    let _: serde_json::Value = serde_json::from_str(input.edges_json.trim())
+        .map_err(|e| format!("edges_json is invalid JSON: {e}"))?;
+    if let Some(vp) = input.viewport_json.as_deref() {
+        if !vp.trim().is_empty() {
+            let _: serde_json::Value = serde_json::from_str(vp.trim())
+                .map_err(|e| format!("viewport_json is invalid JSON: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+impl AppDb {
+    pub fn list_network_architectures(&self) -> Result<Vec<NetworkArchitecture>, String> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, name, description, nodes_json, edges_json, viewport_json,
+                        created_at, updated_at
+                 FROM network_architectures
+                 ORDER BY updated_at DESC, id DESC",
+            )
+            .map_err(|e| format!("prepare network architectures list failed: {e}"))?;
+        let rows = stmt
+            .query_map([], map_network_row)
+            .map_err(|e| format!("query network architectures failed: {e}"))?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row.map_err(|e| format!("read network architecture row failed: {e}"))?);
+        }
+        Ok(items)
+    }
+
+    pub fn network_architecture(&self, id: i64) -> Result<Option<NetworkArchitecture>, String> {
+        let conn = self.connect()?;
+        conn.query_row(
+            "SELECT id, name, description, nodes_json, edges_json, viewport_json,
+                    created_at, updated_at
+             FROM network_architectures WHERE id = ?1",
+            params![id],
+            map_network_row,
+        )
+        .optional()
+        .map_err(|e| format!("load network architecture failed: {e}"))
+    }
+
+    pub fn create_network_architecture(
+        &self,
+        input: NetworkArchitectureInput,
+    ) -> Result<NetworkArchitecture, String> {
+        validate_network_input(&input)?;
+        let conn = self.connect()?;
+        let existing: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM network_architectures WHERE name = ?1",
+                params![input.name.trim()],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup network architecture by name failed: {e}"))?;
+        if existing.is_some() {
+            return Err(format!("network architecture name already exists: {}", input.name.trim()));
+        }
+        conn.execute(
+            "INSERT INTO network_architectures (name, description, nodes_json, edges_json, viewport_json)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![
+                input.name.trim(),
+                input.description.unwrap_or_default().trim(),
+                input.nodes_json,
+                input.edges_json,
+                input.viewport_json,
+            ],
+        )
+        .map_err(|e| format!("insert network architecture failed: {e}"))?;
+        let id = conn.last_insert_rowid();
+        self.network_architecture(id)?
+            .ok_or_else(|| "created network architecture not found".to_string())
+    }
+
+    pub fn update_network_architecture(
+        &self,
+        id: i64,
+        input: NetworkArchitectureInput,
+    ) -> Result<Option<NetworkArchitecture>, String> {
+        validate_network_input(&input)?;
+        let conn = self.connect()?;
+        let affected = conn
+            .execute(
+                "UPDATE network_architectures
+                 SET name = ?1, description = ?2, nodes_json = ?3, edges_json = ?4,
+                     viewport_json = ?5, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?6",
+                params![
+                    input.name.trim(),
+                    input.description.unwrap_or_default().trim(),
+                    input.nodes_json,
+                    input.edges_json,
+                    input.viewport_json,
+                    id,
+                ],
+            )
+            .map_err(|e| format!("update network architecture failed: {e}"))?;
+        if affected == 0 {
+            return Ok(None);
+        }
+        self.network_architecture(id)
+    }
+
+    pub fn delete_network_architecture(&self, id: i64) -> Result<bool, String> {
+        let conn = self.connect()?;
+        let affected = conn
+            .execute(
+                "DELETE FROM network_architectures WHERE id = ?1",
+                params![id],
+            )
+            .map_err(|e| format!("delete network architecture failed: {e}"))?;
+        Ok(affected > 0)
+    }
+}
+
+// ---- ERD Diagrams ----
+
+fn map_erd_row(row: &rusqlite::Row) -> rusqlite::Result<ErdDiagram> {
+    Ok(ErdDiagram {
+        id: row.get(0)?,
+        connection_id: row.get(1)?,
+        name: row.get(2)?,
+        description: row.get(3)?,
+        nodes_json: row.get(4)?,
+        edges_json: row.get(5)?,
+        viewport_json: row.get(6)?,
+        created_at: row.get(7)?,
+        updated_at: row.get(8)?,
+    })
+}
+
+fn validate_erd_input(input: &ErdDiagramInput) -> Result<(), String> {
+    let name = input.name.trim();
+    if name.is_empty() || name.len() > 128 {
+        return Err("ERD name is required and must be 128 characters or less".to_string());
+    }
+    if input.connection_id <= 0 {
+        return Err("ERD connection_id is required".to_string());
+    }
+    let _: serde_json::Value = serde_json::from_str(input.nodes_json.trim())
+        .map_err(|e| format!("nodes_json is invalid JSON: {e}"))?;
+    let _: serde_json::Value = serde_json::from_str(input.edges_json.trim())
+        .map_err(|e| format!("edges_json is invalid JSON: {e}"))?;
+    if let Some(vp) = input.viewport_json.as_deref() {
+        if !vp.trim().is_empty() {
+            let _: serde_json::Value = serde_json::from_str(vp.trim())
+                .map_err(|e| format!("viewport_json is invalid JSON: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+impl AppDb {
+    pub fn list_erd_diagrams(&self) -> Result<Vec<ErdDiagram>, String> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, connection_id, name, description, nodes_json, edges_json,
+                        viewport_json, created_at, updated_at
+                 FROM erd_diagrams
+                 ORDER BY updated_at DESC, id DESC",
+            )
+            .map_err(|e| format!("prepare erd list failed: {e}"))?;
+        let rows = stmt
+            .query_map([], map_erd_row)
+            .map_err(|e| format!("query erd diagrams failed: {e}"))?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row.map_err(|e| format!("read erd row failed: {e}"))?);
+        }
+        Ok(items)
+    }
+
+    pub fn erd_diagram(&self, id: i64) -> Result<Option<ErdDiagram>, String> {
+        let conn = self.connect()?;
+        conn.query_row(
+            "SELECT id, connection_id, name, description, nodes_json, edges_json,
+                    viewport_json, created_at, updated_at
+             FROM erd_diagrams WHERE id = ?1",
+            params![id],
+            map_erd_row,
+        )
+        .optional()
+        .map_err(|e| format!("load erd diagram failed: {e}"))
+    }
+
+    pub fn create_erd_diagram(&self, input: ErdDiagramInput) -> Result<ErdDiagram, String> {
+        validate_erd_input(&input)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM dbman_connections WHERE id = ?1",
+                params![input.connection_id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup connection failed: {e}"))?;
+        if exists.is_none() {
+            return Err(format!("connection not found: {}", input.connection_id));
+        }
+        conn.execute(
+            "INSERT INTO erd_diagrams (connection_id, name, description, nodes_json, edges_json, viewport_json)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                input.connection_id,
+                input.name.trim(),
+                input.description.unwrap_or_default().trim(),
+                input.nodes_json,
+                input.edges_json,
+                input.viewport_json,
+            ],
+        )
+        .map_err(|e| format!("insert erd diagram failed: {e}"))?;
+        let id = conn.last_insert_rowid();
+        self.erd_diagram(id)?
+            .ok_or_else(|| "created erd diagram not found".to_string())
+    }
+
+    pub fn update_erd_diagram(&self, id: i64, input: ErdDiagramInput) -> Result<Option<ErdDiagram>, String> {
+        validate_erd_input(&input)?;
+        let conn = self.connect()?;
+        let affected = conn
+            .execute(
+                "UPDATE erd_diagrams
+                 SET connection_id = ?1, name = ?2, description = ?3,
+                     nodes_json = ?4, edges_json = ?5, viewport_json = ?6,
+                     updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?7",
+                params![
+                    input.connection_id,
+                    input.name.trim(),
+                    input.description.unwrap_or_default().trim(),
+                    input.nodes_json,
+                    input.edges_json,
+                    input.viewport_json,
+                    id,
+                ],
+            )
+            .map_err(|e| format!("update erd diagram failed: {e}"))?;
+        if affected == 0 {
+            return Ok(None);
+        }
+        self.erd_diagram(id)
+    }
+
+    pub fn delete_erd_diagram(&self, id: i64) -> Result<bool, String> {
+        let conn = self.connect()?;
+        let affected = conn
+            .execute("DELETE FROM erd_diagrams WHERE id = ?1", params![id])
+            .map_err(|e| format!("delete erd diagram failed: {e}"))?;
+        Ok(affected > 0)
+    }
+}
+
+// ---- Settings: Roles ----
+
+fn map_role_row(row: &rusqlite::Row) -> rusqlite::Result<Role> {
+    Ok(Role {
+        id: row.get(0)?,
+        code: row.get(1)?,
+        name: row.get(2)?,
+        description: row.get(3)?,
+        enabled: row.get::<_, i64>(4)? != 0,
+        created_at: row.get(5)?,
+        updated_at: row.get(6)?,
+    })
+}
+
+fn validate_role_input(input: &RoleInput) -> Result<(), String> {
+    let code = input.code.trim();
+    if code.is_empty() || code.len() > 64 {
+        return Err("role code is required and must be 64 characters or less".to_string());
+    }
+    let name = input.name.trim();
+    if name.is_empty() || name.len() > 128 {
+        return Err("role name is required and must be 128 characters or less".to_string());
+    }
+    Ok(())
+}
+
+impl AppDb {
+    pub fn list_roles(&self) -> Result<Vec<Role>, String> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, code, name, description, enabled, created_at, updated_at
+                 FROM roles ORDER BY enabled DESC, code ASC",
+            )
+            .map_err(|e| format!("prepare roles list failed: {e}"))?;
+        let rows = stmt
+            .query_map([], map_role_row)
+            .map_err(|e| format!("query roles failed: {e}"))?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row.map_err(|e| format!("read role row failed: {e}"))?);
+        }
+        Ok(items)
+    }
+
+    pub fn role(&self, id: i64) -> Result<Option<Role>, String> {
+        let conn = self.connect()?;
+        conn.query_row(
+            "SELECT id, code, name, description, enabled, created_at, updated_at
+             FROM roles WHERE id = ?1",
+            params![id],
+            map_role_row,
+        )
+        .optional()
+        .map_err(|e| format!("load role failed: {e}"))
+    }
+
+    pub fn create_role(&self, input: RoleInput) -> Result<Role, String> {
+        validate_role_input(&input)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM roles WHERE code = ?1",
+                params![input.code.trim()],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup role code failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("role code already exists: {}", input.code.trim()));
+        }
+        conn.execute(
+            "INSERT INTO roles (code, name, description, enabled) VALUES (?1, ?2, ?3, ?4)",
+            params![
+                input.code.trim(),
+                input.name.trim(),
+                input.description.unwrap_or_default().trim(),
+                if input.enabled.unwrap_or(true) { 1 } else { 0 },
+            ],
+        )
+        .map_err(|e| format!("insert role failed: {e}"))?;
+        let id = conn.last_insert_rowid();
+        self.role(id)?
+            .ok_or_else(|| "created role not found".to_string())
+    }
+
+    pub fn update_role(&self, id: i64, input: RoleInput) -> Result<Option<Role>, String> {
+        validate_role_input(&input)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM roles WHERE code = ?1 AND id != ?2",
+                params![input.code.trim(), id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup role code failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("role code already exists: {}", input.code.trim()));
+        }
+        let affected = conn
+            .execute(
+                "UPDATE roles SET code = ?1, name = ?2, description = ?3, enabled = ?4,
+                     updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?5",
+                params![
+                    input.code.trim(),
+                    input.name.trim(),
+                    input.description.unwrap_or_default().trim(),
+                    if input.enabled.unwrap_or(true) { 1 } else { 0 },
+                    id,
+                ],
+            )
+            .map_err(|e| format!("update role failed: {e}"))?;
+        if affected == 0 { return Ok(None); }
+        self.role(id)
+    }
+
+    pub fn delete_role(&self, id: i64) -> Result<bool, String> {
+        let conn = self.connect()?;
+        let affected = conn
+            .execute("DELETE FROM roles WHERE id = ?1", params![id])
+            .map_err(|e| format!("delete role failed: {e}"))?;
+        Ok(affected > 0)
+    }
+}
+
+// ---- Settings: Units ----
+
+fn map_unit_row(row: &rusqlite::Row) -> rusqlite::Result<Unit> {
+    Ok(Unit {
+        id: row.get(0)?,
+        code: row.get(1)?,
+        name: row.get(2)?,
+        parent_id: row.get(3)?,
+        description: row.get(4)?,
+        enabled: row.get::<_, i64>(5)? != 0,
+        created_at: row.get(6)?,
+        updated_at: row.get(7)?,
+    })
+}
+
+fn validate_unit_input(input: &UnitInput, self_id: Option<i64>) -> Result<(), String> {
+    let code = input.code.trim();
+    if code.is_empty() || code.len() > 64 {
+        return Err("unit code is required and must be 64 characters or less".to_string());
+    }
+    let name = input.name.trim();
+    if name.is_empty() || name.len() > 128 {
+        return Err("unit name is required and must be 128 characters or less".to_string());
+    }
+    if let Some(pid) = input.parent_id {
+        if let Some(sid) = self_id {
+            if pid == sid {
+                return Err("unit cannot be its own parent".to_string());
+            }
+        }
+    }
+    Ok(())
+}
+
+impl AppDb {
+    pub fn list_units(&self) -> Result<Vec<Unit>, String> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, code, name, parent_id, description, enabled, created_at, updated_at
+                 FROM units ORDER BY enabled DESC, code ASC",
+            )
+            .map_err(|e| format!("prepare units list failed: {e}"))?;
+        let rows = stmt
+            .query_map([], map_unit_row)
+            .map_err(|e| format!("query units failed: {e}"))?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row.map_err(|e| format!("read unit row failed: {e}"))?);
+        }
+        Ok(items)
+    }
+
+    pub fn unit(&self, id: i64) -> Result<Option<Unit>, String> {
+        let conn = self.connect()?;
+        conn.query_row(
+            "SELECT id, code, name, parent_id, description, enabled, created_at, updated_at
+             FROM units WHERE id = ?1",
+            params![id],
+            map_unit_row,
+        )
+        .optional()
+        .map_err(|e| format!("load unit failed: {e}"))
+    }
+
+    pub fn create_unit(&self, input: UnitInput) -> Result<Unit, String> {
+        validate_unit_input(&input, None)?;
+        let conn = self.connect()?;
+        if let Some(pid) = input.parent_id {
+            let exists: Option<i64> = conn
+                .query_row(
+                    "SELECT id FROM units WHERE id = ?1",
+                    params![pid],
+                    |row| row.get(0),
+                )
+                .optional()
+                .map_err(|e| format!("lookup parent unit failed: {e}"))?;
+            if exists.is_none() {
+                return Err(format!("parent unit not found: {}", pid));
+            }
+        }
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM units WHERE code = ?1",
+                params![input.code.trim()],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup unit code failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("unit code already exists: {}", input.code.trim()));
+        }
+        conn.execute(
+            "INSERT INTO units (code, name, parent_id, description, enabled) VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![
+                input.code.trim(),
+                input.name.trim(),
+                input.parent_id,
+                input.description.unwrap_or_default().trim(),
+                if input.enabled.unwrap_or(true) { 1 } else { 0 },
+            ],
+        )
+        .map_err(|e| format!("insert unit failed: {e}"))?;
+        let id = conn.last_insert_rowid();
+        self.unit(id)?
+            .ok_or_else(|| "created unit not found".to_string())
+    }
+
+    pub fn update_unit(&self, id: i64, input: UnitInput) -> Result<Option<Unit>, String> {
+        validate_unit_input(&input, Some(id))?;
+        let conn = self.connect()?;
+        if let Some(pid) = input.parent_id {
+            let exists: Option<i64> = conn
+                .query_row(
+                    "SELECT id FROM units WHERE id = ?1",
+                    params![pid],
+                    |row| row.get(0),
+                )
+                .optional()
+                .map_err(|e| format!("lookup parent unit failed: {e}"))?;
+            if exists.is_none() {
+                return Err(format!("parent unit not found: {}", pid));
+            }
+        }
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM units WHERE code = ?1 AND id != ?2",
+                params![input.code.trim(), id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup unit code failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("unit code already exists: {}", input.code.trim()));
+        }
+        let affected = conn
+            .execute(
+                "UPDATE units SET code = ?1, name = ?2, parent_id = ?3, description = ?4, enabled = ?5,
+                     updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?6",
+                params![
+                    input.code.trim(),
+                    input.name.trim(),
+                    input.parent_id,
+                    input.description.unwrap_or_default().trim(),
+                    if input.enabled.unwrap_or(true) { 1 } else { 0 },
+                    id,
+                ],
+            )
+            .map_err(|e| format!("update unit failed: {e}"))?;
+        if affected == 0 { return Ok(None); }
+        self.unit(id)
+    }
+
+    pub fn delete_unit(&self, id: i64) -> Result<bool, String> {
+        let conn = self.connect()?;
+        let affected = conn
+            .execute("DELETE FROM units WHERE id = ?1", params![id])
+            .map_err(|e| format!("delete unit failed: {e}"))?;
+        Ok(affected > 0)
+    }
+}
+
+// ---- Settings: Users ----
+
+fn parse_role_codes(raw: Option<String>) -> Vec<String> {
+    raw.and_then(|s| serde_json::from_str::<Vec<String>>(&s).ok())
+        .unwrap_or_default()
+}
+
+fn map_user_row(row: &rusqlite::Row) -> rusqlite::Result<User> {
+    Ok(User {
+        id: row.get(0)?,
+        username: row.get(1)?,
+        display_name: row.get(2)?,
+        email: row.get(3)?,
+        phone: row.get(4)?,
+        password_hash: row.get(5)?,
+        unit_id: row.get(6)?,
+        role_codes: parse_role_codes(row.get::<_, Option<String>>(7)?),
+        enabled: row.get::<_, i64>(8)? != 0,
+        last_login_at: row.get(9)?,
+        created_at: row.get(10)?,
+        updated_at: row.get(11)?,
+    })
+}
+
+fn validate_user_input(input: &UserInput, require_password: bool) -> Result<(), String> {
+    let username = input.username.trim();
+    if username.is_empty() || username.len() > 64 {
+        return Err("username is required and must be 64 characters or less".to_string());
+    }
+    if require_password {
+        let pw = input.password.as_deref().unwrap_or("");
+        if pw.len() < 6 {
+            return Err("password must be at least 6 characters".to_string());
+        }
+    } else if let Some(pw) = input.password.as_deref() {
+        if !pw.is_empty() && pw.len() < 6 {
+            return Err("password must be at least 6 characters".to_string());
+        }
+    }
+    if let Some(ref email) = input.email {
+        if !email.is_empty() && !email.contains('@') {
+            return Err("invalid email format".to_string());
+        }
+    }
+    Ok(())
+}
+
+impl AppDb {
+    pub fn list_users(&self) -> Result<Vec<User>, String> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, username, display_name, email, phone, password_hash, unit_id,
+                        role_codes, enabled, last_login_at, created_at, updated_at
+                 FROM users ORDER BY enabled DESC, username ASC",
+            )
+            .map_err(|e| format!("prepare users list failed: {e}"))?;
+        let rows = stmt
+            .query_map([], map_user_row)
+            .map_err(|e| format!("query users failed: {e}"))?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row.map_err(|e| format!("read user row failed: {e}"))?);
+        }
+        Ok(items)
+    }
+
+    pub fn user(&self, id: i64) -> Result<Option<User>, String> {
+        let conn = self.connect()?;
+        conn.query_row(
+            "SELECT id, username, display_name, email, phone, password_hash, unit_id,
+                    role_codes, enabled, last_login_at, created_at, updated_at
+             FROM users WHERE id = ?1",
+            params![id],
+            map_user_row,
+        )
+        .optional()
+        .map_err(|e| format!("load user failed: {e}"))
+    }
+
+    pub fn create_user(&self, input: UserInput) -> Result<User, String> {
+        validate_user_input(&input, true)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM users WHERE username = ?1",
+                params![input.username.trim()],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup username failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("username already exists: {}", input.username.trim()));
+        }
+        let salt = crate::apps::settings::derive_salt(&input.username);
+        let pw = input.password.as_deref().unwrap_or("");
+        let hash = crate::apps::settings::hash_password(pw, &salt);
+        let role_codes_json = serde_json::to_string(&input.role_codes.clone().unwrap_or_default())
+            .unwrap_or_else(|_| "[]".to_string());
+        conn.execute(
+            "INSERT INTO users (username, display_name, email, phone, password_hash, unit_id, role_codes, enabled)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![
+                input.username.trim(),
+                input.display_name.unwrap_or_default().trim(),
+                input.email,
+                input.phone,
+                hash,
+                input.unit_id,
+                role_codes_json,
+                if input.enabled.unwrap_or(true) { 1 } else { 0 },
+            ],
+        )
+        .map_err(|e| format!("insert user failed: {e}"))?;
+        let id = conn.last_insert_rowid();
+        self.user(id)?
+            .ok_or_else(|| "created user not found".to_string())
+    }
+
+    pub fn update_user(&self, id: i64, input: UserInput) -> Result<Option<User>, String> {
+        validate_user_input(&input, false)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM users WHERE username = ?1 AND id != ?2",
+                params![input.username.trim(), id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup username failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("username already exists: {}", input.username.trim()));
+        }
+        let role_codes_json = serde_json::to_string(&input.role_codes.clone().unwrap_or_default())
+            .unwrap_or_else(|_| "[]".to_string());
+        if let Some(pw) = input.password.as_deref() {
+            if !pw.is_empty() {
+                let salt = crate::apps::settings::derive_salt(&input.username);
+                let hash = crate::apps::settings::hash_password(pw, &salt);
+                let affected = conn
+                    .execute(
+                        "UPDATE users SET username = ?1, display_name = ?2, email = ?3, phone = ?4,
+                             password_hash = ?5, unit_id = ?6, role_codes = ?7, enabled = ?8,
+                             updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                         WHERE id = ?9",
+                        params![
+                            input.username.trim(),
+                            input.display_name.unwrap_or_default().trim(),
+                            input.email,
+                            input.phone,
+                            hash,
+                            input.unit_id,
+                            role_codes_json,
+                            if input.enabled.unwrap_or(true) { 1 } else { 0 },
+                            id,
+                        ],
+                    )
+                    .map_err(|e| format!("update user failed: {e}"))?;
+                if affected == 0 { return Ok(None); }
+                return self.user(id);
+            }
+        }
+        let affected = conn
+            .execute(
+                "UPDATE users SET username = ?1, display_name = ?2, email = ?3, phone = ?4,
+                     unit_id = ?5, role_codes = ?6, enabled = ?7,
+                     updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?8",
+                params![
+                    input.username.trim(),
+                    input.display_name.unwrap_or_default().trim(),
+                    input.email,
+                    input.phone,
+                    input.unit_id,
+                    role_codes_json,
+                    if input.enabled.unwrap_or(true) { 1 } else { 0 },
+                    id,
+                ],
+            )
+            .map_err(|e| format!("update user failed: {e}"))?;
+        if affected == 0 { return Ok(None); }
+        self.user(id)
+    }
+
+    pub fn reset_user_password(&self, id: i64, new_password: &str) -> Result<bool, String> {
+        if new_password.len() < 6 {
+            return Err("password must be at least 6 characters".to_string());
+        }
+        let conn = self.connect()?;
+        let username: String = match conn
+            .query_row(
+                "SELECT username FROM users WHERE id = ?1",
+                params![id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup user failed: {e}"))?
+        {
+            Some(u) => u,
+            None => return Ok(false),
+        };
+        let salt = crate::apps::settings::derive_salt(&username);
+        let hash = crate::apps::settings::hash_password(new_password, &salt);
+        let affected = conn
+            .execute(
+                "UPDATE users SET password_hash = ?1, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?2",
+                params![hash, id],
+            )
+            .map_err(|e| format!("reset user password failed: {e}"))?;
+        Ok(affected > 0)
+    }
+
+    pub fn delete_user(&self, id: i64) -> Result<bool, String> {
+        let conn = self.connect()?;
+        let affected = conn
+            .execute("DELETE FROM users WHERE id = ?1", params![id])
+            .map_err(|e| format!("delete user failed: {e}"))?;
+        Ok(affected > 0)
+    }
+}
+
+// ---- Settings: Data Dictionary ----
+
+fn map_dictionary_row(row: &rusqlite::Row) -> rusqlite::Result<DictionaryEntry> {
+    Ok(DictionaryEntry {
+        id: row.get(0)?,
+        category: row.get(1)?,
+        code: row.get(2)?,
+        label: row.get(3)?,
+        description: row.get(4)?,
+        sort_order: row.get(5)?,
+        extra_json: row.get(6)?,
+        enabled: row.get::<_, i64>(7)? != 0,
+        created_at: row.get(8)?,
+        updated_at: row.get(9)?,
+    })
+}
+
+fn validate_dictionary_input(input: &DictionaryInput) -> Result<(), String> {
+    let category = input.category.trim();
+    if category.is_empty() || category.len() > 64 {
+        return Err("category is required and must be 64 characters or less".to_string());
+    }
+    let code = input.code.trim();
+    if code.is_empty() || code.len() > 64 {
+        return Err("code is required and must be 64 characters or less".to_string());
+    }
+    let label = input.label.trim();
+    if label.is_empty() || label.len() > 128 {
+        return Err("label is required and must be 128 characters or less".to_string());
+    }
+    Ok(())
+}
+
+impl AppDb {
+    pub fn list_dictionary(&self) -> Result<Vec<DictionaryEntry>, String> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, category, code, label, description, sort_order, extra_json,
+                        enabled, created_at, updated_at
+                 FROM data_dictionary
+                 ORDER BY category ASC, sort_order ASC, id ASC",
+            )
+            .map_err(|e| format!("prepare dictionary list failed: {e}"))?;
+        let rows = stmt
+            .query_map([], map_dictionary_row)
+            .map_err(|e| format!("query dictionary failed: {e}"))?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row.map_err(|e| format!("read dictionary row failed: {e}"))?);
+        }
+        Ok(items)
+    }
+
+    pub fn dictionary_entry(&self, id: i64) -> Result<Option<DictionaryEntry>, String> {
+        let conn = self.connect()?;
+        conn.query_row(
+            "SELECT id, category, code, label, description, sort_order, extra_json,
+                    enabled, created_at, updated_at
+             FROM data_dictionary WHERE id = ?1",
+            params![id],
+            map_dictionary_row,
+        )
+        .optional()
+        .map_err(|e| format!("load dictionary entry failed: {e}"))
+    }
+
+    pub fn create_dictionary(&self, input: DictionaryInput) -> Result<DictionaryEntry, String> {
+        validate_dictionary_input(&input)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM data_dictionary WHERE category = ?1 AND code = ?2",
+                params![input.category.trim(), input.code.trim()],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup dictionary code failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("dictionary entry already exists: {}/{}", input.category.trim(), input.code.trim()));
+        }
+        conn.execute(
+            "INSERT INTO data_dictionary (category, code, label, description, sort_order, extra_json, enabled)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                input.category.trim(),
+                input.code.trim(),
+                input.label.trim(),
+                input.description.unwrap_or_default().trim(),
+                input.sort_order.unwrap_or(0),
+                input.extra_json,
+                if input.enabled.unwrap_or(true) { 1 } else { 0 },
+            ],
+        )
+        .map_err(|e| format!("insert dictionary entry failed: {e}"))?;
+        let id = conn.last_insert_rowid();
+        self.dictionary_entry(id)?
+            .ok_or_else(|| "created dictionary entry not found".to_string())
+    }
+
+    pub fn update_dictionary(&self, id: i64, input: DictionaryInput) -> Result<Option<DictionaryEntry>, String> {
+        validate_dictionary_input(&input)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM data_dictionary WHERE category = ?1 AND code = ?2 AND id != ?3",
+                params![input.category.trim(), input.code.trim(), id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup dictionary code failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("dictionary entry already exists: {}/{}", input.category.trim(), input.code.trim()));
+        }
+        let affected = conn
+            .execute(
+                "UPDATE data_dictionary SET category = ?1, code = ?2, label = ?3, description = ?4,
+                     sort_order = ?5, extra_json = ?6, enabled = ?7,
+                     updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?8",
+                params![
+                    input.category.trim(),
+                    input.code.trim(),
+                    input.label.trim(),
+                    input.description.unwrap_or_default().trim(),
+                    input.sort_order.unwrap_or(0),
+                    input.extra_json,
+                    if input.enabled.unwrap_or(true) { 1 } else { 0 },
+                    id,
+                ],
+            )
+            .map_err(|e| format!("update dictionary entry failed: {e}"))?;
+        if affected == 0 { return Ok(None); }
+        self.dictionary_entry(id)
+    }
+
+    pub fn delete_dictionary(&self, id: i64) -> Result<bool, String> {
+        let conn = self.connect()?;
+        let affected = conn
+            .execute("DELETE FROM data_dictionary WHERE id = ?1", params![id])
+            .map_err(|e| format!("delete dictionary entry failed: {e}"))?;
+        Ok(affected > 0)
+    }
+}
+
+// ---- Settings: System Settings ----
+
+fn map_setting_row(row: &rusqlite::Row) -> rusqlite::Result<SystemSetting> {
+    Ok(SystemSetting {
+        id: row.get(0)?,
+        key: row.get(1)?,
+        value: row.get(2)?,
+        category: row.get(3)?,
+        data_type: row.get(4)?,
+        description: row.get(5)?,
+        is_secret: row.get::<_, i64>(6)? != 0,
+        created_at: row.get(7)?,
+        updated_at: row.get(8)?,
+    })
+}
+
+fn validate_setting_input(input: &SystemSettingInput) -> Result<(), String> {
+    let key = input.key.trim();
+    if key.is_empty() || key.len() > 128 {
+        return Err("key is required and must be 128 characters or less".to_string());
+    }
+    let data_type = input.data_type.as_deref().unwrap_or("string").trim();
+    if !matches!(data_type, "string" | "number" | "boolean" | "json") {
+        return Err("data_type must be string, number, boolean, or json".to_string());
+    }
+    let value_trimmed = input.value.trim();
+    if data_type == "number" && !value_trimmed.is_empty() {
+        value_trimmed.parse::<f64>().map_err(|_| "value is not a valid number".to_string())?;
+    }
+    if data_type == "boolean" && !value_trimmed.is_empty() {
+        if !matches!(value_trimmed, "true" | "false" | "1" | "0" | "yes" | "no") {
+            return Err("boolean value must be true/false/1/0/yes/no".to_string());
+        }
+    }
+    if data_type == "json" && !value_trimmed.is_empty() {
+        serde_json::from_str::<serde_json::Value>(value_trimmed)
+            .map_err(|e| format!("value is not valid JSON: {e}"))?;
+    }
+    Ok(())
+}
+
+impl AppDb {
+    pub fn list_settings(&self) -> Result<Vec<SystemSetting>, String> {
+        let conn = self.connect()?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT id, key, value, category, data_type, description, is_secret,
+                        created_at, updated_at
+                 FROM system_settings ORDER BY category ASC, key ASC",
+            )
+            .map_err(|e| format!("prepare settings list failed: {e}"))?;
+        let rows = stmt
+            .query_map([], map_setting_row)
+            .map_err(|e| format!("query settings failed: {e}"))?;
+        let mut items = Vec::new();
+        for row in rows {
+            items.push(row.map_err(|e| format!("read setting row failed: {e}"))?);
+        }
+        Ok(items)
+    }
+
+    pub fn system_setting(&self, id: i64) -> Result<Option<SystemSetting>, String> {
+        let conn = self.connect()?;
+        conn.query_row(
+            "SELECT id, key, value, category, data_type, description, is_secret,
+                    created_at, updated_at
+             FROM system_settings WHERE id = ?1",
+            params![id],
+            map_setting_row,
+        )
+        .optional()
+        .map_err(|e| format!("load system setting failed: {e}"))
+    }
+
+    pub fn create_setting(&self, input: SystemSettingInput) -> Result<SystemSetting, String> {
+        validate_setting_input(&input)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM system_settings WHERE key = ?1",
+                params![input.key.trim()],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup setting key failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("setting key already exists: {}", input.key.trim()));
+        }
+        conn.execute(
+            "INSERT INTO system_settings (key, value, category, data_type, description, is_secret)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                input.key.trim(),
+                input.value,
+                input.category.unwrap_or_else(|| "general".to_string()).trim(),
+                input.data_type.unwrap_or_else(|| "string".to_string()).trim(),
+                input.description.unwrap_or_default().trim(),
+                if input.is_secret.unwrap_or(false) { 1 } else { 0 },
+            ],
+        )
+        .map_err(|e| format!("insert setting failed: {e}"))?;
+        let id = conn.last_insert_rowid();
+        self.system_setting(id)?
+            .ok_or_else(|| "created setting not found".to_string())
+    }
+
+    pub fn update_setting(&self, id: i64, input: SystemSettingInput) -> Result<Option<SystemSetting>, String> {
+        validate_setting_input(&input)?;
+        let conn = self.connect()?;
+        let exists: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM system_settings WHERE key = ?1 AND id != ?2",
+                params![input.key.trim(), id],
+                |row| row.get(0),
+            )
+            .optional()
+            .map_err(|e| format!("lookup setting key failed: {e}"))?;
+        if exists.is_some() {
+            return Err(format!("setting key already exists: {}", input.key.trim()));
+        }
+        let affected = conn
+            .execute(
+                "UPDATE system_settings SET key = ?1, value = ?2, category = ?3, data_type = ?4,
+                     description = ?5, is_secret = ?6, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?7",
+                params![
+                    input.key.trim(),
+                    input.value,
+                    input.category.unwrap_or_else(|| "general".to_string()).trim(),
+                    input.data_type.unwrap_or_else(|| "string".to_string()).trim(),
+                    input.description.unwrap_or_default().trim(),
+                    if input.is_secret.unwrap_or(false) { 1 } else { 0 },
+                    id,
+                ],
+            )
+            .map_err(|e| format!("update setting failed: {e}"))?;
+        if affected == 0 { return Ok(None); }
+        self.system_setting(id)
+    }
+
+    pub fn delete_setting(&self, id: i64) -> Result<bool, String> {
+        let conn = self.connect()?;
+        let affected = conn
+            .execute("DELETE FROM system_settings WHERE id = ?1", params![id])
+            .map_err(|e| format!("delete setting failed: {e}"))?;
+        Ok(affected > 0)
+    }
 }

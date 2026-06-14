@@ -1,6 +1,11 @@
 use crate::ai;
 use crate::apps::apiman::{ApiManNodeInput, ApiManRequestInput, ApiManWorkspaceInput};
-use crate::apps::dbman::DbConnectionInput;
+use crate::apps::dbman::{DbConnectionInput, ErdDiagramInput};
+use crate::apps::network::NetworkArchitectureInput;
+use crate::apps::settings::{
+    DictionaryInput, RoleInput, SystemSettingInput, UnitInput, UserInput, UserPasswordInput,
+};
+use crate::apps::workflow::{WorkflowInput, WorkflowStatusInput};
 use crate::bapi_log;
 use crate::db::{
     AppDb, CronJobInput, HaproxyBackendServerUpdate, HaproxyLoadBalancerUpdate, JuniperDeviceUpdate,
@@ -1590,6 +1595,120 @@ async fn handle_cron_runs(State(state): State<Arc<AppState>>, Path(id): Path<i64
     }
 }
 
+async fn handle_workflow_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_workflows() {
+        Ok(items) => utils::output(None, Some(json!({ "workflows": items }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_workflow_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.workflow(id) {
+        Ok(Some(wf)) => utils::output(None, Some(json!({ "workflow": wf }))),
+        Ok(None) => utils::output(Some("workflow not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_workflow_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<WorkflowInput>,
+) -> Json<Value> {
+    match state.db.create_workflow(input) {
+        Ok(wf) => utils::output(None, Some(json!({ "workflow": wf }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_workflow_update(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<WorkflowInput>,
+) -> Json<Value> {
+    match state.db.update_workflow(id, input) {
+        Ok(Some(wf)) => utils::output(None, Some(json!({ "workflow": wf }))),
+        Ok(None) => utils::output(Some("workflow not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_workflow_delete(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.delete_workflow(id) {
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
+        Ok(false) => utils::output(Some("workflow not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_workflow_set_status(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<WorkflowStatusInput>,
+) -> Json<Value> {
+    match state.db.set_workflow_status(id, &input.status) {
+        Ok(Some(wf)) => utils::output(None, Some(json!({ "workflow": wf }))),
+        Ok(None) => utils::output(Some("workflow not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_network_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_network_architectures() {
+        Ok(items) => utils::output(None, Some(json!({ "architectures": items }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_network_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.network_architecture(id) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "architecture": item }))),
+        Ok(None) => utils::output(Some("network architecture not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_network_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<NetworkArchitectureInput>,
+) -> Json<Value> {
+    match state.db.create_network_architecture(input) {
+        Ok(item) => utils::output(None, Some(json!({ "architecture": item }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_network_update(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<NetworkArchitectureInput>,
+) -> Json<Value> {
+    match state.db.update_network_architecture(id, input) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "architecture": item }))),
+        Ok(None) => utils::output(Some("network architecture not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_network_delete(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.delete_network_architecture(id) {
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
+        Ok(false) => utils::output(Some("network architecture not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
 #[derive(Deserialize)]
 struct SnmpRequestForm {
     host: Option<String>,
@@ -2794,6 +2913,473 @@ async fn handle_dbman_table_columns(Form(form): Form<DbColumnsForm>) -> Json<Val
     }
 }
 
+// ---- ERD Handlers ----
+
+async fn handle_erd_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_erd_diagrams() {
+        Ok(items) => utils::output(None, Some(json!({ "diagrams": items }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_erd_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.erd_diagram(id) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "diagram": item }))),
+        Ok(None) => utils::output(Some("erd diagram not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_erd_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<ErdDiagramInput>,
+) -> Json<Value> {
+    match state.db.create_erd_diagram(input) {
+        Ok(item) => utils::output(None, Some(json!({ "diagram": item }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_erd_update(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<ErdDiagramInput>,
+) -> Json<Value> {
+    match state.db.update_erd_diagram(id, input) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "diagram": item }))),
+        Ok(None) => utils::output(Some("erd diagram not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_erd_delete(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.delete_erd_diagram(id) {
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
+        Ok(false) => utils::output(Some("erd diagram not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+#[derive(Deserialize)]
+struct ErdSchemaForm {
+    pub connection_id: Option<i64>,
+}
+
+async fn handle_erd_schema(
+    State(state): State<Arc<AppState>>,
+    Form(form): Form<ErdSchemaForm>,
+) -> Json<Value> {
+    let conn_id = match form.connection_id {
+        Some(v) if v > 0 => v,
+        _ => return utils::output(Some("connection_id is required"), None),
+    };
+    let conn = match state.db.get_dbman_connection(conn_id) {
+        Ok(Some(c)) => c,
+        Ok(None) => return utils::output(Some("connection not found"), None),
+        Err(e) => return utils::output(Some(&e), None),
+    };
+    let db_type = conn.db_type.clone();
+    let password = conn.password.clone();
+    let host_opt = conn.host.clone();
+    let port_opt = conn.port;
+    let database_opt = conn.database_name.clone();
+    let username_opt = conn.username.clone();
+    let file_path_opt = conn.file_path.clone();
+    let trust_cert = conn.trust_server_cert;
+
+    let host = host_opt.as_deref().unwrap_or("127.0.0.1");
+    let port = port_opt.unwrap_or(match db_type.as_str() {
+        "mysql" => 3306,
+        "sqlserver" => 1433,
+        _ => 0,
+    });
+    let database = database_opt.as_deref().unwrap_or("");
+    let username = username_opt.as_deref().unwrap_or("");
+    let pass = password.as_deref().unwrap_or("");
+
+    let tables_result: Result<Vec<crate::apps::dbman::TableInfo>, String> = match db_type.as_str() {
+        "sqlite" => {
+            let path = file_path_opt.as_deref().unwrap_or("");
+            crate::apps::dbman::list_sqlite_tables(path).await
+        }
+        _ => {
+            crate::apps::dbman::list_cli_tables(
+                &db_type, host, port, username, pass, database, trust_cert,
+            )
+            .await
+        }
+    };
+    let tables = match tables_result {
+        Ok(t) => t,
+        Err(e) => return utils::output(Some(&e), None),
+    };
+
+    let mut columns_map: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
+    for t in &tables {
+        let cols_result: Result<Vec<crate::apps::dbman::ColumnInfo>, String> = match db_type.as_str() {
+            "sqlite" => {
+                let path = file_path_opt.as_deref().unwrap_or("");
+                crate::apps::dbman::get_sqlite_columns(path, &t.name).await
+            }
+            _ => {
+                crate::apps::dbman::list_cli_columns(
+                    &db_type, host, port, username, pass, database, &t.name, trust_cert,
+                )
+                .await
+            }
+        };
+        match cols_result {
+            Ok(cols) => {
+                columns_map.insert(t.name.clone(), serde_json::to_value(&cols).unwrap_or_default());
+            }
+            Err(e) => {
+                columns_map.insert(t.name.clone(), json!({ "error": e }));
+            }
+        }
+    }
+
+    utils::output(
+        None,
+        Some(json!({
+            "connection": {
+                "id": conn.id,
+                "name": conn.name,
+                "db_type": db_type,
+            },
+            "tables": tables,
+            "columns": columns_map,
+        })),
+    )
+}
+
+// ---- Settings: Roles ----
+
+async fn handle_role_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_roles() {
+        Ok(items) => utils::output(None, Some(json!({ "roles": items }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_role_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.role(id) {
+        Ok(Some(r)) => utils::output(None, Some(json!({ "role": r }))),
+        Ok(None) => utils::output(Some("role not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_role_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<RoleInput>,
+) -> Json<Value> {
+    match state.db.create_role(input) {
+        Ok(r) => utils::output(None, Some(json!({ "role": r }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_role_update(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<RoleInput>,
+) -> Json<Value> {
+    match state.db.update_role(id, input) {
+        Ok(Some(r)) => utils::output(None, Some(json!({ "role": r }))),
+        Ok(None) => utils::output(Some("role not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_role_delete(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.delete_role(id) {
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
+        Ok(false) => utils::output(Some("role not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+// ---- Settings: Units ----
+
+async fn handle_unit_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_units() {
+        Ok(items) => utils::output(None, Some(json!({ "units": items }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_unit_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.unit(id) {
+        Ok(Some(u)) => utils::output(None, Some(json!({ "unit": u }))),
+        Ok(None) => utils::output(Some("unit not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_unit_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<UnitInput>,
+) -> Json<Value> {
+    match state.db.create_unit(input) {
+        Ok(u) => utils::output(None, Some(json!({ "unit": u }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_unit_update(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<UnitInput>,
+) -> Json<Value> {
+    match state.db.update_unit(id, input) {
+        Ok(Some(u)) => utils::output(None, Some(json!({ "unit": u }))),
+        Ok(None) => utils::output(Some("unit not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_unit_delete(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.delete_unit(id) {
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
+        Ok(false) => utils::output(Some("unit not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+// ---- Settings: Users ----
+
+async fn handle_user_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_users() {
+        Ok(items) => utils::output(None, Some(json!({ "users": items }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_user_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.user(id) {
+        Ok(Some(u)) => utils::output(None, Some(json!({ "user": u }))),
+        Ok(None) => utils::output(Some("user not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_user_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<UserInput>,
+) -> Json<Value> {
+    match state.db.create_user(input) {
+        Ok(u) => utils::output(None, Some(json!({ "user": u }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_user_update(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<UserInput>,
+) -> Json<Value> {
+    match state.db.update_user(id, input) {
+        Ok(Some(u)) => utils::output(None, Some(json!({ "user": u }))),
+        Ok(None) => utils::output(Some("user not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_user_reset_password(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<UserPasswordInput>,
+) -> Json<Value> {
+    match state.db.reset_user_password(id, &input.password) {
+        Ok(true) => utils::output(None, Some(json!({ "reset": true }))),
+        Ok(false) => utils::output(Some("user not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_user_delete(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.delete_user(id) {
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
+        Ok(false) => utils::output(Some("user not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+// ---- Settings: Dictionary ----
+
+async fn handle_dictionary_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_dictionary() {
+        Ok(items) => utils::output(None, Some(json!({ "entries": items }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_dictionary_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.dictionary_entry(id) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "entry": item }))),
+        Ok(None) => utils::output(Some("dictionary entry not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_dictionary_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<DictionaryInput>,
+) -> Json<Value> {
+    match state.db.create_dictionary(input) {
+        Ok(item) => utils::output(None, Some(json!({ "entry": item }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_dictionary_update(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<DictionaryInput>,
+) -> Json<Value> {
+    match state.db.update_dictionary(id, input) {
+        Ok(Some(item)) => utils::output(None, Some(json!({ "entry": item }))),
+        Ok(None) => utils::output(Some("dictionary entry not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_dictionary_delete(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.delete_dictionary(id) {
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
+        Ok(false) => utils::output(Some("dictionary entry not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+// ---- Settings: System Settings ----
+
+async fn handle_setting_list(State(state): State<Arc<AppState>>) -> Json<Value> {
+    match state.db.list_settings() {
+        Ok(items) => {
+            let public: Vec<_> = items
+                .into_iter()
+                .map(|s| {
+                    let value = if s.is_secret {
+                        crate::apps::settings::mask_secret(&s.value)
+                    } else {
+                        s.value
+                    };
+                    json!({
+                        "id": s.id,
+                        "key": s.key,
+                        "value": value,
+                        "category": s.category,
+                        "data_type": s.data_type,
+                        "description": s.description,
+                        "is_secret": s.is_secret,
+                        "created_at": s.created_at,
+                        "updated_at": s.updated_at,
+                    })
+                })
+                .collect();
+            utils::output(None, Some(json!({ "settings": public })))
+        }
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_setting_get(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.system_setting(id) {
+        Ok(Some(s)) => {
+            let value = if s.is_secret {
+                crate::apps::settings::mask_secret(&s.value)
+            } else {
+                s.value
+            };
+            utils::output(
+                None,
+                Some(json!({
+                    "setting": {
+                        "id": s.id,
+                        "key": s.key,
+                        "value": value,
+                        "category": s.category,
+                        "data_type": s.data_type,
+                        "description": s.description,
+                        "is_secret": s.is_secret,
+                        "created_at": s.created_at,
+                        "updated_at": s.updated_at,
+                    }
+                })),
+            )
+        }
+        Ok(None) => utils::output(Some("setting not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_setting_create(
+    State(state): State<Arc<AppState>>,
+    Json(input): Json<SystemSettingInput>,
+) -> Json<Value> {
+    match state.db.create_setting(input) {
+        Ok(s) => utils::output(None, Some(json!({ "setting": s }))),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_setting_update(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+    Json(input): Json<SystemSettingInput>,
+) -> Json<Value> {
+    match state.db.update_setting(id, input) {
+        Ok(Some(s)) => utils::output(None, Some(json!({ "setting": s }))),
+        Ok(None) => utils::output(Some("setting not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
+async fn handle_setting_delete(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<i64>,
+) -> Json<Value> {
+    match state.db.delete_setting(id) {
+        Ok(true) => utils::output(None, Some(json!({ "deleted": true }))),
+        Ok(false) => utils::output(Some("setting not found"), None),
+        Err(e) => utils::output(Some(&e), None),
+    }
+}
+
 // ---- Security Handlers ----
 
 async fn handle_security_cvs_sources(State(state): State<Arc<AppState>>) -> Json<Value> {
@@ -3752,6 +4338,184 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route(
             "/api/apiman/variables/:ws_id/:key",
             delete(handle_apiman_delete_variable),
+        )
+        .route(
+            "/workflows",
+            get(handle_workflow_list).post(handle_workflow_create),
+        )
+        .route(
+            "/workflows/:id",
+            get(handle_workflow_get)
+                .put(handle_workflow_update)
+                .delete(handle_workflow_delete),
+        )
+        .route(
+            "/workflows/:id/status",
+            post(handle_workflow_set_status),
+        )
+        .route(
+            "/api/workflows",
+            get(handle_workflow_list).post(handle_workflow_create),
+        )
+        .route(
+            "/api/workflows/:id",
+            get(handle_workflow_get)
+                .put(handle_workflow_update)
+                .delete(handle_workflow_delete),
+        )
+        .route(
+            "/api/workflows/:id/status",
+            post(handle_workflow_set_status),
+        )
+        .route(
+            "/network-architectures",
+            get(handle_network_list).post(handle_network_create),
+        )
+        .route(
+            "/network-architectures/:id",
+            get(handle_network_get)
+                .put(handle_network_update)
+                .delete(handle_network_delete),
+        )
+        .route(
+            "/api/network-architectures",
+            get(handle_network_list).post(handle_network_create),
+        )
+        .route(
+            "/api/network-architectures/:id",
+            get(handle_network_get)
+                .put(handle_network_update)
+                .delete(handle_network_delete),
+        )
+        .route(
+            "/erd-diagrams",
+            get(handle_erd_list).post(handle_erd_create),
+        )
+        .route(
+            "/erd-diagrams/:id",
+            get(handle_erd_get)
+                .put(handle_erd_update)
+                .delete(handle_erd_delete),
+        )
+        .route("/erd-diagrams/schema", post(handle_erd_schema))
+        .route(
+            "/api/erd-diagrams",
+            get(handle_erd_list).post(handle_erd_create),
+        )
+        .route(
+            "/api/erd-diagrams/:id",
+            get(handle_erd_get)
+                .put(handle_erd_update)
+                .delete(handle_erd_delete),
+        )
+        .route("/api/erd-diagrams/schema", post(handle_erd_schema))
+        .route(
+            "/settings/roles",
+            get(handle_role_list).post(handle_role_create),
+        )
+        .route(
+            "/settings/roles/:id",
+            get(handle_role_get)
+                .put(handle_role_update)
+                .delete(handle_role_delete),
+        )
+        .route(
+            "/settings/units",
+            get(handle_unit_list).post(handle_unit_create),
+        )
+        .route(
+            "/settings/units/:id",
+            get(handle_unit_get)
+                .put(handle_unit_update)
+                .delete(handle_unit_delete),
+        )
+        .route(
+            "/settings/users",
+            get(handle_user_list).post(handle_user_create),
+        )
+        .route(
+            "/settings/users/:id",
+            get(handle_user_get)
+                .put(handle_user_update)
+                .delete(handle_user_delete),
+        )
+        .route(
+            "/settings/users/:id/reset-password",
+            post(handle_user_reset_password),
+        )
+        .route(
+            "/settings/dictionary",
+            get(handle_dictionary_list).post(handle_dictionary_create),
+        )
+        .route(
+            "/settings/dictionary/:id",
+            get(handle_dictionary_get)
+                .put(handle_dictionary_update)
+                .delete(handle_dictionary_delete),
+        )
+        .route(
+            "/settings/system",
+            get(handle_setting_list).post(handle_setting_create),
+        )
+        .route(
+            "/settings/system/:id",
+            get(handle_setting_get)
+                .put(handle_setting_update)
+                .delete(handle_setting_delete),
+        )
+        .route(
+            "/api/settings/roles",
+            get(handle_role_list).post(handle_role_create),
+        )
+        .route(
+            "/api/settings/roles/:id",
+            get(handle_role_get)
+                .put(handle_role_update)
+                .delete(handle_role_delete),
+        )
+        .route(
+            "/api/settings/units",
+            get(handle_unit_list).post(handle_unit_create),
+        )
+        .route(
+            "/api/settings/units/:id",
+            get(handle_unit_get)
+                .put(handle_unit_update)
+                .delete(handle_unit_delete),
+        )
+        .route(
+            "/api/settings/users",
+            get(handle_user_list).post(handle_user_create),
+        )
+        .route(
+            "/api/settings/users/:id",
+            get(handle_user_get)
+                .put(handle_user_update)
+                .delete(handle_user_delete),
+        )
+        .route(
+            "/api/settings/users/:id/reset-password",
+            post(handle_user_reset_password),
+        )
+        .route(
+            "/api/settings/dictionary",
+            get(handle_dictionary_list).post(handle_dictionary_create),
+        )
+        .route(
+            "/api/settings/dictionary/:id",
+            get(handle_dictionary_get)
+                .put(handle_dictionary_update)
+                .delete(handle_dictionary_delete),
+        )
+        .route(
+            "/api/settings/system",
+            get(handle_setting_list).post(handle_setting_create),
+        )
+        .route(
+            "/api/settings/system/:id",
+            get(handle_setting_get)
+                .put(handle_setting_update)
+                .delete(handle_setting_delete),
         )
         .route(
             "/api/nginx/env",

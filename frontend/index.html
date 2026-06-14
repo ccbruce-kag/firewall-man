@@ -33,6 +33,7 @@
       }, true);
       var menuViews = {
         menuDashLink: ['dashboard', 'General Dashboard', 'bx-bar-chart-alt-2'],
+        menuWorkflowLink: ['workflow', 'Workflow Designer', 'bx-sitemap'],
         menuFirewallManLink: ['firewallMan', 'Tables', 'bx-shield-quarter'],
         menuJuniperLink: ['juniper', 'Juniper Settings', 'bx-network-chart'],
         menuHaproxyLink: ['haproxy', 'HAProxy Management', 'bx-transfer'],
@@ -42,6 +43,7 @@
         menuSnmpLink: ['snmp', 'SNMP', 'bx-analyse'],
         menuSambaLink: ['samba', 'Samba', 'bx-folder'],
         menuSftpLink: ['sftp', 'SFTP', 'bx-folder'],
+        menuNetArchLink: ['netArch', 'Network Architecture Designer', 'bx-network-chart'],
         menuSysLink: ['system', 'System', 'bx-desktop'],
         menuToolsLink: ['tools', 'Tools', 'bx-wrench'],
         menuShellLink: ['shell', 'Shell', 'bx-terminal'],
@@ -50,6 +52,12 @@
         menuCrontabLink: ['crontab', 'Crontab', 'bx-time-five'],
         menuAILink: ['ai', 'AI Assistant', 'bx-bot'],
         menuDbManNewLink: ['dbman', 'DbMan', 'bx-data'],
+        menuErdDiagramLink: ['erdDiagram', 'ER-Diagram', 'bx-sitemap'],
+        menuRoleLink: ['role', 'Role Maintenance', 'bx-id-card'],
+        menuUnitLink: ['unit', 'Unit Maintenance', 'bx-buildings'],
+        menuUserLink: ['user', 'User Maintenance', 'bx-user'],
+        menuDictionaryLink: ['dictionary', 'Data Dictionary Maintenance', 'bx-book'],
+        menuSystemSettingLink: ['systemSetting', 'System Settings Maintenance', 'bx-slider'],
         menuSecurityCvsLink: ['security', 'Security', 'bx-shield'],
         menuSecurityScanLink: ['security', 'Security', 'bx-shield']
       };
@@ -69,7 +77,8 @@
           pane.style.display = 'none';
         });
         [
-          'dashboard','firewallMan','system','juniper','haproxy','nginx','netplan',
+          'dashboard','workflow','netArch','erdDiagram','role','unit','user','dictionary','systemSetting',
+          'firewallMan','system','juniper','haproxy','nginx','netplan',
           'apiman','dbman','sftp','samba','snmp','pcap','security','tools','ai','shell','widgets','logViewer','crontab'
         ].forEach(function (viewMode) {
           var el = document.getElementById(viewMode + 'View');

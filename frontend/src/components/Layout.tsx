@@ -3,6 +3,7 @@ import Navbar from './Navbar'
 import Logger from './Logger'
 import DashboardView from './views/Dash/DashboardView'
 import SystemView from './views/Dash/SystemView'
+import WorkflowDesignerView from './views/Dash/WorkflowDesignerView'
 import FirewallView from './views/Net/FirewallView'
 import HaproxyView from './views/Net/HaproxyView'
 import NginxView from './views/Net/NginxView'
@@ -12,6 +13,7 @@ import PcapView from './views/Net/PcapView'
 import SambaView from './views/Net/SambaView'
 import SftpView from './views/Net/SftpView'
 import SnmpView from './views/Net/SnmpView'
+import NetworkArchitectureView from './views/Net/NetworkArchitectureView'
 import ShellView from './views/Sys/ShellView'
 import ToolsView from './views/Sys/ToolsView'
 import CrontabView from './views/Sys/CrontabView'
@@ -19,8 +21,14 @@ import LogViewerView from './views/Sys/LogViewerView'
 import WidgetsView from './views/Sys/WidgetsView'
 import ApiManView from './views/Apps/ApiMan/ApiManView'
 import DbManView from './views/Apps/DbMan/DbManView'
+import ErdDiagramView from './views/Apps/DbMan/ErdDiagramView'
 import SecurityView from './views/Security/SecurityView'
 import AiView from './views/AI/AiView'
+import RolesView from './views/Settings/RolesView'
+import UnitsView from './views/Settings/UnitsView'
+import UsersView from './views/Settings/UsersView'
+import DictionaryView from './views/Settings/DictionaryView'
+import SystemSettingsView from './views/Settings/SystemSettingsView'
 
 export default function Layout() {
   return (
@@ -55,6 +63,7 @@ export default function Layout() {
                 <SambaView />
                 <SftpView />
                 <SnmpView />
+                <NetworkArchitectureView />
                 <AiView />
                 <ShellView />
                 <ToolsView />
@@ -62,8 +71,15 @@ export default function Layout() {
                 <LogViewerView />
                 <CrontabView />
                 <SystemView />
+                <WorkflowDesignerView />
                 <ApiManView />
                 <DbManView />
+                <ErdDiagramView />
+                <RolesView />
+                <UnitsView />
+                <UsersView />
+                <DictionaryView />
+                <SystemSettingsView />
                 <SecurityView />
               </div>
             </div>

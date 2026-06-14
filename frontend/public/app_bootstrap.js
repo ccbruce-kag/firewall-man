@@ -91,7 +91,8 @@ var _orig_ready = $;
     const TAB_STORAGE_KEY = "fwm_tabs";
     const TAB_VIEW_PREFIX = "tabView_";
     const WORK_VIEW_MODES = [
-      'dashboard', 'firewallMan', 'system', 'juniper', 'haproxy', 'nginx', 'netplan',
+      'dashboard', 'workflow', 'netArch', 'erdDiagram', 'role', 'unit', 'user', 'dictionary', 'systemSetting',
+      'firewallMan', 'system', 'juniper', 'haproxy', 'nginx', 'netplan',
       'pcap', 'snmp', 'sftp', 'samba', 'apiman', 'dbman', 'security', 'tools', 'ai',
       'shell', 'widgets', 'logViewer', 'crontab'
     ];
@@ -121,6 +122,14 @@ var _orig_ready = $;
       var map = {
         firewallMan: lang.firewallManLabel || 'FirewallMan',
         dashboard: lang.dashLabel || 'General Dashboard',
+        workflow: lang.workflowLabel || 'Workflow Designer',
+        netArch: lang.netArchLabel || 'Network Architecture Designer',
+        erdDiagram: lang.erdDiagramLabel || 'ER-Diagram',
+        role: lang.roleLabel || 'Role Maintenance',
+        unit: lang.unitLabel || 'Unit Maintenance',
+        user: lang.userLabel || 'User Maintenance',
+        dictionary: lang.dictionaryLabel || 'Data Dictionary Maintenance',
+        systemSetting: lang.systemSettingLabel || 'System Settings Maintenance',
         system: lang.systemLabel || 'System',
         shell: lang.shellLabel || 'Shell',
         widgets: lang.widgetsLabel || 'Widgets',
@@ -141,6 +150,9 @@ var _orig_ready = $;
     function tabIcon(mode) {
       var map = {
         firewallMan: 'bx-shield-quarter', dashboard: 'bx-bar-chart-alt-2', system: 'bx-desktop',
+        workflow: 'bx-sitemap', netArch: 'bx-network-chart', erdDiagram: 'bx-sitemap',
+        role: 'bx-id-card', unit: 'bx-buildings', user: 'bx-user',
+        dictionary: 'bx-book', systemSetting: 'bx-slider',
         shell: 'bx-terminal', widgets: 'bx-cube', logViewer: 'bx-file', crontab: 'bx-time-five', ai: 'bx-bot', tools: 'bx-wrench', haproxy: 'bx-transfer',
         nginx: 'bx-windows', juniper: 'bx-network-chart', netplan: 'bx-wifi',
         apiman: 'bx-link', dbman: 'bx-data', security: 'bx-shield',
@@ -351,7 +363,12 @@ var _orig_ready = $;
         clearConfirmPrefix: "確認清除", allRulesSuffix: "所有規則？", chainRulesSuffix: " 鏈的所有規則？",
         allMetricsSuffix: "所有統計數據？", ruleMetricsPrefix: "第 ", ruleMetricsSuffix: " 條規則的統計數據？",
         ruleNumberPrefix: "第", ruleNumberSuffix: "條規則", clearEmptyPrompt: "確認清除用戶自定義的所有空鏈？",
-        menuGroupDash: "儀表板", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", firewallManLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "工具集合", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
+        menuGroupDash: "儀表板與工作流程", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", firewallManLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "工具集合", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
+        workflowLabel: "工作流程設計", workflowTitle: "工作流程設計", workflowNew: "新增流程", workflowRefresh: "重新整理",
+        netArchLabel: "網路架構編輯", netArchTitle: "網路架構編輯", netArchNew: "新增架構", netArchRefresh: "重新整理",
+        erdDiagramLabel: "ER-Diagram", menuGroupSettings: "設定",
+        roleLabel: "角色資料維護", unitLabel: "單位資料維護", userLabel: "使用者資料維護",
+        dictionaryLabel: "資料字典資料維護", systemSettingLabel: "系統設定資料維護",
         menuApiManNew: "新增工作區", menuDbManNew: "新增連線",
         menuSecurityCvs: "CVS 資料庫", menuSecurityScan: "網路掃描",
         menuGroupAI: "AI", menuGroupHelp: "協助", systemLabel: "系統現況", docLabel: "命令文件",
@@ -439,7 +456,12 @@ var _orig_ready = $;
         clearConfirmPrefix: "Confirm to clear", allRulesSuffix: "all rules?", chainRulesSuffix: " chain rules?",
         allMetricsSuffix: "all counters?", ruleMetricsPrefix: "Rule #", ruleMetricsSuffix: " counters?",
         ruleNumberPrefix: "Rule #", ruleNumberSuffix: "", clearEmptyPrompt: "Clear all empty custom chains?",
-        menuGroupDash: "Dashboard", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", firewallManLabel: "FirewallMan",         menuGroupSys: "System Tools", toolsLabel: "Tools", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
+        menuGroupDash: "Dashboard & Workflow", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", firewallManLabel: "FirewallMan",         menuGroupSys: "System Tools", toolsLabel: "Tools", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
+        workflowLabel: "Workflow Designer", workflowTitle: "Workflow Designer", workflowNew: "New Workflow", workflowRefresh: "Refresh",
+        netArchLabel: "Network Architecture Designer", netArchTitle: "Network Architecture Designer", netArchNew: "New Architecture", netArchRefresh: "Refresh",
+        erdDiagramLabel: "ER-Diagram", menuGroupSettings: "Settings",
+        roleLabel: "Role Maintenance", unitLabel: "Unit Maintenance", userLabel: "User Maintenance",
+        dictionaryLabel: "Data Dictionary Maintenance", systemSettingLabel: "System Settings Maintenance",
         menuApiManNew: "New Workspace", menuDbManNew: "New Connection",
         menuSecurityCvs: "CVS Database", menuSecurityScan: "Network Scan",
         menuGroupAI: "AI", menuGroupHelp: "Help", systemLabel: "System", docLabel: "Command Reference",
@@ -526,7 +548,12 @@ var _orig_ready = $;
         clearConfirmPrefix: "確認", allRulesSuffix: "すべてのルールをクリアしますか？", chainRulesSuffix: " チェインの全ルールをクリアしますか？",
         allMetricsSuffix: "すべての統計データをクリアしますか？", ruleMetricsPrefix: "ルール #", ruleMetricsSuffix: " の統計データをクリアしますか？",
         ruleNumberPrefix: "ルール #", ruleNumberSuffix: "", clearEmptyPrompt: "空のカスタムチェインをすべて削除しますか？",
-        menuGroupDash: "ダッシュボード", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", firewallManLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "ツール集", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
+        menuGroupDash: "ダッシュボードとワークフロー", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", firewallManLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "ツール集", crontabLabel: "Crontab",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
+        workflowLabel: "ワークフロー設計", workflowTitle: "ワークフロー設計", workflowNew: "新規ワークフロー", workflowRefresh: "更新",
+        netArchLabel: "ネットワークアーキテクチャ設計", netArchTitle: "ネットワークアーキテクチャ設計", netArchNew: "新規アーキテクチャ", netArchRefresh: "更新",
+        erdDiagramLabel: "ER-Diagram", menuGroupSettings: "設定",
+        roleLabel: "ロール保守", unitLabel: "組織保守", userLabel: "ユーザー保守",
+        dictionaryLabel: "データ辞書保守", systemSettingLabel: "システム設定保守",
         menuApiManNew: "新規ワークスペース", menuDbManNew: "新規接続",
         menuSecurityCvs: "CVS データベース", menuSecurityScan: "ネットワークスキャン",
         menuGroupAI: "AI", menuGroupHelp: "ヘルプ", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
@@ -611,6 +638,19 @@ var _orig_ready = $;
       var lng = i18n[currentLang];
       $('#menuGroupDashLabel').text(lng.menuGroupDash || '儀表板');
       $('#menuDashLabel').text(lng.dashLabel || 'General Dashboard');
+      $('#menuWorkflowLabel').text(lng.workflowLabel || '工作流程設計');
+      $('#workflowTitle').text(lng.workflowTitle || '工作流程設計');
+      $('#workflowNewLabel').text(lng.workflowNew || '新增流程');
+      $('#workflowRefreshLabel').text(lng.workflowRefresh || '重新整理');
+      $('#menuNetArchLabel').text(lng.netArchLabel || '網路架構編輯');
+      $('#netArchTitle').text(lng.netArchTitle || '網路架構編輯');
+      $('#menuErdDiagramLabel').text(lng.erdDiagramLabel || 'ER-Diagram');
+      $('#menuGroupSettingsLabel').text(lng.menuGroupSettings || '設定');
+      $('#menuRoleLabel').text(lng.roleLabel || '角色資料維護');
+      $('#menuUnitLabel').text(lng.unitLabel || '單位資料維護');
+      $('#menuUserLabel').text(lng.userLabel || '使用者資料維護');
+      $('#menuDictionaryLabel').text(lng.dictionaryLabel || '資料字典資料維護');
+      $('#menuSystemSettingLabel').text(lng.systemSettingLabel || '系統設定資料維護');
       $('#menuSysLabel').text(lng.systemLabel || 'System');
       $('#menuGroupNetLabel').text(lng.menuGroupNet || 'Network Tools');
       $('#menuFirewallManLabel').text(lng.firewallManLabel || 'FirewallMan');

@@ -73,6 +73,29 @@ pub struct QueryResult {
     pub elapsed_ms: u128,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct ErdDiagram {
+    pub id: i64,
+    pub connection_id: i64,
+    pub name: String,
+    pub description: Option<String>,
+    pub nodes_json: String,
+    pub edges_json: String,
+    pub viewport_json: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Clone, Deserialize)]
+pub struct ErdDiagramInput {
+    pub connection_id: i64,
+    pub name: String,
+    pub description: Option<String>,
+    pub nodes_json: String,
+    pub edges_json: String,
+    pub viewport_json: Option<String>,
+}
+
 pub async fn test_sqlite(path: &str) -> Result<String, String> {
     let conn = rusqlite::Connection::open(path)
         .map_err(|e| format!("open sqlite failed: {e}"))?;

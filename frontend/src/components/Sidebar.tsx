@@ -50,17 +50,25 @@ export default function Sidebar() {
         <li className="menu-item" id="menuGroupDash">
           <a href="#" className="menu-link menu-toggle">
             <i className="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
-            <div className="text-truncate" id="menuGroupDashLabel">儀表板</div>
+            <div className="text-truncate" id="menuGroupDashLabel">儀表板與工作流程</div>
           </a>
           <ul className="menu-sub">
             <li className="menu-item" id="menuDash">
               <a href="#" className="menu-link" id="menuDashLink">
+                <i className="menu-icon tf-icons bx bx-bar-chart-alt-2"></i>
                 <div className="text-truncate" id="menuDashLabel">一般性儀表板</div>
               </a>
             </li>
             <li className="menu-item" id="menuSys">
               <a href="#" className="menu-link" id="menuSysLink">
+                <i className="menu-icon tf-icons bx bx-pulse"></i>
                 <div className="text-truncate" id="menuSysLabel">系統現況</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuWorkflow">
+              <a href="#" className="menu-link" id="menuWorkflowLink">
+                <i className="menu-icon tf-icons bx bx-sitemap"></i>
+                <div className="text-truncate" id="menuWorkflowLabel">工作流程設計</div>
               </a>
             </li>
           </ul>
@@ -123,6 +131,12 @@ export default function Sidebar() {
               <a href="#" className="menu-link" id="menuSftpLink">
                 <i className="menu-icon tf-icons bx bx-folder"></i>
                 <div className="text-truncate" id="menuSftpLabel">SFTP</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuNetArch">
+              <a href="#" className="menu-link" id="menuNetArchLink">
+                <i className="menu-icon tf-icons bx bx-network-chart"></i>
+                <div className="text-truncate" id="menuNetArchLabel">網路架構編輯</div>
               </a>
             </li>
           </ul>
@@ -192,6 +206,12 @@ export default function Sidebar() {
                 <div className="text-truncate" id="menuDbManNewLabel">新增連線</div>
               </a>
             </li>
+            <li className="menu-item" id="menuErdDiagram">
+              <a href="#" className="menu-link" id="menuErdDiagramLink">
+                <i className="menu-icon tf-icons bx bx-sitemap"></i>
+                <div className="text-truncate" id="menuErdDiagramLabel">ER-Diagram</div>
+              </a>
+            </li>
             <li style={{ height: 1, background: 'var(--bs-border-color)', margin: '2px 12px' }}></li>
             <div id="menuDbManConnItems"></div>
           </ul>
@@ -223,6 +243,44 @@ export default function Sidebar() {
             <li className="menu-item" id="menuAI">
               <a href="#" className="menu-link" id="menuAILink">
                 <div className="text-truncate" id="menuAILabel">AI 助手</div>
+              </a>
+            </li>
+          </ul>
+        </li>
+        <li className="menu-item" id="menuGroupSettings">
+          <a href="#" className="menu-link menu-toggle">
+            <i className="menu-icon tf-icons bx bx-cog"></i>
+            <div className="text-truncate" id="menuGroupSettingsLabel">設定</div>
+          </a>
+          <ul className="menu-sub">
+            <li className="menu-item" id="menuRole">
+              <a href="#" className="menu-link" id="menuRoleLink">
+                <i className="menu-icon tf-icons bx bx-id-card"></i>
+                <div className="text-truncate" id="menuRoleLabel">角色資料維護</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuUnit">
+              <a href="#" className="menu-link" id="menuUnitLink">
+                <i className="menu-icon tf-icons bx bx-buildings"></i>
+                <div className="text-truncate" id="menuUnitLabel">單位資料維護</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuUser">
+              <a href="#" className="menu-link" id="menuUserLink">
+                <i className="menu-icon tf-icons bx bx-user"></i>
+                <div className="text-truncate" id="menuUserLabel">使用者資料維護</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuDictionary">
+              <a href="#" className="menu-link" id="menuDictionaryLink">
+                <i className="menu-icon tf-icons bx bx-book"></i>
+                <div className="text-truncate" id="menuDictionaryLabel">資料字典資料維護</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuSystemSetting">
+              <a href="#" className="menu-link" id="menuSystemSettingLink">
+                <i className="menu-icon tf-icons bx bx-slider"></i>
+                <div className="text-truncate" id="menuSystemSettingLabel">系統設定資料維護</div>
               </a>
             </li>
           </ul>
