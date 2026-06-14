@@ -1,0 +1,161 @@
+### Multi-stage build for Rust OAuth2 Server (with cargo-chef)
+###
+### This layout maximizes Docker layer cache reuse:
+### - dependencies are compiled in an early cached layer
+### - application code changes only rebuild the final binary
+###
+### Admin CSS is compiled by the Tailwind standalone CLI (no Node/npm required).
+### The CSS is pre-built in a dedicated stage and copied into the final image.
+
+# ── Stage 0: Tailwind CSS build ─────────────────────────────────────────────
+FROM debian:trixie-slim AS tailwind-build
+
+ARG TAILWIND_VERSION=v3.4.17
+ARG TARGETARCH=amd64
+
+WORKDIR /tw
+
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Download the Tailwind standalone binary (no Node.js needed)
+RUN set -eux; \
+    ARCH="$(dpkg --print-architecture)"; \
+    case "$ARCH" in \
+        amd64) TWARCH="linux-x64" ;; \
+        arm64) TWARCH="linux-arm64" ;; \
+        *) TWARCH="linux-x64" ;; \
+    esac; \
+    curl -fsSL -o tailwindcss \
+        "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/tailwindcss-${TWARCH}"; \
+    chmod +x tailwindcss
+
+COPY tailwind.config.js ./
+COPY static/css/admin.src.css ./
+COPY templates/ ./templates/
+COPY static/js/ ./static/js/
+
+RUN ./tailwindcss -c tailwind.config.js -i admin.src.css -o admin.min.css --minify
+
+FROM rust:slim AS chef
+
+WORKDIR /app
+
+# Build dependencies for popular crates (openssl, etc.)
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    curl \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install cargo-chef (cached as a layer)
+RUN cargo install cargo-chef --locked
+
+FROM chef AS planner
+
+# Only copy the manifests first so changes to app source don't bust the dependency cache.
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
+COPY oauth2-ratelimit ./oauth2-ratelimit
+COPY oauth2-resilience ./oauth2-resilience
+COPY tests ./tests
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS cacher
+
+# Optional cargo features (e.g., "mongo")
+ARG CARGO_FEATURES=""
+ARG CARGO_NO_DEFAULT_FEATURES="false"
+
+COPY --from=planner /app/recipe.json recipe.json
+RUN if [ -n "$CARGO_FEATURES" ]; then \
+            if [ "$CARGO_NO_DEFAULT_FEATURES" = "true" ]; then \
+                cargo chef cook --release --locked --recipe-path recipe.json --no-default-features --features "$CARGO_FEATURES"; \
+            else \
+                cargo chef cook --release --locked --recipe-path recipe.json --features "$CARGO_FEATURES"; \
+            fi; \
+        else \
+            if [ "$CARGO_NO_DEFAULT_FEATURES" = "true" ]; then \
+                cargo chef cook --release --locked --recipe-path recipe.json --no-default-features; \
+            else \
+                cargo chef cook --release --locked --recipe-path recipe.json; \
+            fi; \
+        fi
+
+FROM chef AS builder
+
+# Optional cargo features (e.g., "mongo")
+ARG CARGO_FEATURES=""
+ARG CARGO_NO_DEFAULT_FEATURES="false"
+
+# Reuse the dependency build artifacts from the cacher stage
+COPY --from=cacher /app/target /app/target
+COPY --from=cacher /usr/local/cargo /usr/local/cargo
+
+# Copy full source tree and build the application
+COPY . .
+RUN if [ -n "$CARGO_FEATURES" ]; then \
+            if [ "$CARGO_NO_DEFAULT_FEATURES" = "true" ]; then \
+                cargo build --release --locked --no-default-features --features "$CARGO_FEATURES"; \
+            else \
+                cargo build --release --locked --features "$CARGO_FEATURES"; \
+            fi; \
+        else \
+            if [ "$CARGO_NO_DEFAULT_FEATURES" = "true" ]; then \
+                cargo build --release --locked --no-default-features; \
+            else \
+                cargo build --release --locked; \
+            fi; \
+        fi
+
+# Stage 2: Runtime
+#
+# NOTE: We keep the runtime distro aligned with the build environment's glibc.
+# CI runners and upstream base images now commonly require GLIBC_2.38+, which
+# Debian bookworm does not provide. Debian trixie includes GLIBC_2.38.
+FROM debian:trixie-slim
+
+WORKDIR /app
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    adduser \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the built binary from builder
+COPY --from=builder /app/target/release/rust_oauth2_server /app/rust_oauth2_server
+
+# Backwards-compatibility: keep the old path if anything still references it
+RUN ln -sf /app/rust_oauth2_server /app/oauth2_server
+
+# Copy templates and static files
+COPY templates ./templates
+COPY static ./static
+
+# Replace the dev-placeholder admin.css with the compiled Tailwind output
+COPY --from=tailwind-build /tw/admin.min.css /app/static/css/admin.css
+
+# Create directory for database
+RUN mkdir -p /app/data
+
+# Create a non-root user for security
+RUN addgroup --gid 1000 appuser \
+    && adduser --disabled-password --gecos '' --uid 1000 --gid 1000 appuser \
+    && chown -R appuser:appuser /app
+
+# Expose port
+EXPOSE 8080
+
+# Set environment variables
+ENV OAUTH2_SERVER_HOST=0.0.0.0
+ENV OAUTH2_SERVER_PORT=8080
+ENV OAUTH2_DATABASE_URL=sqlite:/app/data/oauth2.db
+ENV RUST_LOG=info
+
+# Run as non-root user
+USER appuser
+
+# Run the binary
+CMD ["/app/rust_oauth2_server"]

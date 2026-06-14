@@ -1,0 +1,268 @@
+# OAuth2 Server Configuration
+# This is a HOCON (Human-Optimized Config Object Notation) configuration file
+# See: https://github.com/lightbend/config/blob/master/HOCON.md
+#
+# Environment variables can be used with ${?VARIABLE_NAME} syntax
+# Values can be overridden by setting environment variables with OAUTH2_ prefix
+
+# Server Configuration
+server {
+  # Server host binding
+  host = "127.0.0.1"
+  host = ${?OAUTH2_SERVER_HOST}
+  
+  # Server port
+  port = 8080
+  port = ${?OAUTH2_SERVER_PORT}
+
+  # Optional explicit Actix worker count. Leave unset to use the runtime default.
+  workers = null
+  workers = ${?OAUTH2_SERVER_WORKERS}
+
+  # Optional externally-visible base URL used for discovery docs (issuer/endpoints).
+  # Useful behind reverse proxies / local tunnels, or when the bind address differs from the public URL.
+  # Example: https://auth.example.com
+  public_base_url = null
+  public_base_url = ${?OAUTH2_SERVER_PUBLIC_BASE_URL}
+
+  # Whether to trust proxy headers (Forwarded / X-Forwarded-*).
+  # Default: false (safer). Enable only when behind a trusted proxy.
+  trust_proxy_headers = false
+  trust_proxy_headers = ${?OAUTH2_SERVER_TRUST_PROXY_HEADERS}
+
+  # Explicit CORS allowlist. Leave empty to deny all cross-origin requests.
+  allowed_origins = []
+}
+
+# Database Configuration
+database {
+  # Database URL - supports SQLite, PostgreSQL, and MongoDB (with --features mongo)
+  # Examples:
+  #   - SQLite:     sqlite:oauth2.db?mode=rwc
+  #   - PostgreSQL: postgresql://user:pass@localhost:5432/oauth2
+  #   - MongoDB:    mongodb://localhost:27017/oauth2
+  url = "sqlite:oauth2.db?mode=rwc"
+  url = ${?OAUTH2_DATABASE_URL}
+
+  # Optional read replica URL for geographically local read traffic.
+  read_url = null
+  read_url = ${?OAUTH2_DATABASE_READ_URL}
+
+  # Connection pool sizing and timeouts.
+  max_connections = 50
+  max_connections = ${?OAUTH2_DATABASE_MAX_CONNECTIONS}
+  min_connections = 1
+  min_connections = ${?OAUTH2_DATABASE_MIN_CONNECTIONS}
+  acquire_timeout_secs = 30
+  acquire_timeout_secs = ${?OAUTH2_DATABASE_ACQUIRE_TIMEOUT_SECS}
+  idle_timeout_secs = 600
+  idle_timeout_secs = ${?OAUTH2_DATABASE_IDLE_TIMEOUT_SECS}
+}
+
+# JWT Configuration
+jwt {
+  # JWT signing secret - MUST be set for production (minimum 32 characters)
+  # Generate with: openssl rand -base64 48
+  secret = "insecure-default-for-testing-only-change-in-production"
+  secret = ${?OAUTH2_JWT_SECRET}
+
+  key_rotation_grace_hours = 24
+  key_rotation_grace_hours = ${?OAUTH2_JWT_KEY_ROTATION_GRACE_HOURS}
+
+  # Skip DB/cache lookups during introspection and validate access tokens as JWTs only.
+  stateless_validation = false
+  stateless_validation = ${?OAUTH2_JWT_STATELESS_VALIDATION}
+
+  # Allow unauthenticated callers to use POST /oauth/introspect.
+  # Default: false (recommended). Set true only for deployments that intentionally expose public introspection.
+  public_introspection = false
+  public_introspection = ${?OAUTH2_PUBLIC_INTROSPECTION}
+}
+
+# Event System Configuration
+events {
+  # Enable/disable event system
+  enabled = true
+  enabled = ${?OAUTH2_EVENTS_ENABLED}
+  
+  # Event backend selection
+  # Options: in_memory, console, both, redis, redis_streams, kafka, rabbit, rabbitmq
+  backend = "in_memory"
+  backend = ${?OAUTH2_EVENTS_BACKEND}
+  
+  # Event filtering mode
+  # Options: allow_all, include, exclude
+  filter_mode = "allow_all"
+  filter_mode = ${?OAUTH2_EVENTS_FILTER_MODE}
+  
+  # Event types - set via OAUTH2_EVENTS_TYPES environment variable (comma-separated)
+  # Example: OAUTH2_EVENTS_TYPES="token_created,token_revoked"
+
+  # Allow unauthenticated callers to POST to /events/ingest.
+  # Default: false (recommended). When false, callers must present the shared bearer token below.
+  public_ingest = false
+  public_ingest = ${?OAUTH2_EVENTS_PUBLIC_INGEST}
+
+  # Shared bearer token for /events/ingest when public_ingest=false.
+  # Example caller header: Authorization: Bearer <token>
+  ingest_bearer_token = ${?OAUTH2_EVENTS_INGEST_BEARER_TOKEN}
+  
+  # Redis Streams Backend Configuration
+  redis {
+    url = "redis://127.0.0.1:6379"
+    url = ${?OAUTH2_EVENTS_REDIS_URL}
+    
+    stream = "oauth2_events"
+    stream = ${?OAUTH2_EVENTS_REDIS_STREAM}
+    
+    # Max length (approximate MAXLEN ~). Leave empty for unlimited
+    maxlen = null
+    maxlen = ${?OAUTH2_EVENTS_REDIS_MAXLEN}
+  }
+  
+  # Kafka Backend Configuration
+  kafka {
+    brokers = "127.0.0.1:9092"
+    brokers = ${?OAUTH2_EVENTS_KAFKA_BROKERS}
+    
+    topic = "oauth2_events"
+    topic = ${?OAUTH2_EVENTS_KAFKA_TOPIC}
+    
+    client_id = null
+    client_id = ${?OAUTH2_EVENTS_KAFKA_CLIENT_ID}
+  }
+  
+  # RabbitMQ Backend Configuration
+  rabbit {
+    url = "amqp://127.0.0.1:5672/%2f"
+    url = ${?OAUTH2_EVENTS_RABBIT_URL}
+    
+    exchange = "oauth2.events"
+    exchange = ${?OAUTH2_EVENTS_RABBIT_EXCHANGE}
+    
+    routing_key = "oauth2.event"
+    routing_key = ${?OAUTH2_EVENTS_RABBIT_ROUTING_KEY}
+  }
+}
+
+# Social Login Configuration
+# Configure OAuth2 providers for social login
+# Only configure providers you want to enable by setting their environment variables
+social {
+  # Google OAuth2 - set OAUTH2_GOOGLE_CLIENT_ID, OAUTH2_GOOGLE_CLIENT_SECRET, OAUTH2_GOOGLE_REDIRECT_URI
+  google {
+    enabled = false
+  }
+  
+  # Microsoft OAuth2 - set OAUTH2_MICROSOFT_CLIENT_ID, OAUTH2_MICROSOFT_CLIENT_SECRET, OAUTH2_MICROSOFT_REDIRECT_URI
+  microsoft {
+    enabled = false
+  }
+  
+  # GitHub OAuth2 - set OAUTH2_GITHUB_CLIENT_ID, OAUTH2_GITHUB_CLIENT_SECRET, OAUTH2_GITHUB_REDIRECT_URI
+  github {
+    enabled = false
+  }
+  
+  # Azure login uses the Microsoft identity platform client and can use its own
+  # OAUTH2_AZURE_* settings. If Azure is unset, the runtime can fall back to the
+  # Microsoft config above for /auth/login/azure.
+  azure {
+    enabled = false
+  }
+  
+  # Okta config fields exist, but /auth/login/okta currently returns HTTP 503.
+  okta {
+    enabled = false
+  }
+  
+  # Auth0 config fields exist, but /auth/login/auth0 currently returns HTTP 503.
+  auth0 {
+    enabled = false
+  }
+}
+
+# Session Configuration
+session {
+  # Session key (must be at least 64 characters / 128 hex digits)
+  # Generate with: openssl rand -hex 64
+  key = ${?OAUTH2_SESSION_KEY}
+}
+
+# Debug Configuration
+debug {
+  # Enable debug config logging (set to "1" to enable)
+  config = ${?OAUTH2_DEBUG_CONFIG}
+}
+
+# Rate Limiting Configuration
+rate_limit {
+  enabled = false
+  enabled = ${?OAUTH2_RATE_LIMIT_ENABLED}
+  max_requests = 100
+  max_requests = ${?OAUTH2_RATE_LIMIT_MAX_REQUESTS}
+  window_secs = 60
+  window_secs = ${?OAUTH2_RATE_LIMIT_WINDOW_SECS}
+  backend = "in_memory"
+  backend = ${?OAUTH2_RATE_LIMIT_BACKEND}
+  redis_url = ${?OAUTH2_RATE_LIMIT_REDIS_URL}
+}
+
+# Distributed cache / sharding configuration
+cache {
+  # Optional shared Redis cache used as an L2 behind the in-process LRU caches.
+  # Requires building the server with `--features redis-cache`.
+  redis_url = null
+  redis_url = ${?OAUTH2_CACHE_REDIS_URL}
+
+  # Number of TokenActor shards per process. Increase this to reduce contention
+  # on busy clusters. Routing is deterministic by token/client key.
+  token_actor_shards = 1
+  token_actor_shards = ${?OAUTH2_TOKEN_ACTOR_SHARDS}
+}
+
+# Resilience Configuration
+# Provides back-pressure, bulkheads, and a circuit breaker for DDoS / surge protection.
+resilience {
+  # Set to true to activate all resilience middleware.
+  enabled = false
+  enabled = ${?OAUTH2_RESILIENCE_ENABLED}
+
+  # Back-pressure: global concurrency limit.
+  # Requests arriving when all permits are taken are rejected with HTTP 503.
+  back_pressure {
+    max_concurrent = 1000
+    max_concurrent = ${?OAUTH2_RESILIENCE_MAX_CONCURRENT}
+  }
+
+  # Circuit breaker: fast-fails requests with HTTP 503 when too many 5xx
+  # responses are produced, preventing cascading failures.
+  circuit_breaker {
+    # Consecutive 5xx responses before the circuit opens.
+    failure_threshold = 5
+    failure_threshold = ${?OAUTH2_RESILIENCE_CB_FAILURE_THRESHOLD}
+
+    # Consecutive 2xx/3xx/4xx responses in half-open state before closing.
+    success_threshold = 2
+    success_threshold = ${?OAUTH2_RESILIENCE_CB_SUCCESS_THRESHOLD}
+
+    # Seconds the circuit remains open before probing (half-open).
+    open_secs = 30
+    open_secs = ${?OAUTH2_RESILIENCE_CB_OPEN_SECS}
+
+    # Maximum concurrent probes allowed in half-open state.
+    half_open_max_probes = 3
+    half_open_max_probes = ${?OAUTH2_RESILIENCE_CB_HALF_OPEN_MAX_PROBES}
+  }
+
+  # Bulkheads: per-route-group concurrency limits.
+  # A surge on one route group cannot starve another.
+  # Each entry requires: name, path_prefix, max_concurrent.
+  # Example:
+  # bulkheads = [
+  #   { name = "oauth",  path_prefix = "/oauth",  max_concurrent = 500 },
+  #   { name = "admin",  path_prefix = "/admin",  max_concurrent = 50  },
+  #   { name = "events", path_prefix = "/events", max_concurrent = 100 }
+  # ]
+  bulkheads = []
+}

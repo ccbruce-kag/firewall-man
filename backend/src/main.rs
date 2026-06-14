@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate nom;
+
 mod ai;
 mod apps;
 mod db;
@@ -5,6 +8,7 @@ mod logger;
 mod net;
 mod security;
 mod server;
+mod services;
 mod sys;
 mod utils;
 
@@ -95,6 +99,8 @@ fn main() {
     let platform = detect_platform();
     let db = AppDb::from_env().unwrap_or_else(|e| panic!("database initialization failed: {}", e));
     info!("detected platform: {:?}", platform);
+    services::memcache::start_background_from_env();
+    services::oauth2_server::start_background_from_env();
 
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(async {

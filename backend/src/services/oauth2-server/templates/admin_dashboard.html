@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OAuth2 Control Plane</title>
+
+  <!-- Fonts: Manrope (UI) + JetBrains Mono (numbers/IDs) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS (Play CDN) — config MUST come after CDN load -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Manrope', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+          },
+          colors: {
+            primary: {
+              50:'#eef2ff',100:'#e0e7ff',200:'#c7d2fe',300:'#a5b4fc',
+              400:'#818cf8',500:'#6366f1',600:'#4f46e5',700:'#4338ca',
+              800:'#3730a3',900:'#312e81',950:'#1e1b4b',
+            },
+            surface: {
+              light: '#fafbfc',
+              dark:  '#0b0f17',
+              card:  '#ffffff',
+              cardDark: '#10151f',
+              line:  '#e2e8f0',
+              lineDark: '#1e2636',
+            },
+          },
+          boxShadow: {
+            'soft':  '0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06)',
+            'ring':  '0 0 0 1px rgb(99 102 241 / 0.18), 0 8px 28px -8px rgb(99 102 241 / 0.3)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"
+          integrity="sha384-l8f0VcPi/M1iHPv8egOnY/15TDwqgbOR1anMIJWvU6nLRgZVLTLSaNqi/TOoT5Fh"
+          crossorigin="anonymous"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+          integrity="sha384-e6nUZLBkQ86NJ6TVVKAeSaK8jWa3NhkYWZFomE39AvDbQWeie9PlQqM3pmYW5d1g"
+          crossorigin="anonymous"></script>
+
+  <!-- Admin JS (defines Alpine stores + page functions) -->
+  <script src="/static/js/admin.js"></script>
+
+  <!-- Component layer compiled by Tailwind Play CDN -->
+  <style type="text/tailwindcss">
+    @layer components {
+      .btn      { @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-slate-900; }
+      .btn-primary   { @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-sm; }
+      .btn-danger    { @apply btn bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-sm; }
+      .btn-secondary { @apply btn bg-slate-100 text-slate-700 hover:bg-slate-200 focus:ring-slate-400 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700; }
+      .btn-ghost     { @apply btn bg-transparent text-slate-600 hover:bg-slate-100 focus:ring-slate-400 dark:text-slate-300 dark:hover:bg-slate-800; }
+
+      .card       { @apply bg-white dark:bg-[#10151f] rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-soft; }
+      .stat-card  { @apply card p-5 relative overflow-hidden; }
+
+      .badge      { @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold tracking-wide; }
+      .badge-green  { @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/50; }
+      .badge-red    { @apply badge bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/50; }
+      .badge-yellow { @apply badge bg-amber-50 text-amber-700 border border-amber-200/70 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/50; }
+      .badge-blue   { @apply badge bg-indigo-50 text-indigo-700 border border-indigo-200/70 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/50; }
+      .badge-gray   { @apply badge bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700; }
+
+      .table-header { @apply px-4 py-2.5 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.08em] bg-slate-50/60 dark:bg-slate-900/40; }
+      .table-cell   { @apply px-4 py-3 text-sm text-slate-700 dark:text-slate-300; }
+      .table-row    { @apply border-b border-slate-100 dark:border-slate-800/80 hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors cursor-pointer; }
+
+      .input  { @apply block w-full rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30; }
+      .select { @apply block rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1.5 text-sm text-slate-900 dark:text-slate-100 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30; }
+
+      .nav-link   { @apply w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100; }
+      .nav-link-active { @apply bg-primary-50 dark:bg-primary-950/40 text-primary-700 dark:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-950/40 hover:text-primary-700 dark:hover:text-primary-300; }
+      .nav-section { @apply px-2.5 mb-1 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500; }
+
+      .stat-label { @apply text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500 dark:text-slate-400; }
+      .stat-value { @apply text-[28px] leading-none font-bold tracking-tight font-sans; }
+      .stat-foot  { @apply text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-mono; }
+
+      .chip      { @apply inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium; }
+      .chip-live { @apply chip bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300; }
+    }
+  </style>
+
+  <style>
+    /* Base typography */
+    body { font-family: 'Manrope', system-ui, sans-serif; font-feature-settings: 'ss01', 'cv11'; }
+    code, pre, .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: 'zero', 'ss02'; }
+
+    /* Sidebar scrollbar */
+    #sidebar::-webkit-scrollbar { width: 4px; }
+    #sidebar::-webkit-scrollbar-thumb { background: rgba(148,163,184,.25); border-radius:2px; }
+
+    /* Drawer transition */
+    .drawer-enter { transform: translateX(100%); }
+    .drawer-open  { transform: translateX(0); transition: transform .25s ease; }
+
+    /* Subtle grid background for dashboard surface */
+    .surface-grid {
+      background-image:
+        linear-gradient(to right, rgba(148,163,184,0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148,163,184,0.06) 1px, transparent 1px);
+      background-size: 32px 32px;
+      background-position: -1px -1px;
+    }
+    .dark .surface-grid {
+      background-image:
+        linear-gradient(to right, rgba(148,163,184,0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(148,163,184,0.04) 1px, transparent 1px);
+    }
+
+    /* Live-status pulse dot */
+    @keyframes pulse-dot {
+      0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.55); }
+      50%     { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+    }
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 9999px; background: #10b981;
+      animation: pulse-dot 2.2s ease-out infinite;
+    }
+
+    /* Stat card accent stripe (top, gradient) */
+    .stat-accent::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent-from, #6366f1), var(--accent-to, #a855f7));
+    }
+
+    /* Chart container sizing */
+    .chart-box { position: relative; height: 220px; }
+
+    /* Fine-tune Manrope tabular numerals for numeric stat values */
+    .tabular { font-variant-numeric: tabular-nums; }
+
+    /* Canvas crispness */
+    canvas { image-rendering: -webkit-optimize-contrast; }
+  </style>
+</head>
+
+<body class="h-full bg-slate-50 dark:bg-[#0b0f17] text-slate-900 dark:text-slate-100 antialiased"
+      x-data
+      x-init="$store.theme.init(); $store.router.init(); $store.caps.init()">
+
+<!-- ── Layout shell ─────────────────────────────────────────────────────── -->
+<div class="flex h-full">
+
+  <!-- Sidebar backdrop (mobile) -->
+  <div class="fixed inset-0 z-20 bg-black/60 backdrop-blur-sm lg:hidden"
+       x-show="$store.router.sidebarOpen"
+       x-transition:enter="transition duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0"
+       @click="$store.router.sidebarOpen = false"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar"
+         class="fixed inset-y-0 left-0 z-30 w-[232px] overflow-y-auto bg-white/95 dark:bg-[#0d1220]/95 backdrop-blur-xl border-r border-slate-200/80 dark:border-slate-800/80 flex flex-col
+                -translate-x-full lg:translate-x-0 transition-transform duration-300"
+         :class="$store.router.sidebarOpen ? 'translate-x-0' : ''">
+
+    <!-- Brand -->
+    <div class="flex items-center gap-2.5 px-5 pt-5 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-ring">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <div class="flex flex-col leading-tight">
+        <span class="font-bold text-slate-900 dark:text-white text-[13px] tracking-tight">OAuth2 Control</span>
+        <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 tracking-[0.12em] uppercase">Authorization Server</span>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 px-2 py-3 space-y-5">
+
+      <div>
+        <p class="nav-section">Overview</p>
+        <button @click="$store.router.navigate('dashboard')"
+                :class="$store.router.page === 'dashboard' ? 'nav-link-active' : ''"
+                class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          Dashboard
+        </button>
+        <button @click="$store.router.navigate('metrics')"
+                :class="$store.router.page === 'metrics' ? 'nav-link-active' : ''"
+                class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Metrics
+        </button>
+      </div>
+
+      <div>
+        <p class="nav-section">Identity</p>
+        <button @click="$store.router.navigate('clients')"
+                :class="$store.router.page === 'clients' ? 'nav-link-active' : ''"
+                class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+          Clients
+        </button>
+        <button @click="$store.router.navigate('users')"
+                :class="$store.router.page === 'users' ? 'nav-link-active' : ''"
+                class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Users
+        </button>
+      </div>
+
+      <div>
+        <p class="nav-section">Tokens &amp; Sessions</p>
+        <button @click="$store.router.navigate('tokens')"
+                :class="$store.router.page === 'tokens' ? 'nav-link-active' : ''"
+                class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          Tokens
+        </button>
+        <button @click="$store.router.navigate('device')" x-show="$store.caps.device_flow"
+                :class="$store.router.page === 'device' ? 'nav-link-active' : ''"
+                class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+          Device Codes
+        </button>
+        <button @click="$store.router.navigate('keys')" x-show="$store.caps.key_rotation"
+                :class="$store.router.page === 'keys' ? 'nav-link-active' : ''"
+                class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          JWT Keys
+        </button>
+      </div>
+
+      <div>
+        <p class="nav-section">System</p>
+        <button @click="$store.router.navigate('events')" x-show="$store.caps.events"
+                :class="$store.router.page === 'events' ? 'nav-link-active' : ''"
+                class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Events
+        </button>
+        <button @click="$store.router.navigate('denylist')" x-show="$store.caps.denylist"
+                :class="$store.router.page === 'denylist' ? 'nav-link-active' : ''"
+                class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          Denylist
+        </button>
+        <button @click="$store.router.navigate('audit')" x-show="$store.caps.audit_log"
+                :class="$store.router.page === 'audit' ? 'nav-link-active' : ''"
+                class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>
+          Audit Log
+        </button>
+        <a href="/health" target="_blank" class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          Health
+          <svg class="w-3 h-3 ml-auto opacity-40" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>
+        </a>
+        <a href="/swagger-ui" target="_blank" class="nav-link">
+          <svg class="w-4 h-4 opacity-80" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          API Docs
+          <svg class="w-3 h-3 ml-auto opacity-40" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 17l9.2-9.2M17 17V7H7"/></svg>
+        </a>
+      </div>
+    </nav>
+
+    <!-- Bottom: Profile -->
+    <div class="px-2 py-3 border-t border-slate-100 dark:border-slate-800/80">
+      <a href="/profile" class="nav-link">
+        <div class="w-6 h-6 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-[10px] font-bold">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        My Profile
+      </a>
+    </div>
+  </aside>
+
+  <!-- Main column -->
+  <div class="flex-1 flex flex-col min-w-0 lg:pl-[232px]">
+
+    <!-- Top bar -->
+    <header class="sticky top-0 z-10 flex items-center gap-3 px-5 py-3 bg-white/80 dark:bg-[#0b0f17]/80 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/80">
+      <!-- Mobile hamburger -->
+      <button @click="$store.router.sidebarOpen = !$store.router.sidebarOpen"
+              class="lg:hidden p-1.5 rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+
+      <div class="flex items-baseline gap-3">
+        <h1 class="text-[15px] font-bold text-slate-900 dark:text-slate-100 capitalize tracking-tight"
+            x-text="$store.router.page === 'dashboard' ? 'Dashboard' : $store.router.page.replace(/-/g,' ')"></h1>
+        <span class="hidden sm:inline text-[11px] font-medium text-slate-400 dark:text-slate-500 tracking-wider uppercase">Control Plane</span>
+      </div>
+
+      <div class="flex-1"></div>
+
+      <!-- Live status -->
+      <div class="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/50 dark:border-emerald-800/40">
+        <span class="pulse-dot"></span>
+        <span class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 tracking-wide">LIVE</span>
+      </div>
+
+      <!-- External quick-links -->
+      <a href="/metrics" target="_blank" class="hidden md:inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-mono text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="Prometheus scrape endpoint">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        /metrics
+      </a>
+
+      <!-- Dark mode toggle -->
+      <button @click="$store.theme.toggle()"
+              class="p-2 rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              :title="$store.theme.isDark ? 'Switch to light mode' : 'Switch to dark mode'">
+        <svg x-show="!$store.theme.isDark" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        <svg x-show="$store.theme.isDark" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </header>
+
+    <!-- Page content -->
+    <main class="flex-1 overflow-auto p-5 space-y-5 surface-grid">
+
+      <!-- ══ Dashboard ══════════════════════════════════════════════════ -->
+      <div x-show="$store.router.page === 'dashboard'"
+           x-data="dashboardPage()"
+           x-init="init()"
+           @navigate.away="destroy()">
+
+        <!-- Header strip -->
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+          <div>
+            <h2 class="text-[22px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">Authorization Server Overview</h2>
+            <p class="text-[13px] text-slate-500 dark:text-slate-400 mt-1">Real-time health, issuance activity, and request latency across the control plane.</p>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+            <span class="chip-live"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>auto-refresh 30s</span>
+          </div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 mb-5">
+          <template x-if="loading">
+            <template x-for="i in 4" :key="i">
+              <div class="card p-5 animate-pulse h-[108px]">
+                <div class="h-3 bg-slate-200 dark:bg-slate-800 rounded w-1/3 mb-3"></div>
+                <div class="h-7 bg-slate-200 dark:bg-slate-800 rounded w-1/2 mb-2"></div>
+                <div class="h-2.5 bg-slate-200 dark:bg-slate-800 rounded w-2/3"></div>
+              </div>
+            </template>
+          </template>
+          <template x-if="!loading && stats">
+            <div class="contents">
+              <div class="stat-card stat-accent" style="--accent-from:#6366f1;--accent-to:#a855f7">
+                <div class="flex items-start justify-between">
+                  <p class="stat-label">Registered Clients</p>
+                  <svg class="w-4 h-4 text-primary-500/70" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                </div>
+                <p class="stat-value text-primary-600 dark:text-primary-400 tabular mt-3" x-text="stats.total_clients"></p>
+                <p class="stat-foot">
+                  <span class="text-indigo-600 dark:text-indigo-400" x-text="stats.public_clients"></span> public
+                  <span class="text-slate-400 mx-1">·</span>
+                  <span class="text-slate-700 dark:text-slate-300" x-text="stats.confidential_clients"></span> confidential
+                </p>
+              </div>
+
+              <div class="stat-card stat-accent" style="--accent-from:#10b981;--accent-to:#06b6d4">
+                <div class="flex items-start justify-between">
+                  <p class="stat-label">End Users</p>
+                  <svg class="w-4 h-4 text-emerald-500/70" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                </div>
+                <p class="stat-value text-emerald-600 dark:text-emerald-400 tabular mt-3" x-text="stats.total_users"></p>
+                <p class="stat-foot">
+                  <span class="text-emerald-600 dark:text-emerald-400" x-text="stats.enabled_users"></span> enabled
+                  <span class="text-slate-400 mx-1">·</span>
+                  <span x-text="stats.total_users - stats.enabled_users"></span> disabled
+                </p>
+              </div>
+
+              <div class="stat-card stat-accent" style="--accent-from:#06b6d4;--accent-to:#6366f1">
+                <div class="flex items-start justify-between">
+                  <p class="stat-label">Active Tokens</p>
+                  <svg class="w-4 h-4 text-cyan-500/70" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                </div>
+                <p class="stat-value text-cyan-600 dark:text-cyan-400 tabular mt-3" x-text="stats.active_tokens"></p>
+                <p class="stat-foot">
+                  <span x-text="stats.total_tokens"></span> issued
+                  <span class="text-slate-400 mx-1">·</span>
+                  <span class="text-rose-600 dark:text-rose-400" x-text="stats.revoked_tokens"></span> revoked
+                </p>
+              </div>
+
+              <div class="stat-card stat-accent"
+                   :style="stats.pending_device_codes > 0 ? '--accent-from:#f59e0b;--accent-to:#f43f5e' : '--accent-from:#64748b;--accent-to:#94a3b8'">
+                <div class="flex items-start justify-between">
+                  <p class="stat-label">Device Authorizations</p>
+                  <svg class="w-4 h-4 text-amber-500/70" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                </div>
+                <p class="stat-value tabular mt-3"
+                   :class="stats.pending_device_codes > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'"
+                   x-text="stats.pending_device_codes"></p>
+                <p class="stat-foot">awaiting user verification</p>
+              </div>
+            </div>
+          </template>
+        </div>
+
+        <!-- Charts grid — 2×2 with subtle hover lift -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="card p-5 hover:shadow-ring transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-[13px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">Token Activity</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Cumulative issuance vs revocation</p>
+              </div>
+              <span class="badge-blue">counter</span>
+            </div>
+            <div class="chart-box"><canvas id="tokenChart"></canvas></div>
+          </div>
+
+          <div class="card p-5 hover:shadow-ring transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-[13px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">HTTP Response Classes</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Success / client error / server error</p>
+              </div>
+              <span class="badge-blue">ratio</span>
+            </div>
+            <div class="chart-box"><canvas id="requestChart"></canvas></div>
+          </div>
+
+          <div class="card p-5 hover:shadow-ring transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-[13px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">Request Latency Distribution</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Estimated from histogram buckets · <span class="font-mono">ms</span></p>
+              </div>
+              <span class="badge-gray">histogram</span>
+            </div>
+            <div class="chart-box"><canvas id="latencyChart"></canvas></div>
+          </div>
+
+          <div class="card p-5 hover:shadow-ring transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-[13px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">Resilience Events</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Rate-limit, circuit breaker, back-pressure</p>
+              </div>
+              <span class="badge-yellow">resilience</span>
+            </div>
+            <div class="chart-box"><canvas id="resilienceChart"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Clients ═════════════════════════════════════════════════════ -->
+      <div x-show="$store.router.page === 'clients'"
+           x-data="clientsPage()"
+           x-init="init()"
+           @navigate.away="destroy()">
+        <div class="card overflow-hidden">
+          <!-- Toolbar -->
+          <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mr-auto">Registered Clients</h2>
+            <input type="search" x-model="search" @input="onSearch()" placeholder="Search clients…"
+                   class="input w-52 text-sm py-1.5">
+            <select x-model="limit" @change="setPageSize($event.target.value)" class="select text-sm py-1.5">
+              <option>10</option><option selected>25</option><option>50</option><option>100</option>
+            </select>
+            <button @click="openCreateModal()" class="btn btn-primary text-xs">+ New Client</button>
+          </div>
+          <!-- Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-900/50">
+                <tr>
+                  <th class="table-header cursor-pointer hover:text-slate-800 dark:hover:text-slate-100" @click="sort('name')">
+                    Name <span class="text-xs opacity-60" x-text="sortIcon('name')"></span>
+                  </th>
+                  <th class="table-header cursor-pointer hover:text-slate-800 dark:hover:text-slate-100" @click="sort('client_id')">
+                    Client ID <span class="text-xs opacity-60" x-text="sortIcon('client_id')"></span>
+                  </th>
+                  <th class="table-header">Auth Method</th>
+                  <th class="table-header">Scope</th>
+                  <th class="table-header cursor-pointer hover:text-slate-800 dark:hover:text-slate-100" @click="sort('created_at')">
+                    Created <span class="text-xs opacity-60" x-text="sortIcon('created_at')"></span>
+                  </th>
+                  <th class="table-header">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="i in (loading ? [1,2,3,4,5] : [])" :key="i">
+                  <tr>
+                    <td colspan="6" class="table-cell">
+                      <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                    </td>
+                  </tr>
+                </template>
+                <template x-if="!loading && error">
+                  <tr><td colspan="6" class="table-cell text-red-500 py-8 text-center" x-text="error"></td></tr>
+                </template>
+                <template x-if="!loading && !error && items.length === 0">
+                  <tr><td colspan="6" class="table-cell text-slate-400 py-10 text-center">No clients found</td></tr>
+                </template>
+                <template x-for="item in items" :key="item.id">
+                  <tr class="table-row" @click="openDrawer(item)">
+                    <td class="table-cell font-medium" x-text="item.name"></td>
+                    <td class="table-cell"><code class="text-xs bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded" x-text="item.client_id"></code></td>
+                    <td class="table-cell">
+                      <span :class="item.token_endpoint_auth_method === 'none' ? 'badge-blue' : 'badge-gray'" class="badge" x-text="item.token_endpoint_auth_method === 'none' ? 'public' : 'confidential'"></span>
+                    </td>
+                    <td class="table-cell text-slate-500 max-w-xs truncate" x-text="item.scope"></td>
+                    <td class="table-cell text-slate-500 whitespace-nowrap" x-text="relativeTime(item.created_at)"></td>
+                    <td class="table-cell whitespace-nowrap">
+                      <div class="flex gap-1 flex-wrap">
+                        <button @click.stop="toggleEnabled(item, $event)"
+                                class="btn btn-secondary text-xs py-1 px-2"
+                                x-text="item.enabled === false ? 'Enable' : 'Disable'"></button>
+                        <button @click.stop="rotateSecret(item, $event)" x-show="item.token_endpoint_auth_method !== 'none'"
+                                class="btn btn-secondary text-xs py-1 px-2">Rotate Secret</button>
+                        <button @click.stop="revokeAllTokens(item, $event)"
+                                class="btn btn-secondary text-xs py-1 px-2">Revoke Tokens</button>
+                        <button @click.stop="deleteClient(item, $event)"
+                                class="btn btn-danger text-xs py-1 px-2">Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400">
+            <span x-text="total === 0 ? 'No results' : `${pageStart}–${pageEnd} of ${total}`"></span>
+            <div class="flex gap-2">
+              <button @click="prevPage()" :disabled="!hasPrev"
+                      class="btn btn-secondary disabled:opacity-40" :class="hasPrev ? '' : 'cursor-not-allowed'">← Prev</button>
+              <button @click="nextPage()" :disabled="!hasNext"
+                      class="btn btn-secondary disabled:opacity-40" :class="hasNext ? '' : 'cursor-not-allowed'">Next →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Client detail drawer — x-if removes from DOM entirely so position:fixed cannot escape -->
+        <template x-if="$store.router.page === 'clients' && drawer">
+          <div class="fixed inset-0 z-40 flex justify-end" @keydown.escape.window="closeDrawer()">
+            <div class="absolute inset-0 bg-black/40" @click="closeDrawer()"></div>
+            <div class="relative w-full max-w-md bg-white dark:bg-slate-800 shadow-xl flex flex-col h-full">
+              <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="font-semibold text-slate-800 dark:text-slate-200" x-text="drawer.name"></h3>
+                <button @click="closeDrawer()" class="btn btn-ghost p-1.5 rounded-full">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+              <div class="flex-1 overflow-y-auto px-5 py-4 space-y-4 text-sm">
+                <dl class="space-y-3">
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Client ID</dt>
+                    <dd class="mt-0.5 font-mono text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded break-all" x-text="drawer.client_id"></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Scope</dt>
+                    <dd class="mt-0.5 text-slate-700 dark:text-slate-300 break-all" x-text="drawer.scope"></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Grant Types</dt>
+                    <dd class="mt-0.5 text-slate-700 dark:text-slate-300" x-text="drawer.grant_types"></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Redirect URIs</dt>
+                    <dd class="mt-0.5 text-slate-700 dark:text-slate-300 break-all" x-text="drawer.redirect_uris"></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Auth Method</dt>
+                    <dd class="mt-0.5"><span :class="drawer.token_endpoint_auth_method === 'none' ? 'badge-blue' : 'badge-gray'" class="badge" x-text="drawer.token_endpoint_auth_method"></span></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Created</dt>
+                    <dd class="mt-0.5 text-slate-700 dark:text-slate-300" x-text="formatDate(drawer.created_at)"></dd></div>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- ══ Tokens ══════════════════════════════════════════════════════ -->
+      <div x-show="$store.router.page === 'tokens'"
+           x-data="tokensPage()"
+           x-init="init()"
+           @navigate.away="destroy()">
+        <div class="card overflow-hidden">
+          <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mr-auto">Tokens</h2>
+            <input type="search" x-model="search" @input="onSearch()" placeholder="Search…" class="input w-44 text-sm py-1.5">
+            <select x-model="status" @change="offset=0;load()" class="select text-sm py-1.5">
+              <option value="active">Active</option>
+              <option value="revoked">Revoked</option>
+              <option value="expired">Expired</option>
+              <option value="">All</option>
+            </select>
+            <select x-model="limit" @change="setPageSize($event.target.value)" class="select text-sm py-1.5">
+              <option>10</option><option selected>25</option><option>50</option><option>100</option>
+            </select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-900/50">
+                <tr>
+                  <th class="table-header">ID</th>
+                  <th class="table-header cursor-pointer" @click="sort('client_id')">Client <span class="text-xs opacity-60" x-text="sortIcon('client_id')"></span></th>
+                  <th class="table-header">User</th>
+                  <th class="table-header">Scope</th>
+                  <th class="table-header cursor-pointer" @click="sort('expires_at')">Expires <span class="text-xs opacity-60" x-text="sortIcon('expires_at')"></span></th>
+                  <th class="table-header">Status</th>
+                  <th class="table-header">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-if="loading">
+                  <tr><td colspan="7" class="table-cell py-10 text-center"><div class="animate-spin inline-block w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full"></div></td></tr>
+                </template>
+                <template x-if="!loading && items.length === 0">
+                  <tr><td colspan="7" class="table-cell text-slate-400 py-10 text-center">No tokens found</td></tr>
+                </template>
+                <template x-for="item in items" :key="item.id">
+                  <tr class="table-row" @click="openDrawer(item)">
+                    <td class="table-cell"><code class="text-xs font-mono" x-text="item.id.slice(0,8)+'…'"></code></td>
+                    <td class="table-cell" x-text="item.client_id"></td>
+                    <td class="table-cell text-slate-500" x-text="item.user_id || '—'"></td>
+                    <td class="table-cell text-slate-500 max-w-xs truncate" x-text="item.scope"></td>
+                    <td class="table-cell whitespace-nowrap text-slate-500" x-text="relativeTime(item.expires_at)"></td>
+                    <td class="table-cell"><span :class="tokenStatus(item).cls" class="badge" x-text="tokenStatus(item).label"></span></td>
+                    <td class="table-cell">
+                      <button x-show="!item.revoked" @click.stop="revokeToken(item, $event)" class="btn btn-danger text-xs py-1 px-2">Revoke</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400">
+            <span x-text="total === 0 ? 'No results' : `${pageStart}–${pageEnd} of ${total}`"></span>
+            <div class="flex gap-2">
+              <button @click="prevPage()" :disabled="!hasPrev" class="btn btn-secondary disabled:opacity-40">← Prev</button>
+              <button @click="nextPage()" :disabled="!hasNext" class="btn btn-secondary disabled:opacity-40">Next →</button>
+            </div>
+          </div>
+        </div>
+        <!-- Token drawer — x-if removes from DOM entirely so position:fixed cannot escape -->
+        <template x-if="$store.router.page === 'tokens' && drawer">
+          <div class="fixed inset-0 z-40 flex justify-end" @keydown.escape.window="closeDrawer()">
+            <div class="absolute inset-0 bg-black/40" @click="closeDrawer()"></div>
+            <div class="relative w-full max-w-md bg-white dark:bg-slate-800 shadow-xl flex flex-col h-full">
+              <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
+                <h3 class="font-semibold text-slate-800 dark:text-slate-200">Token Detail</h3>
+                <button @click="closeDrawer()" class="btn btn-ghost p-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              </div>
+              <div class="flex-1 overflow-y-auto px-5 py-4 space-y-3 text-sm">
+                <dl class="space-y-3">
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase">Token ID</dt><dd class="mt-0.5 font-mono text-xs bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded break-all" x-text="drawer.id"></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase">Client</dt><dd class="mt-0.5 text-slate-700 dark:text-slate-300" x-text="drawer.client_id"></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase">User</dt><dd class="mt-0.5 text-slate-700 dark:text-slate-300" x-text="drawer.user_id || '—'"></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase">Scope</dt><dd class="mt-0.5 text-slate-700 dark:text-slate-300 break-all" x-text="drawer.scope"></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase">Status</dt><dd class="mt-0.5"><span :class="tokenStatus(drawer).cls" class="badge" x-text="tokenStatus(drawer).label"></span></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase">Created</dt><dd class="mt-0.5 text-slate-700 dark:text-slate-300" x-text="formatDate(drawer.created_at)"></dd></div>
+                  <div><dt class="text-xs font-semibold text-slate-500 uppercase">Expires</dt><dd class="mt-0.5 text-slate-700 dark:text-slate-300" x-text="formatDate(drawer.expires_at)"></dd></div>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- ══ Users ═══════════════════════════════════════════════════════ -->
+      <div x-show="$store.router.page === 'users'"
+           x-data="usersPage()"
+           x-init="init()"
+           @navigate.away="destroy()">
+        <div class="card overflow-hidden">
+          <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mr-auto">Users</h2>
+            <input type="search" x-model="search" @input="onSearch()" placeholder="Search users…" class="input w-52 text-sm py-1.5">
+            <select x-model="limit" @change="setPageSize($event.target.value)" class="select text-sm py-1.5">
+              <option>10</option><option selected>25</option><option>50</option><option>100</option>
+            </select>
+            <button @click="openCreateModal()" class="btn btn-primary text-xs">+ New User</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-900/50">
+                <tr>
+                  <th class="table-header cursor-pointer" @click="sort('username')">Username <span class="text-xs opacity-60" x-text="sortIcon('username')"></span></th>
+                  <th class="table-header cursor-pointer" @click="sort('email')">Email <span class="text-xs opacity-60" x-text="sortIcon('email')"></span></th>
+                  <th class="table-header">Role</th>
+                  <th class="table-header">Status</th>
+                  <th class="table-header cursor-pointer" @click="sort('created_at')">Created <span class="text-xs opacity-60" x-text="sortIcon('created_at')"></span></th>
+                  <th class="table-header">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-if="loading"><tr><td colspan="6" class="table-cell py-10 text-center"><div class="animate-spin inline-block w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full"></div></td></tr></template>
+                <template x-if="!loading && items.length === 0"><tr><td colspan="6" class="table-cell text-slate-400 py-10 text-center">No users found</td></tr></template>
+                <template x-for="item in items" :key="item.id">
+                  <tr class="table-row" @click="openDrawer(item)">
+                    <td class="table-cell font-medium" x-text="item.username"></td>
+                    <td class="table-cell text-slate-500" x-text="item.email"></td>
+                    <td class="table-cell"><span :class="item.role === 'admin' ? 'badge-blue' : 'badge-gray'" class="badge" x-text="item.role"></span></td>
+                    <td class="table-cell"><span :class="item.enabled ? 'badge-green' : 'badge-red'" class="badge" x-text="item.enabled ? 'Enabled' : 'Disabled'"></span></td>
+                    <td class="table-cell text-slate-500 whitespace-nowrap" x-text="relativeTime(item.created_at)"></td>
+                    <td class="table-cell whitespace-nowrap">
+                      <div class="flex gap-1 flex-wrap">
+                        <button @click.stop="toggleEnabled(item, $event)"
+                                class="btn btn-secondary text-xs py-1 px-2"
+                                x-text="item.enabled ? 'Disable' : 'Enable'"></button>
+                        <button @click.stop="toggleRole(item, $event)"
+                                class="btn btn-secondary text-xs py-1 px-2"
+                                x-text="item.role === 'admin' ? 'Make User' : 'Make Admin'"></button>
+                        <button @click.stop="openPasswordModal(item)"
+                                class="btn btn-secondary text-xs py-1 px-2">Reset Pw</button>
+                        <button @click.stop="deleteUser(item, $event)"
+                                class="btn btn-danger text-xs py-1 px-2">Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-500">
+            <span x-text="total === 0 ? 'No results' : `${pageStart}–${pageEnd} of ${total}`"></span>
+            <div class="flex gap-2">
+              <button @click="prevPage()" :disabled="!hasPrev" class="btn btn-secondary disabled:opacity-40">← Prev</button>
+              <button @click="nextPage()" :disabled="!hasNext" class="btn btn-secondary disabled:opacity-40">Next →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Denylist ════════════════════════════════════════════════════ -->
+      <div x-show="$store.router.page === 'denylist'"
+           x-data="denylistPage()"
+           x-init="init()"
+           @navigate.away="destroy && destroy()">
+        <div class="card overflow-hidden">
+          <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mr-auto">Denylist</h2>
+            <select x-model="limit" @change="setPageSize($event.target.value)" class="select text-sm py-1.5">
+              <option>10</option><option selected>25</option><option>50</option><option>100</option>
+            </select>
+            <button @click="openAddModal()" class="btn btn-primary text-xs">+ Add Entry</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-900/50">
+                <tr>
+                  <th class="table-header">Kind</th>
+                  <th class="table-header">Value</th>
+                  <th class="table-header">Reason</th>
+                  <th class="table-header">By</th>
+                  <th class="table-header">Active</th>
+                  <th class="table-header cursor-pointer" @click="sort('created_at')">Created <span class="text-xs opacity-60" x-text="sortIcon('created_at')"></span></th>
+                  <th class="table-header">Expires</th>
+                  <th class="table-header">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-if="loading"><tr><td colspan="8" class="table-cell py-10 text-center"><div class="animate-spin inline-block w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full"></div></td></tr></template>
+                <template x-if="!loading && items.length === 0"><tr><td colspan="8" class="table-cell text-slate-400 py-10 text-center">No denylist entries</td></tr></template>
+                <template x-for="item in items" :key="item.id">
+                  <tr class="table-row">
+                    <td class="table-cell"><span class="badge badge-gray" x-text="item.kind"></span></td>
+                    <td class="table-cell font-mono text-xs break-all" x-text="item.value"></td>
+                    <td class="table-cell text-slate-500" x-text="item.reason || '—'"></td>
+                    <td class="table-cell text-slate-500" x-text="item.created_by || '—'"></td>
+                    <td class="table-cell"><span :class="item.active ? 'badge-red' : 'badge-gray'" class="badge" x-text="item.active ? 'active' : 'expired'"></span></td>
+                    <td class="table-cell text-slate-500 whitespace-nowrap" x-text="relativeTime(item.created_at)"></td>
+                    <td class="table-cell text-slate-500 whitespace-nowrap" x-text="item.expires_at ? relativeTime(item.expires_at) : '—'"></td>
+                    <td class="table-cell">
+                      <button @click.stop="remove(item, $event)" class="btn btn-danger text-xs py-1 px-2">Remove</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-500">
+            <span x-text="total === 0 ? 'No results' : `${pageStart}–${pageEnd} of ${total}`"></span>
+            <div class="flex gap-2">
+              <button @click="prevPage()" :disabled="!hasPrev" class="btn btn-secondary disabled:opacity-40">← Prev</button>
+              <button @click="nextPage()" :disabled="!hasNext" class="btn btn-secondary disabled:opacity-40">Next →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Audit Log ═══════════════════════════════════════════════════ -->
+      <div x-show="$store.router.page === 'audit'"
+           x-data="auditPage()"
+           x-init="init()"
+           @navigate.away="destroy && destroy()">
+        <div class="card overflow-hidden">
+          <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mr-auto">Audit Log</h2>
+            <select x-model="limit" @change="setPageSize($event.target.value)" class="select text-sm py-1.5">
+              <option>25</option><option selected>50</option><option>100</option><option>200</option>
+            </select>
+            <button @click="load()" class="btn btn-secondary text-xs">Refresh</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-900/50">
+                <tr>
+                  <th class="table-header cursor-pointer" @click="sort('created_at')">When <span class="text-xs opacity-60" x-text="sortIcon('created_at')"></span></th>
+                  <th class="table-header">Actor</th>
+                  <th class="table-header">Action</th>
+                  <th class="table-header">Target</th>
+                  <th class="table-header">IP</th>
+                  <th class="table-header">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-if="loading"><tr><td colspan="6" class="table-cell py-10 text-center"><div class="animate-spin inline-block w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full"></div></td></tr></template>
+                <template x-if="!loading && items.length === 0"><tr><td colspan="6" class="table-cell text-slate-400 py-10 text-center">No audit events yet</td></tr></template>
+                <template x-for="item in items" :key="item.id">
+                  <tr class="table-row">
+                    <td class="table-cell whitespace-nowrap text-slate-500" x-text="relativeTime(item.created_at)"></td>
+                    <td class="table-cell text-slate-700 dark:text-slate-300" x-text="item.actor_email || item.actor_id || '—'"></td>
+                    <td class="table-cell"><span class="badge badge-blue font-mono" x-text="item.action"></span></td>
+                    <td class="table-cell text-slate-500"><span x-text="item.target_kind"></span><span x-show="item.target_id">: <code class="text-xs" x-text="item.target_id.slice(0,12)"></code></span></td>
+                    <td class="table-cell text-slate-500 font-mono text-xs" x-text="item.ip || '—'"></td>
+                    <td class="table-cell text-slate-500 text-xs max-w-md truncate" x-text="item.metadata || '—'"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-500">
+            <span x-text="total === 0 ? 'No results' : `${pageStart}–${pageEnd} of ${total}`"></span>
+            <div class="flex gap-2">
+              <button @click="prevPage()" :disabled="!hasPrev" class="btn btn-secondary disabled:opacity-40">← Prev</button>
+              <button @click="nextPage()" :disabled="!hasNext" class="btn btn-secondary disabled:opacity-40">Next →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Device Codes ════════════════════════════════════════════════ -->
+      <div x-show="$store.router.page === 'device'"
+           x-data="devicePage()"
+           x-init="init()"
+           @navigate.away="destroy()">
+        <div class="card overflow-hidden">
+          <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mr-auto">Device Authorization Codes</h2>
+            <select x-model="status" @change="offset=0;load()" class="select text-sm py-1.5">
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="denied">Denied</option>
+              <option value="">All</option>
+            </select>
+            <select x-model="limit" @change="setPageSize($event.target.value)" class="select text-sm py-1.5">
+              <option>10</option><option selected>25</option><option>50</option>
+            </select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-900/50">
+                <tr>
+                  <th class="table-header">User Code</th>
+                  <th class="table-header">Client</th>
+                  <th class="table-header">Scope</th>
+                  <th class="table-header">Status</th>
+                  <th class="table-header cursor-pointer" @click="sort('expires_at')">Expires <span class="text-xs opacity-60" x-text="sortIcon('expires_at')"></span></th>
+                  <th class="table-header">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-if="loading"><tr><td colspan="6" class="table-cell py-10 text-center"><div class="animate-spin inline-block w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full"></div></td></tr></template>
+                <template x-if="!loading && items.length === 0"><tr><td colspan="6" class="table-cell text-slate-400 py-10 text-center">No device codes found</td></tr></template>
+                <template x-for="item in items" :key="item.id">
+                  <tr class="table-row">
+                    <td class="table-cell"><code class="font-mono text-sm font-bold tracking-widest" x-text="item.user_code"></code></td>
+                    <td class="table-cell" x-text="item.client_id"></td>
+                    <td class="table-cell text-slate-500" x-text="item.scope"></td>
+                    <td class="table-cell"><span :class="deviceStatus(item).cls" class="badge" x-text="deviceStatus(item).label"></span></td>
+                    <td class="table-cell text-slate-500 whitespace-nowrap" x-text="relativeTime(item.expires_at)"></td>
+                    <td class="table-cell">
+                      <button x-show="!item.expired && !item.approved && !item.denied"
+                              @click.stop="expireCode(item, $event)" class="btn btn-danger text-xs py-1 px-2">Expire</button>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-500">
+            <span x-text="total === 0 ? 'No results' : `${pageStart}–${pageEnd} of ${total}`"></span>
+            <div class="flex gap-2">
+              <button @click="prevPage()" :disabled="!hasPrev" class="btn btn-secondary disabled:opacity-40">← Prev</button>
+              <button @click="nextPage()" :disabled="!hasNext" class="btn btn-secondary disabled:opacity-40">Next →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ JWT Keys ════════════════════════════════════════════════════ -->
+      <div x-show="$store.router.page === 'keys'"
+           x-data="keysPage()"
+           x-init="init()">
+        <!-- Warning banner if any key is old -->
+        <template x-if="keys.some(k => k.is_current && keyAge(k.created_at) > 30)">
+          <div class="mb-4 flex items-center gap-3 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-300 text-sm">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span>Active signing key is over 30 days old. Consider rotating it.</span>
+          </div>
+        </template>
+
+        <div class="card overflow-hidden">
+          <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mr-auto">JWT Signing Keys</h2>
+            <a href="/.well-known/jwks.json" target="_blank" class="btn btn-secondary text-xs">JWKS →</a>
+            <button @click="$store.router.showRotateModal = true" class="btn btn-primary text-xs">Rotate Key</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-900/50">
+                <tr>
+                  <th class="table-header">Key ID (kid)</th>
+                  <th class="table-header">Algorithm</th>
+                  <th class="table-header">Status</th>
+                  <th class="table-header">Created</th>
+                  <th class="table-header">Expires</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-if="loading"><tr><td colspan="5" class="table-cell py-10 text-center text-slate-400">Loading…</td></tr></template>
+                <template x-if="!loading && keys.length === 0"><tr><td colspan="5" class="table-cell py-10 text-center text-slate-400">No keys found</td></tr></template>
+                <template x-for="key in keys" :key="key.kid">
+                  <tr class="border-b border-slate-100 dark:border-slate-700">
+                    <td class="table-cell"><code class="text-xs font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded" x-text="key.kid"></code></td>
+                    <td class="table-cell"><span class="badge badge-blue" x-text="key.algorithm"></span></td>
+                    <td class="table-cell">
+                      <span :class="key.is_current ? 'badge-green' : 'badge-gray'" class="badge" x-text="key.is_current ? 'Current' : 'Grace'"></span>
+                      <span x-show="keyAge(key.created_at) > 30" class="ml-1 badge badge-yellow" title="Over 30 days old">Old</span>
+                    </td>
+                    <td class="table-cell text-slate-500 whitespace-nowrap" x-text="formatDate(key.created_at)"></td>
+                    <td class="table-cell text-slate-500 whitespace-nowrap" x-text="key.expires_at ? formatDate(key.expires_at) : '—'"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══ Metrics ═════════════════════════════════════════════════════ -->
+      <div x-show="$store.router.page === 'metrics'"
+           x-data="metricsPage()"
+           x-init="init()"
+           @navigate.away="destroy()">
+
+        <!-- Header strip -->
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+          <div>
+            <h2 class="text-[22px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">Telemetry</h2>
+            <p class="text-[13px] text-slate-500 dark:text-slate-400 mt-1">Prometheus scrape at <code class="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">/metrics</code> — live computed latency quantiles from histogram buckets.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="chip-live"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>auto-refresh 15s</span>
+          </div>
+        </div>
+
+        <!-- Gauge tiles -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div class="stat-card stat-accent" style="--accent-from:#6366f1;--accent-to:#a855f7">
+            <p class="stat-label">Active Tokens</p>
+            <p class="stat-value text-primary-600 dark:text-primary-400 tabular mt-2" x-text="scalar('oauth2_server_oauth_active_tokens')"></p>
+            <p class="stat-foot">current gauge</p>
+          </div>
+          <div class="stat-card stat-accent" style="--accent-from:#10b981;--accent-to:#06b6d4">
+            <p class="stat-label">Tokens Issued</p>
+            <p class="stat-value text-emerald-600 dark:text-emerald-400 tabular mt-2" x-text="scalar('oauth2_server_oauth_token_issued_total')"></p>
+            <p class="stat-foot">lifetime counter</p>
+          </div>
+          <div class="stat-card stat-accent" style="--accent-from:#f43f5e;--accent-to:#f59e0b">
+            <p class="stat-label">Failed Auths</p>
+            <p class="stat-value text-rose-600 dark:text-rose-400 tabular mt-2" x-text="scalar('oauth2_server_oauth_failed_authentications')"></p>
+            <p class="stat-foot">401 + invalid_grant</p>
+          </div>
+          <div class="stat-card stat-accent" style="--accent-from:#a855f7;--accent-to:#6366f1">
+            <p class="stat-label">In-flight Requests</p>
+            <p class="stat-value text-violet-600 dark:text-violet-400 tabular mt-2" x-text="scalar('oauth2_server_concurrent_requests_in_flight')"></p>
+            <p class="stat-foot">concurrency gauge</p>
+          </div>
+        </div>
+
+        <!-- Latency quantile strip — show p50/p95/p99 as numeric pills -->
+        <div class="card p-5 mb-4">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-[13px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">Request Latency Quantiles</h3>
+              <p class="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Linear interpolation across histogram <code class="font-mono text-[10px]">_bucket</code> series</p>
+            </div>
+            <span class="badge-blue">HTTP</span>
+          </div>
+          <div class="grid grid-cols-3 gap-3 font-mono">
+            <template x-for="(q, i) in [0.5, 0.95, 0.99]" :key="q">
+              <div class="rounded-md border border-slate-200 dark:border-slate-800 p-3 bg-slate-50/60 dark:bg-slate-900/40">
+                <div class="flex items-baseline justify-between">
+                  <span class="text-[11px] font-bold tracking-wide uppercase"
+                        :class="['text-cyan-600 dark:text-cyan-400','text-indigo-600 dark:text-indigo-400','text-violet-600 dark:text-violet-400'][i]"
+                        x-text="'p' + (q * 100)"></span>
+                  <span class="text-[10px] text-slate-400">ms</span>
+                </div>
+                <div class="text-xl font-bold text-slate-900 dark:text-slate-100 tabular mt-1"
+                     x-text="(hq('oauth2_server_http_request_duration_seconds', q) * 1000).toFixed(1)"></div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="card p-5 hover:shadow-ring transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-[13px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">Auth Activity</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Token lifecycle counters</p>
+              </div>
+              <span class="badge-blue">counter</span>
+            </div>
+            <div class="chart-box"><canvas id="m-tokens"></canvas></div>
+          </div>
+
+          <div class="card p-5 hover:shadow-ring transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-[13px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">HTTP Latency</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Request-duration quantiles · <span class="font-mono">ms</span></p>
+              </div>
+              <span class="badge-gray">histogram</span>
+            </div>
+            <div class="chart-box"><canvas id="m-latency"></canvas></div>
+          </div>
+
+          <div class="card p-5 hover:shadow-ring transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-[13px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">DB Query Latency</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Storage-layer query duration · <span class="font-mono">ms</span></p>
+              </div>
+              <span class="badge-gray">histogram</span>
+            </div>
+            <div class="chart-box"><canvas id="m-db"></canvas></div>
+          </div>
+
+          <div class="card p-5 hover:shadow-ring transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-[13px] font-bold text-slate-800 dark:text-slate-200 tracking-tight">Resilience Events</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-500 mt-0.5">Rate-limit, CB trips, back-pressure, in-flight</p>
+              </div>
+              <span class="badge-yellow">resilience</span>
+            </div>
+            <div class="chart-box"><canvas id="m-resilience"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Events ══════════════════════════════════════════════════════ -->
+      <div x-show="$store.router.page === 'events'"
+           x-data="eventsPage()"
+           x-init="init()"
+           @navigate.away="destroy()">
+
+        <!-- Plugin health -->
+        <div x-show="pluginHealth" class="card p-4 mb-5">
+          <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Event Bus Health</h3>
+          <pre class="text-xs text-slate-500 dark:text-slate-400 whitespace-pre-wrap" x-text="JSON.stringify(pluginHealth, null, 2)"></pre>
+        </div>
+
+        <div class="card overflow-hidden">
+          <div class="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mr-auto">Recent Events</h2>
+            <input type="search" x-model="search" @input="onSearch()" placeholder="Search events…" class="input w-52 text-sm py-1.5">
+            <select x-model="limit" @change="setPageSize($event.target.value)" class="select text-sm py-1.5">
+              <option>10</option><option selected>25</option><option>50</option>
+            </select>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-900/50">
+                <tr>
+                  <th class="table-header">Event Type</th>
+                  <th class="table-header">Source</th>
+                  <th class="table-header">Idempotency Key</th>
+                  <th class="table-header">Received</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-if="loading"><tr><td colspan="4" class="table-cell py-10 text-center text-slate-400">Loading…</td></tr></template>
+                <template x-if="!loading && (error || items.length === 0)">
+                  <tr><td colspan="4" class="table-cell py-10 text-center text-slate-400" x-text="error || 'No events recorded yet'"></td></tr>
+                </template>
+                <template x-for="item in items" :key="(item.event && item.event.id) || item.correlation_id">
+                  <tr class="table-row">
+                    <td class="table-cell"><span class="badge badge-blue" x-text="(item.event && item.event.event_type) || item.event_type || '—'"></span></td>
+                    <td class="table-cell text-slate-500" x-text="item.producer || item.source || '—'"></td>
+                    <td class="table-cell"><code class="text-xs" x-text="(item.idempotency_key || (item.event && item.event.id) || '—').slice(0, 16) + '…'"></code></td>
+                    <td class="table-cell text-slate-500 whitespace-nowrap" x-text="relativeTime(item.produced_at || item.received_at || item.created_at)"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div class="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700 text-sm text-slate-500">
+            <span x-text="total === 0 ? 'No results' : `${pageStart}–${pageEnd} of ${total}`"></span>
+            <div class="flex gap-2">
+              <button @click="prevPage()" :disabled="!hasPrev" class="btn btn-secondary disabled:opacity-40">← Prev</button>
+              <button @click="nextPage()" :disabled="!hasNext" class="btn btn-secondary disabled:opacity-40">Next →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main><!-- /main -->
+
+    <!-- Footer -->
+    <footer class="px-5 py-3 text-[11px] text-slate-400 dark:text-slate-500 border-t border-slate-200/70 dark:border-slate-800/80 flex items-center justify-between bg-white/60 dark:bg-[#0b0f17]/60 backdrop-blur-sm">
+      <span class="flex items-center gap-2 font-mono">
+        <span class="pulse-dot" style="width:6px;height:6px;"></span>
+        oauth2-server
+      </span>
+      <span class="flex gap-4 font-mono">
+        <a href="/health" target="_blank" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">/health</a>
+        <a href="/ready" target="_blank" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">/ready</a>
+        <a href="/metrics" target="_blank" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">/metrics</a>
+        <a href="/.well-known/openid-configuration" target="_blank" class="hover:text-primary-600 dark:hover:text-primary-400 transition-colors">/.well-known</a>
+      </span>
+    </footer>
+  </div><!-- /main column -->
+</div><!-- /layout -->
+
+<!-- ══ Rotate Signing Key modal — at body level so position:fixed is never inside a display:none parent ══ -->
+<div style="display:none"
+     x-show="$store.router.page === 'keys' && $store.router.showRotateModal"
+     @click.self="$store.router.showRotateModal = false"
+     @keydown.escape.window="$store.router.showRotateModal = false"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+  <div x-data="rotateModalData()" class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+    <h3 class="font-semibold text-slate-800 dark:text-slate-200">Rotate Signing Key</h3>
+    <div class="space-y-3 text-sm">
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Algorithm</label>
+        <select x-model="rotateAlgorithm" class="select w-full"><option>RS256</option><option>HS256</option></select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Grace period (hours)</label>
+        <input type="number" x-model="rotateGrace" min="1" max="720" class="input w-full">
+      </div>
+      <p class="text-xs text-slate-400">Old keys remain valid during the grace period so existing tokens can still be verified.</p>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button @click="$store.router.showRotateModal = false" class="btn btn-secondary">Cancel</button>
+      <button @click="rotate()" :disabled="rotating" class="btn btn-primary" x-text="rotating ? 'Rotating…' : 'Rotate'"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Create / Edit Client modal ════════════════════════════════════════ -->
+<div style="display:none"
+     x-data="clientFormModal()"
+     x-show="$store.modals.client.open"
+     @click.self="$store.modals.client.open = false"
+     @keydown.escape.window="$store.modals.client.open = false"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4">
+    <h3 class="font-semibold text-slate-800 dark:text-slate-200" x-text="$store.modals.client.mode === 'edit' ? 'Edit Client' : 'New Client'"></h3>
+    <div class="space-y-3 text-sm max-h-[60vh] overflow-y-auto">
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Name <span class="text-red-500">*</span></label>
+        <input type="text" x-model="form.name" class="input w-full" placeholder="Acme SSO">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Client ID <span class="text-slate-400">(optional, auto-generated)</span></label>
+        <input type="text" x-model="form.client_id" class="input w-full" :disabled="$store.modals.client.mode === 'edit'" placeholder="leave blank to auto-generate">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Auth Method</label>
+        <select x-model="form.token_endpoint_auth_method" class="select w-full">
+          <option value="client_secret_basic">client_secret_basic</option>
+          <option value="client_secret_post">client_secret_post</option>
+          <option value="client_secret_jwt">client_secret_jwt</option>
+          <option value="private_key_jwt">private_key_jwt</option>
+          <option value="none">none (public)</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Redirect URIs (one per line)</label>
+        <textarea x-model="form.redirect_uris_text" rows="3" class="input w-full font-mono text-xs" placeholder="https://app.example.com/callback"></textarea>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Grant Types (space-separated)</label>
+        <input type="text" x-model="form.grant_types_text" class="input w-full" placeholder="authorization_code refresh_token">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Scope</label>
+        <input type="text" x-model="form.scope" class="input w-full" placeholder="openid profile email">
+      </div>
+      <div x-show="$store.modals.client.mode === 'edit'">
+        <label class="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+          <input type="checkbox" x-model="form.enabled"> Enabled
+        </label>
+      </div>
+      <p x-show="error" class="text-xs text-red-500" x-text="error"></p>
+      <div x-show="createdSecret" class="p-3 rounded bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 text-xs">
+        <p class="font-semibold text-amber-800 dark:text-amber-300 mb-1">Copy this secret now — it will not be shown again.</p>
+        <code class="block font-mono break-all text-amber-900 dark:text-amber-200" x-text="createdSecret"></code>
+      </div>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button @click="$store.modals.client.open = false" class="btn btn-secondary" x-text="createdSecret ? 'Close' : 'Cancel'"></button>
+      <button x-show="!createdSecret" @click="submit()" :disabled="saving" class="btn btn-primary" x-text="saving ? 'Saving…' : 'Save'"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Create / Edit User modal ════════════════════════════════════════ -->
+<div style="display:none"
+     x-data="userFormModal()"
+     x-show="$store.modals.user.open"
+     @click.self="$store.modals.user.open = false"
+     @keydown.escape.window="$store.modals.user.open = false"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+    <h3 class="font-semibold text-slate-800 dark:text-slate-200" x-text="$store.modals.user.mode === 'edit' ? 'Edit User' : 'New User'"></h3>
+    <div class="space-y-3 text-sm">
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Username <span class="text-red-500">*</span></label>
+        <input type="text" x-model="form.username" class="input w-full" :disabled="$store.modals.user.mode === 'edit'">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Email <span class="text-red-500">*</span></label>
+        <input type="email" x-model="form.email" class="input w-full">
+      </div>
+      <div x-show="$store.modals.user.mode !== 'edit'">
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Password <span class="text-red-500">*</span></label>
+        <input type="password" x-model="form.password" class="input w-full" placeholder="min 8 characters">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Role</label>
+        <select x-model="form.role" class="select w-full">
+          <option value="user">user</option>
+          <option value="admin">admin</option>
+        </select>
+      </div>
+      <div>
+        <label class="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+          <input type="checkbox" x-model="form.enabled"> Enabled
+        </label>
+      </div>
+      <p x-show="error" class="text-xs text-red-500" x-text="error"></p>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button @click="$store.modals.user.open = false" class="btn btn-secondary">Cancel</button>
+      <button @click="submit()" :disabled="saving" class="btn btn-primary" x-text="saving ? 'Saving…' : 'Save'"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Reset Password modal ══════════════════════════════════════════════ -->
+<div style="display:none"
+     x-data="passwordModal()"
+     x-show="$store.modals.password.open"
+     @click.self="$store.modals.password.open = false"
+     @keydown.escape.window="$store.modals.password.open = false"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
+    <h3 class="font-semibold text-slate-800 dark:text-slate-200">Reset Password</h3>
+    <p class="text-xs text-slate-500">Resetting password for <span class="font-mono" x-text="$store.modals.password.username"></span>. All active tokens will be revoked.</p>
+    <div class="space-y-3 text-sm">
+      <input type="password" x-model="password" class="input w-full" placeholder="New password (min 8 chars)">
+      <p x-show="error" class="text-xs text-red-500" x-text="error"></p>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button @click="$store.modals.password.open = false" class="btn btn-secondary">Cancel</button>
+      <button @click="submit()" :disabled="saving" class="btn btn-danger" x-text="saving ? 'Resetting…' : 'Reset'"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Add Denylist Entry modal ══════════════════════════════════════════ -->
+<div style="display:none"
+     x-data="denylistModal()"
+     x-show="$store.modals.denylist.open"
+     @click.self="$store.modals.denylist.open = false"
+     @keydown.escape.window="$store.modals.denylist.open = false"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+  <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+    <h3 class="font-semibold text-slate-800 dark:text-slate-200">Add Denylist Entry</h3>
+    <div class="space-y-3 text-sm">
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Kind</label>
+        <select x-model="form.kind" class="select w-full">
+          <option value="ip">IP address</option>
+          <option value="username">Username</option>
+          <option value="email">Email</option>
+          <option value="user_id">User ID</option>
+          <option value="client_id">Client ID</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Value <span class="text-red-500">*</span></label>
+        <input type="text" x-model="form.value" class="input w-full">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reason</label>
+        <input type="text" x-model="form.reason" class="input w-full" placeholder="e.g. brute-force attempt">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Expires at (optional ISO-8601)</label>
+        <input type="datetime-local" x-model="form.expires_at_local" class="input w-full">
+      </div>
+      <p x-show="error" class="text-xs text-red-500" x-text="error"></p>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button @click="$store.modals.denylist.open = false" class="btn btn-secondary">Cancel</button>
+      <button @click="submit()" :disabled="saving" class="btn btn-primary" x-text="saving ? 'Adding…' : 'Add'"></button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

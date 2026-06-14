@@ -1,0 +1,53 @@
+# Configuration for cargo-audit
+# This file configures which advisories to ignore
+#
+# IMPORTANT: deny.toml is the primary policy file for cargo-deny.
+# This file is used only by `cargo audit` (standalone).
+
+[advisories]
+# Ignore advisories with no upstream fix yet.
+
+# RUSTSEC-2023-0071: Marvin Attack — RSA PKCS#1 v1.5 timing side-channel
+# Affected crate: rsa 0.9.x
+# Affected code paths:
+#   - jsonwebtoken (JWT RS256 signing/verification)
+#   - oauth2-actix admin_keys handler (RSA key generation for JWKS)
+# Status: No fix available upstream (rsa crate). Tracked for migration to
+#         ES256 (P-256) or EdDSA which eliminates RSA entirely.
+# Severity: Medium (CVSS 5.9) — requires network access to exploit timing.
+# Review date: 2025-04-13
+# Next review: Remove this suppression once rsa >= 0.10 ships a fix.
+
+# RUSTSEC-2021-0153: `encoding` crate is unmaintained
+# Affected path: encoding 0.2.33 ← java-properties ← hocon ← oauth2-config
+# Status: Crate is unmaintained since 2021
+# Reason: Transitive dependency through hocon config library. The encoding crate
+#         is only used by java-properties for Java .properties file parsing.
+#         Limited impact: not directly processing user input with this crate.
+# Review date: 2026-05-04
+# Next review: Consider replacing hocon or submitting PR to hocon to remove encoding dep
+
+# RUSTSEC-2024-0384: `instant` crate is unmaintained
+# Affected path: instant 0.1.13 ← fastrand 1.9.0 ← futures-lite 1.13.0 ← async-io 1.13.0
+#                ← async-reactor-trait ← lapin ← oauth2-events
+# Status: Crate is unmaintained since Sept 2024
+# Reason: Transitive dependency through lapin (RabbitMQ client). Only used when
+#         events-rabbit feature is enabled (optional). Deep in dependency tree.
+# Review date: 2026-05-04
+# Next review: Monitor lapin for updates to newer async-io that doesn't depend on instant
+
+# RUSTSEC-2025-0134: `rustls-pemfile` crate is unmaintained
+# Affected path: rustls-pemfile 2.2.0 ← tcp-stream ← amq-protocol-tcp ← amq-protocol
+#                ← lapin ← oauth2-events
+# Status: Crate is unmaintained since Nov 2025
+# Reason: Transitive dependency through lapin (RabbitMQ client). Only used when
+#         events-rabbit feature is enabled (optional).
+# Review date: 2026-05-04
+# Next review: Monitor lapin for updates or migration to rustls-pemfile successor
+
+ignore = [
+    "RUSTSEC-2023-0071",
+    "RUSTSEC-2021-0153",
+    "RUSTSEC-2024-0384",
+    "RUSTSEC-2025-0134",
+]

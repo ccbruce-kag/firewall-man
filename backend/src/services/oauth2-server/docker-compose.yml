@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database (optional - can use SQLite instead)
+  postgres: # nosemgrep: yaml.docker-compose.security.writable-filesystem-service
+    image: postgres:15-alpine
+    container_name: oauth2_postgres
+    environment:
+      POSTGRES_DB: oauth2
+      POSTGRES_USER: oauth2_user
+      POSTGRES_PASSWORD: oauth2_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # PostgreSQL requires a writable filesystem for /var/run/postgresql and /tmp;
+    # data persistence is already constrained to the named volume above.
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oauth2_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB database (optional - build with `--features mongo` and use a mongodb:// URL)
+  mongo: # nosemgrep: yaml.docker-compose.security.writable-filesystem-service
+    image: mongo:7
+    container_name: oauth2_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    # MongoDB requires a writable filesystem for /tmp and socket files;
+    # data persistence is already constrained to the named volume above.
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "localhost/admin", "--eval", "db.runCommand({ ping: 1 }).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Flyway migration service
+  flyway: # nosemgrep: yaml.docker-compose.security.writable-filesystem-service
+    image: flyway/flyway:10-alpine
+    container_name: oauth2_flyway
+    command: migrate
+    volumes:
+      - ./migrations/sql:/flyway/sql
+      - ./flyway.conf:/flyway/conf/flyway.conf
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://postgres:5432/oauth2
+      - FLYWAY_USER=oauth2_user
+      - FLYWAY_PASSWORD=oauth2_password
+      - FLYWAY_SCHEMAS=public
+      - FLYWAY_LOCATIONS=filesystem:/flyway/sql
+    # Flyway writes temporary files during migration execution.
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # OAuth2 Server
+  oauth2_server:
+    build: .
+    container_name: oauth2_server
+    ports:
+      - "8080:8080"
+    environment:
+      - OAUTH2_SERVER_HOST=0.0.0.0
+      - OAUTH2_SERVER_PORT=8080
+      - OAUTH2_DATABASE_URL=postgresql://oauth2_user:oauth2_password@postgres:5432/oauth2
+      - OAUTH2_JWT_SECRET=${OAUTH2_JWT_SECRET:-change-me-in-production}
+      # Optional: send traces to the local otel collector if you bring up docker-compose.observability.yml
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel_collector:4317}
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_SERVICE_NAME=oauth2_server
+      - RUST_LOG=${RUST_LOG:-info}
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  mongo_data:

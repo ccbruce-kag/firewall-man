@@ -235,3 +235,4 @@ Apache License 2.0
   [iptables-web](https://github.com/pretty66/iptables-web)
   [rustcached](https://github.com/ketralnis/rustcached)
   [rust-oauth2-server](https://github.com/kuwala-io/rust-oauth2-server)
+  [hyper-reverse-proxy](https://github.com/hyperium/hyper-reverse-proxy)

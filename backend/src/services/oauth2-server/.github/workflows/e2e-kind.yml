@@ -1,0 +1,15 @@
+name: E2E Tests with KIND
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-kind:
+    uses: ./.github/workflows/reusable-kind-e2e.yml
+    with:
+      job_name: E2E Tests on KIND
+      script_path: scripts/e2e_kind.sh
+      timeout_minutes: 35

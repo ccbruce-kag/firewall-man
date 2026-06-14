@@ -1,0 +1,31 @@
+[package]
+name = "oauth2-ratelimit"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Rate limiting middleware for rust-oauth2-server"
+
+[dependencies]
+async-trait = "0.1"
+dashmap = "6"
+thiserror = "2"
+tokio = { version = "1", features = ["time", "rt"] }
+tracing = "0.1"
+
+[dependencies.redis]
+version = "0.27"
+features = ["tokio-comp", "connection-manager"]
+optional = true
+
+# Optional — only pulled in when the Redis backend is enabled so we can emit
+# OTel-semconv `redis.command` spans around Lua-script invocations.
+[dependencies.oauth2-observability]
+path = "../crates/oauth2-observability"
+optional = true
+
+[features]
+default = []
+redis-backend = ["redis", "oauth2-observability/redis"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }

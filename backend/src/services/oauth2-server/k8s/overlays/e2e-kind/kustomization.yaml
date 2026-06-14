@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# E2E overlay for KIND/local testing.
+# Goals:
+# - Don't require ingress controllers or metrics-server
+# - Keep cluster dependencies minimal
+# - Reduce server replicas to 1
+
+resources:
+  - ../../base
+
+images:
+  - name: docker.io/example/oauth2-server
+    newTag: test
+
+patches:
+  # Ingress/HPA are production concerns and can fail/noise on KIND.
+  - path: patches/delete-ingress.yaml
+  - path: patches/delete-hpa.yaml
+  - path: patches/secret-e2e-creds.yaml
+
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: oauth2-server
+    path: patches/deployment-replicas.json
+
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: oauth2-server
+    path: patches/deployment-insecure-defaults.yaml

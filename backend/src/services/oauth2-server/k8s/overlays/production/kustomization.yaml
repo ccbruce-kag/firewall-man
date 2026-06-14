@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+bases:
+  - ../../base
+resources:
+  - secret-provider-class.yaml
+labels:
+  - pairs:
+      environment: production
+      app.kubernetes.io/instance: production
+    includeSelectors: true
+    includeTemplates: true
+patchesStrategicMerge:
+  - observability-patch.yaml
+  - deployment-csi-mount.yaml
+  - delete-base-secret.yaml
+images:
+  - name: docker.io/example/oauth2-server
+    newName: oauth2-server
+    newTag: latest

@@ -1,0 +1,636 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+    tags:
+      - "*.*.*"
+      - "v*.*.*"
+      - "*.*.*-*"
+      - "v*.*.*-*"
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ format('{0}-{1}', github.workflow, github.event.pull_request.number || github.ref) }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+  OAUTH2_JWT_SECRET: "test-jwt-secret-for-ci-only-do-not-use-in-production-32chars"
+  # Always define this so workflow expressions referencing env.IMAGE_VERSION are valid.
+  # On tag builds, it's overwritten by the "Compute release version" step.
+  IMAGE_VERSION: "0.0.0-dev"
+
+jobs:
+  checks:
+    name: Checks (fmt, clippy, test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Rust toolchain + cache
+        uses: ./.github/actions/rust-setup
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+          cache-key: checks
+          install-system-deps: "true"
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy linting
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run tests
+        run: cargo test --verbose --all-features --locked
+
+      - name: Compliance test results capture
+        # Re-run only the RFC-tagged compliance tests with stable libtest
+        # pretty output captured to a file. The compliance_report tool then
+        # folds these results into the matrix as real pass/fail/ignored.
+        # The full `Run tests` step above already validated the suite, so
+        # this re-run is fast (compilation cached) and tolerant of failures
+        # (compliance_report itself does not fail the job).
+        run: |
+          mkdir -p target
+          cargo test --no-fail-fast --all-features --locked \
+            --test 'compliance_*' --test 'rfc_compliance' \
+            --test 'rfc8252_native_apps' --test 'rfc9700_*' \
+            --test 'phase2_rfc_compliance' \
+            -- --test-threads=1 \
+            > target/compliance-tests.txt 2>&1 || true
+
+      - name: Generate compliance report (with results)
+        run: cargo run --bin compliance_report -- --results target/compliance-tests.txt
+
+      - name: Upload compliance artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: rfc-compliance-report
+          path: |
+            docs/compliance/RFC_COMPLIANCE.md
+            target/compliance-report.json
+            target/compliance-junit.xml
+            target/compliance-tests.txt
+          if-no-files-found: error
+
+  build-binaries:
+    name: Build release binaries
+    runs-on: ubuntu-latest
+    needs: [checks]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Rust toolchain + cache
+        uses: ./.github/actions/rust-setup
+        with:
+          toolchain: stable
+          cache-key: build-binaries
+          install-system-deps: "true"
+
+      - name: Install cross (for arm64 builds)
+        uses: taiki-e/install-action@055f5df8c3f65ea01cd41e9dc855becd88953486 # v2.75.18
+        with:
+          tool: cross
+
+      - name: Build release binaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=()
+
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]] && \
+             ([[ "${GITHUB_REF}" == "refs/heads/${{ github.event.repository.default_branch }}" ]] || \
+              [[ "${GITHUB_REF}" == refs/tags/* ]]); then
+            args+=(--include-mongo-variants)
+          fi
+
+          bash .github/scripts/build_release_binaries.sh "${args[@]}"
+
+      - name: Upload release binary artifact (linux/amd64)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: rust_oauth2_server-linux-amd64
+          path: target/release/rust_oauth2_server-amd64
+          if-no-files-found: error
+
+      - name: Upload release binary artifact (linux/arm64)
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: rust_oauth2_server-linux-arm64
+          path: target/release/rust_oauth2_server-arm64
+          if-no-files-found: error
+
+      - name: Upload release binary artifact (linux/amd64, mongo feature)
+        if: github.event_name == 'push' && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/'))
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: rust_oauth2_server-mongo-linux-amd64
+          path: target/release/rust_oauth2_server-mongo-amd64
+          if-no-files-found: error
+
+      - name: Upload release binary artifact (linux/arm64, mongo feature)
+        if: github.event_name == 'push' && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/'))
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: rust_oauth2_server-mongo-linux-arm64
+          path: target/release/rust_oauth2_server-mongo-arm64
+          if-no-files-found: error
+
+      - name: Upload release binary artifact (linux/amd64, mongo-only; no SQLx)
+        if: github.event_name == 'push' && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/'))
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: rust_oauth2_server-mongo-only-linux-amd64
+          path: target/release/rust_oauth2_server-mongo-only-amd64
+          if-no-files-found: error
+
+      - name: Upload release binary artifact (linux/arm64, mongo-only; no SQLx)
+        if: github.event_name == 'push' && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/'))
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: rust_oauth2_server-mongo-only-linux-arm64
+          path: target/release/rust_oauth2_server-mongo-only-arm64
+          if-no-files-found: error
+
+  security:
+    name: Security (audit, deny)
+    runs-on: ubuntu-latest
+    needs: [checks]
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Rust toolchain + cache
+        uses: ./.github/actions/rust-setup
+        with:
+          toolchain: stable
+          cache-key: security
+          install-system-deps: "true"
+
+      - name: Install cargo-audit
+        uses: taiki-e/install-action@055f5df8c3f65ea01cd41e9dc855becd88953486 # v2.75.18
+        with:
+          tool: cargo-audit
+
+      - name: Security Audit (cargo-audit)
+        run: cargo audit
+
+      - name: Check Dependencies (cargo-deny)
+        uses: EmbarkStudios/cargo-deny-action@175dc7fd4fb85ec8f46948fb98f44db001149081 # v2
+        with:
+          command: check
+
+  # Code Coverage
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    needs: [checks]
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Rust toolchain + cache
+        uses: ./.github/actions/rust-setup
+        with:
+          toolchain: stable
+          cache-key: coverage
+          install-system-deps: "true"
+
+      - name: Install tarpaulin
+        uses: taiki-e/install-action@055f5df8c3f65ea01cd41e9dc855becd88953486 # v2.75.18
+        with:
+          tool: cargo-tarpaulin
+
+      - name: Generate Coverage
+        run: cargo tarpaulin --out Xml --output-dir ./coverage --all-features --locked
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
+        with:
+          files: ./coverage/cobertura.xml
+          fail_ci_if_error: false
+
+  # Integration Tests
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [checks]
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: oauth2_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Rust toolchain + cache
+        uses: ./.github/actions/rust-setup
+        with:
+          toolchain: stable
+          cache-key: integration
+          install-system-deps: "true"
+
+      - name: Run Flyway Migrations
+        run: |
+          docker run --rm --network host -v ${{ github.workspace }}/migrations/sql:/flyway/sql \
+            flyway/flyway:10-alpine \
+            -url=jdbc:postgresql://localhost:5432/oauth2_test \
+            -user=test_user \
+            -password=test_password \
+            -connectRetries=20 \
+            -connectRetriesInterval=3 \
+            -locations=filesystem:/flyway/sql \
+            migrate
+
+      - name: Run Integration Tests
+        env:
+          OAUTH2_DATABASE_URL: postgresql://test_user:test_password@localhost:5432/oauth2_test
+        run: cargo test --test integration --locked
+
+  mongo-storage:
+    name: Mongo Storage Tests (feature)
+    runs-on: ubuntu-latest
+    needs: [checks]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Rust toolchain + cache
+        uses: ./.github/actions/rust-setup
+        with:
+          toolchain: stable
+          cache-key: mongo-storage
+          install-system-deps: "true"
+
+      - name: Run Mongo storage tests (requires Docker)
+        env:
+          RUN_TESTCONTAINERS: "1"
+        run: cargo test --test mongo_storage --features mongo --locked
+
+  # E2E Tests on KIND (reuses prebuilt binaries from the build-binaries job)
+  e2e-kind:
+    needs: [build-binaries]
+    uses: ./.github/workflows/reusable-kind-e2e.yml
+    with:
+      job_name: E2E Tests on KIND
+      script_path: scripts/e2e_kind.sh
+      use_prebuilt_binaries: true
+      timeout_minutes: 35
+      enable_config_debug: true
+
+  # Docker Build
+  docker:
+    name: Docker (${{ matrix.variant_name }})
+    runs-on: ubuntu-latest
+    needs: [build-binaries, security, integration, mongo-storage, e2e-kind]
+    if: github.event_name == 'push' && (github.ref == format('refs/heads/{0}', github.event.repository.default_branch) || startsWith(github.ref, 'refs/tags/'))
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant_name: base
+            artifact_prefix: rust_oauth2_server
+            binary_suffix: ""
+            tag_suffix: ""
+          - variant_name: mongo
+            artifact_prefix: rust_oauth2_server-mongo
+            binary_suffix: -mongo
+            tag_suffix: -mongo
+          - variant_name: mongo-only
+            artifact_prefix: rust_oauth2_server-mongo-only
+            binary_suffix: -mongo-only
+            tag_suffix: -mongo-only
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Download prebuilt server binary (amd64)
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: ${{ matrix.artifact_prefix }}-linux-amd64
+          path: target/release
+
+      - name: Download prebuilt server binary (arm64)
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: ${{ matrix.artifact_prefix }}-linux-arm64
+          path: target/release
+
+      - name: Ensure binaries are executable
+        run: |
+          chmod +x \
+            "target/release/rust_oauth2_server${{ matrix.binary_suffix }}-amd64" \
+            "target/release/rust_oauth2_server${{ matrix.binary_suffix }}-arm64"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
+
+      - name: Decide publishing targets
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${{ secrets.DOCKER_USERNAME }}" && -n "${{ secrets.DOCKER_TOKEN }}" ]]; then
+            echo "dockerhub=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dockerhub=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Login to GitHub Container Registry (GHCR)
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Login to Docker Hub
+        if: steps.publish.outputs.dockerhub == 'true'
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Compute release version (tags only)
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref_name='${{ github.ref_name }}'
+          version="${ref_name#v}"
+
+          # Enforce numeric semver-ish tags for releases (e.g., 0.0.1 or v0.0.1, optionally with -rc.1).
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$ ]]; then
+            echo "Tag '$ref_name' is not a valid release version (expected like 0.0.1 or v0.0.1)."
+            exit 1
+          fi
+
+          # Refuse to publish an image whose tag disagrees with the workspace
+          # Cargo.toml. The canonical release flow (release.yml) bumps
+          # Cargo.toml in the same commit it tags, so a mismatch means the
+          # tag was created outside that flow (e.g. manual gh release create)
+          # and would produce an image labeled X.Y.Z whose binary reports a
+          # different CARGO_PKG_VERSION.
+          cargo_version=$(grep -m1 -E '^version[[:space:]]*=' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          if [[ "$cargo_version" != "$version" ]]; then
+            echo "Tag '$ref_name' (-> $version) does not match workspace Cargo.toml version ($cargo_version)." >&2
+            echo "Refusing to publish a versioned image whose binary CARGO_PKG_VERSION would disagree with the image tag." >&2
+            echo "If this is a real release, cut it via the release.yml workflow so Cargo.toml is bumped atomically." >&2
+            exit 1
+          fi
+
+          echo "IMAGE_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Extract metadata (GHCR)
+        id: meta_ghcr
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/oauth2-server
+          tags: |
+            type=raw,value=latest${{ matrix.tag_suffix }},enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=sha,format=short,suffix=${{ matrix.tag_suffix }},enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=raw,value=${{ env.IMAGE_VERSION }}${{ matrix.tag_suffix }},enable=${{ startsWith(github.ref, 'refs/tags/') }}
+
+      - name: Extract metadata (Docker Hub)
+        if: steps.publish.outputs.dockerhub == 'true'
+        id: meta_dockerhub
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
+        with:
+          images: |
+            docker.io/${{ secrets.DOCKER_USERNAME }}/oauth2-server
+          tags: |
+            type=raw,value=latest${{ matrix.tag_suffix }},enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=sha,format=short,suffix=${{ matrix.tag_suffix }},enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
+            type=raw,value=${{ env.IMAGE_VERSION }}${{ matrix.tag_suffix }},enable=${{ startsWith(github.ref, 'refs/tags/') }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5
+        with:
+          context: .
+          push: true
+          file: Dockerfile.prebuilt
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            BINARY_SUFFIX=${{ matrix.binary_suffix }}
+          tags: |
+            ${{ steps.meta_ghcr.outputs.tags }}
+            ${{ steps.meta_dockerhub.outputs.tags }}
+          labels: ${{ steps.meta_ghcr.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Validate multi-arch manifest (GHCR)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]]; then
+            tag="${{ env.IMAGE_VERSION }}${{ matrix.tag_suffix }}"
+          else
+            tag="latest${{ matrix.tag_suffix }}"
+          fi
+
+          image="ghcr.io/${{ github.repository_owner }}/oauth2-server:${tag}"
+          bash .github/scripts/validate_multiarch_manifest.sh \
+            "$image" \
+            "/tmp/imagetools-${{ matrix.variant_name }}.txt"
+
+      - name: Validate multi-arch manifest (Docker Hub)
+        if: steps.publish.outputs.dockerhub == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ startsWith(github.ref, 'refs/tags/') }}" == "true" ]]; then
+            tag="${{ env.IMAGE_VERSION }}${{ matrix.tag_suffix }}"
+          else
+            tag="latest${{ matrix.tag_suffix }}"
+          fi
+
+          image="docker.io/${{ secrets.DOCKER_USERNAME }}/oauth2-server:${tag}"
+          bash .github/scripts/validate_multiarch_manifest.sh \
+            "$image" \
+            "/tmp/imagetools-dockerhub-${{ matrix.variant_name }}.txt"
+
+  # Documentation
+  docs:
+    name: Build and Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: [checks]
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+
+      - name: Rust toolchain + cache
+        uses: ./.github/actions/rust-setup
+        with:
+          toolchain: stable
+          cache-key: docs
+          install-system-deps: "true"
+
+      - name: Build Rust Docs
+        run: cargo doc --no-deps --all-features
+
+      - name: Download compliance artifact (with real test results)
+        # The `checks` job runs the compliance suite and uploads a fresh
+        # docs/compliance/RFC_COMPLIANCE.md (status filled in from libtest
+        # output). Pull it down here so the published docs always reflect
+        # current pass/fail status. Falls back to the committed file if the
+        # artifact is unavailable for any reason.
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        continue-on-error: true
+        with:
+          name: rfc-compliance-report
+          path: target/compliance-artifact
+
+      - name: Apply compliance report to docs tree
+        # If the artifact arrived, copy the fresh Markdown into docs/compliance/
+        # before mkdocs build runs.
+        run: |
+          if [ -f target/compliance-artifact/docs/compliance/RFC_COMPLIANCE.md ]; then
+            cp target/compliance-artifact/docs/compliance/RFC_COMPLIANCE.md \
+               docs/compliance/RFC_COMPLIANCE.md
+            echo "Applied freshly generated compliance matrix from checks job"
+          else
+            echo "No compliance artifact found; using committed RFC_COMPLIANCE.md"
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements-docs.txt', 'mkdocs.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install MkDocs
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements-docs.txt ]; then
+            pip install -r requirements-docs.txt
+          else
+            # Fallback: minimal deps for mkdocs.yml (keep in sync with requirements-docs.txt)
+            pip install mkdocs-material mkdocs-mermaid2-plugin
+          fi
+
+      - name: Build MkDocs
+        run: |
+          if [ -f mkdocs.yml ]; then
+            mkdocs build
+          fi
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+
+      - name: Prepare docs for deployment
+        run: |
+          mkdir -p _site
+          # Copy MkDocs site if it exists
+          if [ -d "site" ]; then
+            cp -r site/* _site/
+          fi
+          # Copy Rust docs to rustdoc subdirectory
+          if [ -d "target/doc" ]; then
+            mkdir -p _site/rustdoc
+            cp -r target/doc/* _site/rustdoc/
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5
+
+  # Quality Gate
+  gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    needs:
+      [
+        checks,
+        build-binaries,
+        security,
+        integration,
+        mongo-storage,
+        e2e-kind,
+        coverage,
+      ]
+    if: always()
+    steps:
+      - name: Check Job Results
+        run: |
+          # Security scan results are informational only
+          if [ "${{ needs.security.result }}" != "success" ]; then
+            echo "⚠️  Security scan found issues (informational only)"
+          fi
+
+          # Coverage is informational and may be skipped
+          if [ "${{ needs.coverage.result }}" = "failure" ]; then
+            echo "⚠️  Coverage job failed (informational only)"
+          fi
+
+          # Only fail on critical job failures
+          if [ "${{ needs.checks.result }}" != "success" ] || \
+             [ "${{ needs.build-binaries.result }}" != "success" ] || \
+             [ "${{ needs.integration.result }}" != "success" ] || \
+             [ "${{ needs.mongo-storage.result }}" != "success" ] || \
+             [ "${{ needs.e2e-kind.result }}" != "success" ]; then
+            echo "Quality gate failed!"
+            exit 1
+          fi
+          echo "Quality gate passed!"
+
+      - name: Job summary (final)
+        if: always()
+        run: |
+          {
+            echo
+            echo "Result: **${{ job.status }}**"
+            echo "\nUpstream results:"
+            echo "- checks: ${{ needs.checks.result }}"
+            echo "- build-binaries: ${{ needs.build-binaries.result }}"
+            echo "- security: ${{ needs.security.result }}"
+            echo "- integration: ${{ needs.integration.result }}"
+            echo "- mongo-storage: ${{ needs.mongo-storage.result }}"
+            echo "- e2e-kind: ${{ needs.e2e-kind.result }}"
+            echo "- coverage: ${{ needs.coverage.result }}"
+          } >> "$GITHUB_STEP_SUMMARY"

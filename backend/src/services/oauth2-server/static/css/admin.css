@@ -1,0 +1,9 @@
+/*
+ * admin.css — minimal overrides
+ *
+ * In production: replace this file with the output of:
+ *   tailwindcss -c tailwind.config.js -i static/css/admin.src.css -o static/css/admin.css --minify
+ *
+ * During local development the Tailwind Play CDN in admin_dashboard.html handles all styling.
+ * This file is intentionally kept empty so there is no conflict with the CDN.
+ */

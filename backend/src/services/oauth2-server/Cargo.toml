@@ -1,0 +1,127 @@
+[package]
+name = "rust_oauth2_server"
+version = "0.9.0"
+edition = "2021"
+autolib = false
+authors = ["Ian Lintner"]
+description = "A complete OAuth2 server implementation using Actix-web and the actor model"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ianlintner/rust_oauth2_server"
+
+[workspace]
+members = [
+	"crates/oauth2-actix",
+	"crates/oauth2-config",
+	"crates/oauth2-core",
+	"crates/oauth2-server",
+	"crates/oauth2-storage-factory",
+	"crates/oauth2-openapi",
+	"crates/oauth2-observability",
+	"crates/oauth2-events",
+	"crates/oauth2-ports",
+	"crates/oauth2-social-login",
+	"crates/oauth2-storage-mongo",
+	"crates/oauth2-storage-sqlx",
+	"oauth2-ratelimit",
+	"oauth2-resilience",
+]
+
+[dependencies]
+# Extracted reusable crates
+oauth2-actix = { path = "crates/oauth2-actix" }
+oauth2-config = { path = "crates/oauth2-config" }
+oauth2-core = { path = "crates/oauth2-core", features = ["actix", "openapi"] }
+oauth2-events = { path = "crates/oauth2-events" }
+oauth2-openapi = { path = "crates/oauth2-openapi" }
+oauth2-observability = { path = "crates/oauth2-observability", features = ["actix"] }
+oauth2-ports = { path = "crates/oauth2-ports" }
+oauth2-social-login = { path = "crates/oauth2-social-login" }
+oauth2-server = { path = "crates/oauth2-server", default-features = false }
+oauth2-storage-factory = { path = "crates/oauth2-storage-factory", default-features = false }
+
+# Used by `src/bin/export_openapi.rs`.
+serde_json = "1.0"
+utoipa = "5.4"
+
+# Used by `src/bin/compliance_report.rs`.
+serde = { version = "1.0", features = ["derive"] }
+
+# Runtime used only by the thin delegating binary (`src/main.rs`).
+actix-rt = "2.9"
+
+[features]
+# SQL backends + OpenTelemetry export compiled in by default. Traces only emit
+# when OTEL_EXPORTER_OTLP_ENDPOINT (or OAUTH2_OTLP_ENDPOINT) is set at runtime;
+# otherwise the SDK is a no-op. To build without OTEL:
+#   cargo build --no-default-features --features sqlx
+default = ["sqlx", "otel"]
+
+# SQL-backed storage (SQLite/Postgres) via SQLx.
+sqlx = ["oauth2-core/sqlx", "oauth2-server/sqlx", "oauth2-storage-factory/sqlx"]
+
+# Optional MongoDB storage backend.
+mongo = ["oauth2-server/mongo", "oauth2-storage-factory/mongo"]
+
+# Optional eventing backends (Phase 1 best-effort)
+events-redis = ["oauth2-events/events-redis", "oauth2-server/events-redis"]
+events-kafka = ["oauth2-events/events-kafka", "oauth2-server/events-kafka"]
+events-rabbit = ["oauth2-events/events-rabbit", "oauth2-server/events-rabbit"]
+
+# Optional Redis-backed distributed runtime features.
+redis-cache = ["oauth2-server/redis-cache"]
+redis-rate-limit = ["oauth2-server/redis-rate-limit"]
+
+# Optional OpenTelemetry export (OTLP). Wave 0 foundation — enables the
+# OTEL SDK only when explicitly requested.
+otel = ["oauth2-observability/otel", "oauth2-server/otel", "oauth2-social-login/otel"]
+
+# Convenience feature for the distributed deployment profile.
+distributed = ["redis-cache", "redis-rate-limit", "events-redis"]
+
+[dev-dependencies]
+# Testing
+async-trait = "0.1"
+actix = "0.13"
+actix-rt = "2.9"
+actix-web = "4.4"
+actix-cors = "0.7"
+actix-session = { version = "0.11", features = ["cookie-session"] }
+tokio = { version = "1.35", features = ["full"] }
+cucumber = { version = "0.22.1", features = ["macros"] }
+futures = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+base64 = "0.22"
+percent-encoding = "2.3"
+sha2 = "0.10"
+tempfile = "3"
+testcontainers = "0.27.2"
+testcontainers-modules = { version = "0.15", features = ["postgres", "mongo"] }
+tracing = "0.1"
+jsonwebtoken = { version = "10.3", features = ["rust_crypto"] }
+rsa = { version = "0.9", features = ["pem"] }
+rand_core = { version = "0.6", features = ["std"] }
+httpmock = "0.8"
+
+# Workspace crates used directly by root integration tests.
+oauth2-ratelimit = { path = "oauth2-ratelimit" }
+oauth2-storage-sqlx = { path = "crates/oauth2-storage-sqlx" }
+oauth2-storage-mongo = { path = "crates/oauth2-storage-mongo" }
+
+# Used by integration tests (e.g., migrations and SQL-level assertions).
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio-rustls", "sqlite", "postgres", "any", "chrono", "uuid", "macros", "migrate"] }
+
+# OTEL SDK is a dev-dep only — the `tests/otel_trace_propagation.rs`
+# integration test (feature-gated `#[cfg(feature = "otel")]`) installs an
+# in-memory span exporter to assert parent/child span shape without a live
+# collector. These versions match `crates/oauth2-observability`.
+opentelemetry = { version = "0.31", features = ["trace"] }
+opentelemetry_sdk = { version = "0.31", features = ["rt-tokio", "testing"] }
+tracing-opentelemetry = "0.32"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[[test]]
+name = "bdd"
+harness = false
