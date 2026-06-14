@@ -1347,7 +1347,7 @@
                       <div class="card-body p-2" id="dbmanTableList"></div>
                     </div>
                     <div class="row g-2 mb-2">
-                      <div class="col-md-8">
+                      <div class="col-12">
                         <div class="card">
                           <div class="card-header py-2 d-flex justify-content-between align-items-center">
                             <strong style="font-size:.8125rem">SQL 查詢</strong>
@@ -1363,12 +1363,10 @@
                           </div>
                         </div>
                       </div>
-                      <div class="col-md-4">
-                        <div class="card">
-                          <div class="card-header py-2"><strong style="font-size:.8125rem">已儲存查詢</strong></div>
-                          <div class="card-body p-2" id="dbmanSavedQueries"></div>
-                        </div>
-                      </div>
+                    </div>
+                    <div class="card mb-2">
+                      <div class="card-header py-2"><strong style="font-size:.8125rem">已儲存查詢</strong></div>
+                      <div class="card-body p-2" id="dbmanSavedQueries"></div>
                     </div>
                   </div>
                   <div id="dbmanConnForm" style="display:none">
@@ -1501,10 +1499,13 @@
             <div id="toolsView" style="display:none">
               <ul class="nav nav-tabs nav-fill mb-3" id="toolsTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                  <button class="nav-link active" id="tools-ping-tab" data-bs-toggle="tab" data-bs-target="#toolsPingPane" type="button" role="tab"><i class="bx bx-signal-5 me-1"></i><span class="toolsTabLabel">Ping</span></button>
-                </li>
-                <li class="nav-item" role="presentation">
-                  <button class="nav-link" id="tools-lsof-tab" data-bs-toggle="tab" data-bs-target="#toolsLsofPane" type="button" role="tab"><i class="bx bx-list-ul me-1"></i><span class="toolsTabLabel">Lsof</span></button>
+                   <button class="nav-link active" id="tools-ping-tab" data-bs-toggle="tab" data-bs-target="#toolsPingPane" type="button" role="tab"><i class="bx bx-signal-5 me-1"></i><span class="toolsTabLabel">Ping</span></button>
+                 </li>
+                 <li class="nav-item" role="presentation">
+                   <button class="nav-link" id="tools-pingc-tab" data-bs-toggle="tab" data-bs-target="#toolsPingCPane" type="button" role="tab"><i class="bx bx-grid-small me-1"></i><span class="toolsTabLabel">Ping Class C</span></button>
+                 </li>
+                 <li class="nav-item" role="presentation">
+                   <button class="nav-link" id="tools-lsof-tab" data-bs-toggle="tab" data-bs-target="#toolsLsofPane" type="button" role="tab"><i class="bx bx-list-ul me-1"></i><span class="toolsTabLabel">Lsof</span></button>
                 </li>
                 <li class="nav-item" role="presentation">
                   <button class="nav-link" id="tools-traceroute-tab" data-bs-toggle="tab" data-bs-target="#toolsTraceroutePane" type="button" role="tab"><i class="bx bx-transfer-alt me-1"></i><span class="toolsTabLabel">Traceroute</span></button>
@@ -1516,9 +1517,12 @@
                   <button class="nav-link" id="tools-iploc-tab" data-bs-toggle="tab" data-bs-target="#toolsIpLocPane" type="button" role="tab"><i class="bx bx-map me-1"></i><span class="toolsTabLabel">IP 位置</span></button>
                 </li>
                 <li class="nav-item" role="presentation">
-                  <button class="nav-link" id="tools-netstat-tab" data-bs-toggle="tab" data-bs-target="#toolsNetstatPane" type="button" role="tab"><i class="bx bx-analyse me-1"></i><span class="toolsTabLabel">Netstat</span></button>
-                </li>
-              </ul>
+                   <button class="nav-link" id="tools-netstat-tab" data-bs-toggle="tab" data-bs-target="#toolsNetstatPane" type="button" role="tab"><i class="bx bx-analyse me-1"></i><span class="toolsTabLabel">Netstat</span></button>
+                 </li>
+                 <li class="nav-item" role="presentation">
+                   <button class="nav-link" id="tools-log-tab" data-bs-toggle="tab" data-bs-target="#toolsLogPane" type="button" role="tab"><i class="bx bx-file me-1"></i><span class="toolsTabLabel">Log Viewer</span></button>
+                 </li>
+               </ul>
               <div class="tab-content p-0">
                 <div class="tab-pane fade show active" id="toolsPingPane" role="tabpanel">
                   <div class="card"><div class="card-body">
@@ -1529,9 +1533,31 @@
                       <div class="col-md-3"><button class="btn btn-primary w-100" id="toolsPingBtn"><i class="bx bx-play me-1"></i>執行 Ping</button></div>
                     </div>
                     <pre class="tools-output" id="toolsPingOutput" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px;max-height:400px;overflow:auto;white-space:pre-wrap"></pre>
-                  </div></div>
-                </div>
-                <div class="tab-pane fade" id="toolsLsofPane" role="tabpanel">
+                   </div></div>
+                 </div>
+                 <div class="tab-pane fade" id="toolsPingCPane" role="tabpanel">
+                   <div class="card"><div class="card-body">
+                     <div class="row g-2 align-items-end mb-2">
+                       <div class="col-md-4">
+                         <label class="form-label" style="font-size:.75rem">Class C 網路</label>
+                         <input type="text" class="form-control font-monospace" id="toolsPingCNetwork" placeholder="192.168.1">
+                       </div>
+                       <div class="col-md-3">
+                         <button class="btn btn-primary w-100" id="toolsPingCBtn"><i class="bx bx-play me-1"></i>掃描所有 IP</button>
+                       </div>
+                       <div class="col-md-3">
+                         <span id="toolsPingCStatus" class="text-muted" style="font-size:.75rem"></span>
+                       </div>
+                     </div>
+                     <div class="table-responsive" style="max-height:450px;overflow:auto">
+                       <table class="table table-sm table-bordered mb-0" style="font-size:.75rem" id="toolsPingCTable">
+                         <thead><tr><th style="width:40px">#</th><th>IP</th><th>狀態</th><th>延遲 (ms)</th></tr></thead>
+                         <tbody id="toolsPingCTbody"></tbody>
+                       </table>
+                     </div>
+                   </div></div>
+                 </div>
+                 <div class="tab-pane fade" id="toolsLsofPane" role="tabpanel">
                   <div class="card"><div class="card-body">
                     <div class="row g-2 align-items-end mb-2">
                       <div class="col-md-4"><label class="form-label" style="font-size:.75rem">Port</label><input type="number" class="form-control" id="toolsLsofPort" placeholder="80" min="1" max="65535"></div>
@@ -1575,10 +1601,42 @@
                     <div class="mb-2"><span class="badge bg-label-info tools-netstat-cmd-badge"></span></div>
                     <button class="btn btn-primary mb-2" id="toolsNetstatBtn"><i class="bx bx-play me-1"></i>執行 Netstat</button>
                     <pre class="tools-output" id="toolsNetstatOutput" style="font-size:.75rem;background:var(--bs-tertiary-bg);padding:.5rem;border-radius:4px;max-height:400px;overflow:auto;white-space:pre-wrap"></pre>
-                  </div></div>
-                </div>
-              </div>
-            </div>
+                   </div></div>
+                 </div>
+                 <div class="tab-pane fade" id="toolsLogPane" role="tabpanel">
+                   <div class="card"><div class="card-body">
+                     <div class="row g-2 align-items-end mb-2">
+                       <div class="col-md-4">
+                         <label class="form-label" style="font-size:.75rem">選擇日誌檔案</label>
+                         <select class="form-select font-monospace" id="toolsLogSelect">
+                           <option value="">-- 自訂路徑 --</option>
+                         </select>
+                       </div>
+                        <div class="col-md-4">
+                          <label class="form-label" style="font-size:.75rem">或輸入路徑</label>
+                          <input type="text" class="form-control font-monospace" id="toolsLogPath" placeholder="/var/log/system.log">
+                        </div>
+                       <div class="col-md-2">
+                         <label class="form-label" style="font-size:.75rem">行數</label>
+                         <input type="number" class="form-control" id="toolsLogLines" value="50" min="10" max="5000">
+                       </div>
+                       <div class="col-md-2">
+                         <button class="btn btn-primary w-100" id="toolsLogTailBtn"><i class="bx bx-play me-1"></i>Tail</button>
+                       </div>
+                     </div>
+                     <div class="d-flex align-items-center gap-3 mb-2">
+                       <div class="form-check form-switch mb-0">
+                         <input class="form-check-input" type="checkbox" id="toolsLogAutoRefresh">
+                         <label class="form-check-label" for="toolsLogAutoRefresh" style="font-size:.75rem">自動更新 (3秒)</label>
+                       </div>
+                       <span class="text-muted" id="toolsLogStatus" style="font-size:.75rem"></span>
+                       <button class="btn btn-sm btn-outline-secondary ms-auto" id="toolsLogClearBtn"><i class="bx bx-trash me-1"></i>清除</button>
+                     </div>
+                     <pre class="tools-output" id="toolsLogOutput" style="font-size:.75rem;background:#1e1e2e;color:#cdd6f4;padding:.5rem;border-radius:4px;max-height:500px;overflow:auto;white-space:pre-wrap;font-family:'Cascadia Code',monospace"></pre>
+                   </div></div>
+                 </div>
+               </div>
+             </div>
 
             <!-- System View -->
             <div id="systemView" style="display:none">
@@ -1798,7 +1856,7 @@
         system: lang.systemLabel || '系統現況',
         shell: lang.shellLabel || 'Shell',
         ai: lang.aiLabel || 'AI 助手',
-        tools: lang.toolsLabel || '系統工具',
+        tools: lang.toolsLabel || '工具集合',
         haproxy: lang.haproxyLabel || 'HaProxy 管理',
         nginx: lang.nginxLabel || 'Nginx 管理',
         juniper: lang.juniperLabel || 'Juniper 設定',
@@ -1918,7 +1976,7 @@
         clearConfirmPrefix: "確認清除", allRulesSuffix: "所有規則？", chainRulesSuffix: " 鏈的所有規則？",
         allMetricsSuffix: "所有統計數據？", ruleMetricsPrefix: "第 ", ruleMetricsSuffix: " 條規則的統計數據？",
         ruleNumberPrefix: "第", ruleNumberSuffix: "條規則", clearEmptyPrompt: "確認清除用戶自定義的所有空鏈？",
-        menuGroupDash: "儀表板", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", tablesLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "系統工具",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
+        menuGroupDash: "儀表板", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", tablesLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "工具集合",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
         menuApiManNew: "新增工作區", menuDbManNew: "新增連線",
         menuSecurityCvs: "CVS 資料庫", menuSecurityScan: "網路掃描",
         menuGroupAI: "AI", menuGroupHelp: "協助", systemLabel: "系統現況", docLabel: "命令文件",
@@ -1992,7 +2050,7 @@
         clearConfirmPrefix: "Confirm to clear", allRulesSuffix: "all rules?", chainRulesSuffix: " chain rules?",
         allMetricsSuffix: "all counters?", ruleMetricsPrefix: "Rule #", ruleMetricsSuffix: " counters?",
         ruleNumberPrefix: "Rule #", ruleNumberSuffix: "", clearEmptyPrompt: "Clear all empty custom chains?",
-        menuGroupDash: "Dashboard", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", tablesLabel: "Tables",         menuGroupSys: "System Tools", toolsLabel: "System Tools",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
+        menuGroupDash: "Dashboard", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", tablesLabel: "Tables",         menuGroupSys: "System Tools", toolsLabel: "Tools",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
         menuApiManNew: "New Workspace", menuDbManNew: "New Connection",
         menuSecurityCvs: "CVS Database", menuSecurityScan: "Network Scan",
         menuGroupAI: "AI", menuGroupHelp: "Help", systemLabel: "System", docLabel: "Command Reference",
@@ -2065,7 +2123,7 @@
         clearConfirmPrefix: "確認", allRulesSuffix: "すべてのルールをクリアしますか？", chainRulesSuffix: " チェインの全ルールをクリアしますか？",
         allMetricsSuffix: "すべての統計データをクリアしますか？", ruleMetricsPrefix: "ルール #", ruleMetricsSuffix: " の統計データをクリアしますか？",
         ruleNumberPrefix: "ルール #", ruleNumberSuffix: "", clearEmptyPrompt: "空のカスタムチェインをすべて削除しますか？",
-        menuGroupDash: "ダッシュボード", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", tablesLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "システムツール",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
+        menuGroupDash: "ダッシュボード", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", tablesLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "ツール集",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
         menuApiManNew: "新規ワークスペース", menuDbManNew: "新規接続",
         menuSecurityCvs: "CVS データベース", menuSecurityScan: "ネットワークスキャン",
         menuGroupAI: "AI", menuGroupHelp: "ヘルプ", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
@@ -4695,7 +4753,17 @@
         apiman: function() { renderApiManTree(); },
         dbman: function() { loadDbManConnections(); loadDbManSavedQueries(); },
         security: function() { loadSecurityCvsSources(); },
-        tools: function() {},
+        tools: function() {
+          // Force Bootstrap tabs to init after DOM wrapping
+          try {
+            var $firstTab = $('#toolsTabs').find('[data-bs-toggle="tab"]').first();
+            if ($firstTab.length) {
+              var tab = new bootstrap.Tab($firstTab[0]);
+              tab.show();
+            }
+          } catch(e) {}
+          setTimeout(loadLogFiles, 100);
+        },
         system: function() { loadSystemInfo(); },
         tables: function() { $('.action-buttons').show(); },
       };
@@ -6221,6 +6289,99 @@
           });
       });
 
+      // ─── Log Viewer ───
+      var logRefreshTimer = null;
+      var logCurrentPath = null;
+
+      function loadLogFiles() {
+        $.get('/tools/log/list', function (res) {
+          if (res.code !== 0) {
+            logger.warn('日誌列表載入失敗', res.msg);
+            return;
+          }
+          var files = res.data || [];
+          var select = $('#toolsLogSelect').empty().append('<option value="">-- 自訂路徑 --</option>');
+          files.forEach(function (f) {
+            select.append('<option value="' + escHtml(f) + '">' + escHtml(f) + '</option>');
+          });
+          logger.debug('日誌列表已載入', files.length + ' 個檔案');
+        }).fail(function (xhr) {
+          logger.error('日誌列表 API 請求失敗', xhr.status + ' ' + xhr.statusText);
+        });
+      }
+
+      function doLogTail() {
+        var path = $('#toolsLogSelect').val() || $('#toolsLogPath').val().trim();
+        if (!path) { layer.msg('請選擇或輸入日誌檔案路徑', { icon: 2 }); return; }
+        var lines = $('#toolsLogLines').val() || 50;
+        logCurrentPath = path;
+        $('#toolsLogStatus').text('載入中...');
+        logger.info('Log Tail 請求', path + ' (' + lines + ' 行)');
+        $.post('/tools/log/tail', { path: path, lines: lines }, function (res) {
+          if (res.code !== 0) {
+            $('#toolsLogOutput').text('錯誤: ' + (res.msg || '?'));
+            $('#toolsLogStatus').text('失敗');
+            logger.error('Log Tail 錯誤', res.msg);
+            return;
+          }
+          $('#toolsLogOutput').text(res.data.content || '（空）');
+          $('#toolsLogStatus').text('行數: ' + (res.data.lines || 0) + ' | ' + res.data.path);
+          logger.debug('Log Tail 完成', res.data.lines + ' 行');
+          // Auto-scroll to bottom
+          var out = document.getElementById('toolsLogOutput');
+          if (out) out.scrollTop = out.scrollHeight;
+        }).fail(function (xhr) {
+          $('#toolsLogOutput').text('HTTP 錯誤: ' + xhr.status);
+          $('#toolsLogStatus').text('請求失敗');
+          logger.error('Log Tail HTTP 失敗', xhr.status + ' ' + xhr.statusText);
+        });
+      }
+
+      function startLogRefresh() {
+        stopLogRefresh();
+        if (!logCurrentPath) return;
+        logRefreshTimer = setInterval(function () {
+          $.post('/tools/log/tail', { path: logCurrentPath, lines: $('#toolsLogLines').val() || 50 }, function (res) {
+            if (res.code === 0) {
+              var autoScroll = false;
+              var out = document.getElementById('toolsLogOutput');
+              if (out && out.scrollTop + out.clientHeight >= out.scrollHeight - 20) autoScroll = true;
+              $('#toolsLogOutput').text(res.data.content || '（空）');
+              if (autoScroll) out.scrollTop = out.scrollHeight;
+              $('#toolsLogStatus').text('行數: ' + (res.data.lines || 0) + ' | ' + res.data.path + ' (自動更新中)');
+            }
+          });
+        }, 3000);
+        $('#toolsLogStatus').text($('#toolsLogStatus').text() + ' (自動更新中)');
+      }
+      function stopLogRefresh() {
+        if (logRefreshTimer) { clearInterval(logRefreshTimer); logRefreshTimer = null; }
+      }
+
+      $('#toolsLogTailBtn').on('click', function () {
+        doLogTail();
+        if ($('#toolsLogAutoRefresh').is(':checked')) startLogRefresh();
+      });
+      $('#toolsLogAutoRefresh').on('change', function () {
+        if ($(this).is(':checked')) { if (logCurrentPath) startLogRefresh(); }
+        else { stopLogRefresh(); }
+      });
+      $('#toolsLogSelect').on('change', function () {
+        var val = $(this).val();
+        if (val) $('#toolsLogPath').val(val);
+      });
+      $('#toolsLogClearBtn').on('click', function () {
+        $('#toolsLogOutput').text('');
+        $('#toolsLogStatus').text('');
+        stopLogRefresh();
+        logCurrentPath = null;
+      });
+      // Load log files when Log tab is shown
+      $(document).on('shown.bs.tab', '#tools-log-tab', function () {
+        loadLogFiles();
+        stopLogRefresh();
+      });
+
       // ─── Tools event handlers ───
       function toolsRun(endpoint, data, outputId) {
         var $out = $(outputId);
@@ -6238,6 +6399,34 @@
         var host = $('#toolsPingHost').val().trim();
         if (!host) { layer.msg('請輸入目標主機', { icon: 2 }); return; }
         toolsRun('ping', { host: host, count: $('#toolsPingCount').val(), timeout: $('#toolsPingTimeout').val() }, '#toolsPingOutput');
+      });
+      $('#toolsPingCBtn').on('click', function () {
+        var network = $('#toolsPingCNetwork').val().trim();
+        if (!network) { layer.msg('請輸入 Class C 網路 (如 192.168.1)', { icon: 2 }); return; }
+        // Strip trailing .0
+        network = network.replace(/\.0$/, '');
+        var $tbody = $('#toolsPingCTbody').empty();
+        var $status = $('#toolsPingCStatus').text('掃描中... 254 個 IP');
+        $('#toolsPingCBtn').prop('disabled', true);
+        logger.info('Ping Class C 開始', network);
+        $.post('/tools/ping-classc', { network: network }, function (res) {
+          if (res.code !== 0) { $status.text('錯誤: ' + (res.msg || '')); $('#toolsPingCBtn').prop('disabled', false); return; }
+          var data = res.data;
+          var results = data.results || [];
+          results.forEach(function (r, i) {
+            var reachable = r.reachable;
+            var cls = reachable ? 'text-success' : 'text-muted';
+            var label = reachable ? '<span class="badge bg-label-success">通</span>' : '<span class="badge bg-label-secondary">沒通</span>';
+            var elapsed = r.elapsed_ms || '-';
+            $tbody.append('<tr class="' + cls + '"><td>' + (i+1) + '</td><td><code>' + escHtml(r.ip) + '</code></td><td>' + label + '</td><td>' + elapsed + '</td></tr>');
+          });
+          $status.text('完成: ' + data.reachable + '/' + data.total + ' 通');
+          logger.info('Ping Class C 完成', network + ' → ' + data.reachable + '/' + data.total);
+          $('#toolsPingCBtn').prop('disabled', false);
+        }).fail(function (xhr) {
+          $status.text('請求失敗');
+          $('#toolsPingCBtn').prop('disabled', false);
+        });
       });
       $('#toolsLsofBtn').on('click', function () {
         toolsRun('lsof', { port: $('#toolsLsofPort').val() || '', protocol: $('#toolsLsofProtocol').val() }, '#toolsLsofOutput');

@@ -1218,6 +1218,73 @@ async fn handle_nginx_config_preview(State(state): State<Arc<AppState>>) -> Json
     utils::output(None, Some(serde_json::to_value(&preview).unwrap_or_default()))
 }
 
+// ---- Log Viewer Handlers ----
+
+async fn handle_log_list() -> Json<Value> {
+    let log_dir = std::path::Path::new("/var/log");
+    let mut files: Vec<String> = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(log_dir) {
+        for entry in entries.flatten() {
+            if let Some(name) = entry.file_name().to_str() {
+                if !name.starts_with('.') {
+                    files.push(name.to_string());
+                }
+            }
+        }
+    }
+    files.sort();
+    utils::output(None, Some(serde_json::to_value(&files).unwrap_or_default()))
+}
+
+#[derive(Deserialize)]
+struct LogTailForm {
+    pub path: Option<String>,
+    pub lines: Option<u32>,
+}
+
+async fn handle_log_tail(Form(form): Form<LogTailForm>) -> Json<Value> {
+    let path = match form.path { Some(ref p) if !p.trim().is_empty() => p.trim().to_string(), _ => return utils::output(Some("log path is required"), None) };
+    let lines = form.lines.unwrap_or(50).max(10).min(5000);
+
+    // If path is just a filename, prepend /var/log/
+    let full_path = if path.contains('/') { path.clone() } else { format!("/var/log/{}", path) };
+
+        // Use tail command (without -F to avoid hanging)
+        let output = tokio::process::Command::new("tail")
+            .args(["-n", &lines.to_string(), &full_path])
+            .output()
+            .await;
+
+    match output {
+        Ok(out) => {
+            let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+            let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+            let content = if stdout.is_empty() { stderr } else { stdout };
+            let has_more = content.lines().count() as u32 >= lines;
+            utils::output(None, Some(json!({
+                "path": full_path,
+                "content": content,
+                "lines": content.lines().count(),
+                "has_more": has_more,
+            })))
+        }
+        Err(e) => utils::output(Some(&format!("tail failed: {e}")), None),
+    }
+}
+
+async fn handle_log_content(Form(form): Form<LogTailForm>) -> Json<Value> {
+    let path = match form.path { Some(ref p) if !p.trim().is_empty() => p.trim().to_string(), _ => return utils::output(Some("log path is required"), None) };
+    let full_path = if path.contains('/') { path.clone() } else { format!("/var/log/{}", path) };
+
+    match tokio::fs::read_to_string(&full_path).await {
+        Ok(content) => {
+            let line_count = content.lines().count();
+            utils::output(None, Some(json!({"path": full_path, "content": content, "lines": line_count})))
+        }
+        Err(e) => utils::output(Some(&format!("read failed: {e}")), None),
+    }
+}
+
 // ---- Tools Handlers ----
 
 #[derive(Deserialize)]
@@ -1225,6 +1292,16 @@ pub struct PingForm {
     pub host: Option<String>,
     pub count: Option<u32>,
     pub timeout: Option<u32>,
+}
+
+#[derive(Deserialize)]
+pub struct PingClasscForm {
+    pub network: Option<String>,
+}
+
+async fn handle_tools_ping_classc(Form(form): Form<PingClasscForm>) -> Json<Value> {
+    let network = match form.network { Some(ref n) if !n.trim().is_empty() => n.trim().to_string(), _ => return utils::output(Some("network is required"), None) };
+    Json(crate::tools::ping_classc(&network, 1, 3).await)
 }
 
 async fn handle_tools_ping(Form(form): Form<PingForm>) -> Json<Value> {
@@ -2515,9 +2592,19 @@ async fn handle_favicon() -> impl IntoResponse {
 // ---- Router Builder ----
 
 pub fn build_router(state: Arc<AppState>) -> Router {
-    let auth_layer = middleware::from_fn_with_state(state.clone(), auth_middleware);
+    // Split routes into API (prefixed) and Web (non-prefixed)
+    let web_routes = Router::new()
+        .route("/web/*path", get(handle_web_assets))
+        .route("/health", get(handle_health))
+        .route("/activity", get(handle_activity))
+        .route("/platform", get(handle_platform))
+        .route("/interfaces", get(handle_interfaces))
+        .route("/log", post(handle_log))
+        .route("/favicon.ico", get(handle_favicon))
+        .route("/", get(handle_index))
+        .route("/docs/*path", get(handle_docs));
 
-    let auth_routes = Router::new()
+    let api_routes = Router::new()
         .route("/version", get(handle_version))
         .route("/listRule", post(handle_list_rule))
         .route("/listExec", post(handle_list_exec))
@@ -2525,10 +2612,7 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/deleteRule", post(handle_delete_rule))
         .route("/flushMetrics", post(handle_flush_metrics))
         .route("/getRuleInfo", post(handle_get_rule_info))
-        .route(
-            "/flushEmptyCustomChain",
-            post(handle_flush_empty_custom_chain),
-        )
+        .route("/flushEmptyCustomChain", post(handle_flush_empty_custom_chain))
         .route("/export", post(handle_export))
         .route("/import", post(handle_import))
         .route("/exec", post(handle_exec))
@@ -2551,81 +2635,33 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/api/haproxy/reload", post(handle_haproxy_reload))
         .route("/api/haproxy/restart", post(handle_haproxy_restart))
         .route("/api/haproxy/config", get(handle_haproxy_config))
-        .route(
-            "/api/haproxy/config/validate",
-            post(handle_haproxy_validate),
-        )
+        .route("/api/haproxy/config/validate", post(handle_haproxy_validate))
         .route("/api/haproxy/lbs", get(handle_haproxy_lbs))
         .route("/api/haproxy/lbs/:id", delete(handle_haproxy_delete_lb))
-        .route(
-            "/api/haproxy/lbs/:id/delete",
-            post(handle_haproxy_delete_lb),
-        )
-        .route(
-            "/api/haproxy/lbs/:id/enabled",
-            post(handle_haproxy_set_enabled),
-        )
+        .route("/api/haproxy/lbs/:id/delete", post(handle_haproxy_delete_lb))
+        .route("/api/haproxy/lbs/:id/enabled", post(handle_haproxy_set_enabled))
         .route("/api/haproxy/test/web", post(handle_haproxy_test_web))
         .route("/api/haproxy/test/sql", post(handle_haproxy_test_sql))
         .route("/api/haproxy/web", post(handle_haproxy_web))
         .route("/api/haproxy/sql", post(handle_haproxy_sql))
         .route("/juniper/info", get(handle_juniper_info))
-        .route(
-            "/juniper/settings",
-            get(handle_juniper_settings).post(handle_juniper_save_settings),
-        )
-        .route(
-            "/juniper/vlans",
-            get(handle_juniper_vlans).post(handle_juniper_create_vlan),
-        )
+        .route("/juniper/settings", get(handle_juniper_settings).post(handle_juniper_save_settings))
+        .route("/juniper/vlans", get(handle_juniper_vlans).post(handle_juniper_create_vlan))
         .route("/juniper/vlans/:name", delete(handle_juniper_delete_vlan))
         .route("/juniper/ports", get(handle_juniper_ports))
-        .route(
-            "/juniper/ports/bulk-config",
-            post(handle_juniper_bulk_ports),
-        )
-        .route(
-            "/juniper/ports/:port/access-vlan",
-            post(handle_juniper_access_vlan),
-        )
-        .route(
-            "/juniper/ports/:port/trunk-vlan",
-            post(handle_juniper_trunk_vlan),
-        )
-        .route(
-            "/juniper/ports/:port/enabled",
-            post(handle_juniper_port_enabled),
-        )
+        .route("/juniper/ports/bulk-config", post(handle_juniper_bulk_ports))
+        .route("/juniper/ports/:port/access-vlan", post(handle_juniper_access_vlan))
+        .route("/juniper/ports/:port/trunk-vlan", post(handle_juniper_trunk_vlan))
+        .route("/juniper/ports/:port/enabled", post(handle_juniper_port_enabled))
         .route("/api/juniper/info", get(handle_juniper_info))
-        .route(
-            "/api/juniper/settings",
-            get(handle_juniper_settings).post(handle_juniper_save_settings),
-        )
-        .route(
-            "/api/juniper/vlans",
-            get(handle_juniper_vlans).post(handle_juniper_create_vlan),
-        )
-        .route(
-            "/api/juniper/vlans/:name",
-            delete(handle_juniper_delete_vlan),
-        )
+        .route("/api/juniper/settings", get(handle_juniper_settings).post(handle_juniper_save_settings))
+        .route("/api/juniper/vlans", get(handle_juniper_vlans).post(handle_juniper_create_vlan))
+        .route("/api/juniper/vlans/:name", delete(handle_juniper_delete_vlan))
         .route("/api/juniper/ports", get(handle_juniper_ports))
-        .route(
-            "/api/juniper/ports/bulk-config",
-            post(handle_juniper_bulk_ports),
-        )
-        .route(
-            "/api/juniper/ports/:port/access-vlan",
-            post(handle_juniper_access_vlan),
-        )
-        .route(
-            "/api/juniper/ports/:port/trunk-vlan",
-            post(handle_juniper_trunk_vlan),
-        )
-        .route(
-            "/api/juniper/ports/:port/enabled",
-            post(handle_juniper_port_enabled),
-        )
+        .route("/api/juniper/ports/bulk-config", post(handle_juniper_bulk_ports))
+        .route("/api/juniper/ports/:port/access-vlan", post(handle_juniper_access_vlan))
+        .route("/api/juniper/ports/:port/trunk-vlan", post(handle_juniper_trunk_vlan))
+        .route("/api/juniper/ports/:port/enabled", post(handle_juniper_port_enabled))
         .route("/nginx/env", get(handle_nginx_env).post(handle_nginx_save_env))
         .route("/nginx/sites", get(handle_nginx_sites).post(handle_nginx_create_site))
         .route("/nginx/sites/scan", get(handle_nginx_scan_sites))
@@ -2639,18 +2675,6 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/nginx/config/preview", get(handle_nginx_config_preview))
         .route("/nginx/test", post(handle_nginx_test))
         .route("/nginx/reload", post(handle_nginx_reload))
-        .route("/tools/ping", post(handle_tools_ping))
-        .route("/tools/lsof", post(handle_tools_lsof))
-        .route("/tools/traceroute", post(handle_tools_traceroute))
-        .route("/tools/nslookup", post(handle_tools_nslookup))
-        .route("/tools/ip-location", post(handle_tools_ip_location))
-        .route("/tools/netstat", post(handle_tools_netstat))
-        .route("/api/tools/ping", post(handle_tools_ping))
-        .route("/api/tools/lsof", post(handle_tools_lsof))
-        .route("/api/tools/traceroute", post(handle_tools_traceroute))
-        .route("/api/tools/nslookup", post(handle_tools_nslookup))
-        .route("/api/tools/ip-location", post(handle_tools_ip_location))
-        .route("/api/tools/netstat", post(handle_tools_netstat))
         .route("/netplan/interfaces", get(handle_netplan_interfaces))
         .route("/netplan/interfaces/:iface/current", get(handle_netplan_current))
         .route("/netplan/configs", get(handle_netplan_configs))
@@ -2689,14 +2713,6 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/security/scan/tasks/:id/export", get(handle_security_export_csv))
         .route("/apiman/workspaces/export/:ws_id", get(handle_apiman_export_workspace))
         .route("/apiman/workspaces/import", post(handle_apiman_import_workspace))
-        .route("/api/security/cvs/sources", get(handle_security_cvs_sources).post(handle_security_save_cvs_source))
-        .route("/api/security/cvs/sources/:id", delete(handle_security_delete_cvs_source))
-        .route("/api/security/cvs/import", post(handle_security_import_csv))
-        .route("/api/security/cvs/save", post(handle_security_save_csv))
-        .route("/api/security/scan/tasks", get(handle_security_scan_tasks).post(handle_security_create_scan_task))
-        .route("/api/security/scan/tasks/:id", delete(handle_security_delete_scan_task))
-        .route("/api/security/scan/tasks/:id/run", post(handle_security_run_scan))
-        .route("/api/security/scan/tasks/:id/results", get(handle_security_scan_results))
         .route("/apiman/workspaces", get(handle_apiman_workspaces).post(handle_apiman_create_workspace))
         .route("/apiman/workspaces/:id", put(handle_apiman_update_workspace).delete(handle_apiman_delete_workspace))
         .route("/apiman/workspaces/:ws_id/nodes", get(handle_apiman_nodes))
@@ -2717,6 +2733,9 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/api/apiman/nodes/:id/move", post(handle_apiman_move_node))
         .route("/api/apiman/requests/:node_id", get(handle_apiman_get_request).put(handle_apiman_save_request))
         .route("/api/apiman/requests/:node_id/send", post(handle_apiman_send_request))
+        .route("/api/apiman/requests/:node_id/history", get(handle_apiman_response_history))
+        .route("/api/apiman/variables/:ws_id", get(handle_apiman_variables).post(handle_apiman_upsert_variable))
+        .route("/api/apiman/variables/:ws_id/:key", delete(handle_apiman_delete_variable))
         .route("/api/nginx/env", get(handle_nginx_env).post(handle_nginx_save_env))
         .route("/api/nginx/sites", get(handle_nginx_sites).post(handle_nginx_create_site))
         .route("/api/nginx/sites/scan", get(handle_nginx_scan_sites))
@@ -2730,16 +2749,44 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/api/nginx/config/preview", get(handle_nginx_config_preview))
         .route("/api/nginx/test", post(handle_nginx_test))
         .route("/api/nginx/reload", post(handle_nginx_reload))
-        .route("/web/*path", get(handle_web_assets))
-        .route("/health", get(handle_health))
-        .route("/activity", get(handle_activity))
-        .route("/platform", get(handle_platform))
-        .route("/interfaces", get(handle_interfaces))
-        .route("/log", post(handle_log))
-        .route("/favicon.ico", get(handle_favicon))
-        .route("/", get(handle_index))
-        .route("/docs/*path", get(handle_docs))
-        .layer(auth_layer);
+        .route("/api/security/cvs/sources", get(handle_security_cvs_sources).post(handle_security_save_cvs_source))
+        .route("/api/security/cvs/sources/:id", delete(handle_security_delete_cvs_source))
+        .route("/api/security/cvs/import", post(handle_security_import_csv))
+        .route("/api/security/cvs/save", post(handle_security_save_csv))
+        .route("/api/security/scan/tasks", get(handle_security_scan_tasks).post(handle_security_create_scan_task))
+        .route("/api/security/scan/tasks/:id", delete(handle_security_delete_scan_task))
+        .route("/api/security/scan/tasks/:id/run", post(handle_security_run_scan))
+        .route("/api/security/scan/tasks/:id/results", get(handle_security_scan_results))
+        .route("/api/security/scan/tasks/:id/correlate", get(handle_security_correlate))
+        .route("/tools/log/list", get(handle_log_list))
+        .route("/tools/log/tail", post(handle_log_tail))
+        .route("/tools/log/content", post(handle_log_content))
+        .route("/tools/ping", post(handle_tools_ping))
+        .route("/tools/ping-classc", post(handle_tools_ping_classc))
+        .route("/tools/lsof", post(handle_tools_lsof))
+        .route("/tools/traceroute", post(handle_tools_traceroute))
+        .route("/tools/nslookup", post(handle_tools_nslookup))
+        .route("/tools/ip-location", post(handle_tools_ip_location))
+        .route("/tools/netstat", post(handle_tools_netstat))
+        .route("/api/tools/log/list", get(handle_log_list))
+        .route("/api/tools/log/tail", post(handle_log_tail))
+        .route("/api/tools/log/content", post(handle_log_content))
+        .route("/api/tools/ping", post(handle_tools_ping))
+        .route("/api/tools/ping-classc", post(handle_tools_ping_classc))
+        .route("/api/tools/lsof", post(handle_tools_lsof))
+        .route("/api/tools/traceroute", post(handle_tools_traceroute))
+        .route("/api/tools/nslookup", post(handle_tools_nslookup))
+        .route("/api/tools/ip-location", post(handle_tools_ip_location))
+        .route("/api/tools/netstat", post(handle_tools_netstat));
+
+    // Auth layer applied to both web and API routes
+    let auth_layer = middleware::from_fn_with_state(state.clone(), auth_middleware);
+    let auth_web = web_routes.layer(auth_layer.clone());
+    let auth_api = api_routes.layer(auth_layer.clone());
+
+    // Prefixed API routes
+    let prefixed_api = Router::new()
+        .nest("/miitai-fwm/0.52", auth_api.clone());
 
     // WebSocket endpoints: browsers don't send Basic Auth headers on WS upgrade,
     // so these must bypass the auth middleware.
@@ -2749,6 +2796,8 @@ pub fn build_router(state: Arc<AppState>) -> Router {
 
     Router::new()
         .merge(ws_routes)
-        .merge(auth_routes)
+        .merge(auth_web)
+        .merge(auth_api)
+        .merge(prefixed_api)
         .with_state(state)
 }

@@ -112,6 +112,51 @@ pub async fn ip_location(ip: &str) -> Value {
     }
 }
 
+pub async fn ping_classc(network: &str, count: u32, timeout_secs: u32) -> Value {
+    // Parse network prefix (e.g. "192.168.1" or "192.168.1.0")
+    let prefix = network.trim_end_matches('0').trim_end_matches('.');
+
+    let semaphore = std::sync::Arc::new(tokio::sync::Semaphore::new(50)); // max 50 concurrent
+    let mut handles = Vec::new();
+
+    for i in 1..=254 {
+        let ip = format!("{}.{}", prefix, i);
+        let sem = semaphore.clone();
+        handles.push(tokio::spawn(async move {
+            let _permit = sem.acquire().await.unwrap();
+            let start = std::time::Instant::now();
+            let platform = std::env::consts::OS;
+            let args: Vec<String> = match platform {
+                "windows" => vec!["-n".to_string(), "1".to_string(), "-w".to_string(), "3000".to_string(), ip.clone()],
+                "macos" => vec!["-c".to_string(), "1".to_string(), "-t".to_string(), "3".to_string(), ip.clone()],
+                _ => vec!["-c".to_string(), "1".to_string(), "-W".to_string(), "3".to_string(), ip.clone()],
+            };
+            let arg_refs: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+            let reachable = tokio::process::Command::new("ping")
+                .args(&arg_refs)
+                .output()
+                .await
+                .map(|o| o.status.success())
+                .unwrap_or(false);
+            let elapsed = start.elapsed().as_millis() as i64;
+            json!({"ip": ip, "reachable": reachable, "elapsed_ms": elapsed})
+        }));
+    }
+
+    let mut results: Vec<Value> = Vec::new();
+    for handle in handles {
+        if let Ok(result) = handle.await {
+            results.push(result);
+        }
+    }
+    results.sort_by(|a, b| {
+        let a_ip = a["ip"].as_str().unwrap_or("");
+        let b_ip = b["ip"].as_str().unwrap_or("");
+        a_ip.cmp(b_ip)
+    });
+    json!({"results": results, "total": results.len(), "reachable": results.iter().filter(|r| r["reachable"].as_bool().unwrap_or(false)).count()})
+}
+
 pub async fn netstat(platform: &str) -> Value {
     let (cmd, args): (&str, Vec<&str>) = match platform {
         "windows" => ("netstat", vec!["-ano"]),
