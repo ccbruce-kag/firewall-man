@@ -23,6 +23,9 @@ base64 = "0.22"
 chrono = "0.4"
 rusqlite = { version = "0.32", features = ["bundled"] }
 pcap = "2"
+snmp2 = "0.4"
+ssh2 = "0.9"
+smb2 = "0.11"
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.29", features = ["fs", "term", "process", "signal", "ioctl"] }

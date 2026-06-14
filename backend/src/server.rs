@@ -1,4 +1,5 @@
 use crate::ai;
+use crate::bapi_log;
 use crate::db::{
     AppDb, HaproxyBackendServerUpdate, HaproxyLoadBalancerUpdate, JuniperDeviceUpdate,
 };
@@ -1381,6 +1382,7 @@ async fn handle_tools_pcap_capture(Form(form): Form<PcapCaptureForm>) -> Json<Va
     let filter = form.filter.unwrap_or_default();
     let count = form.count.unwrap_or(50);
     let timeout = form.timeout.unwrap_or(10);
+    bapi_log!("info", "pcap.capture", &format!("iface={}, filter={}, count={}, timeout={}", interface, filter, count, timeout));
 
     let iface = interface.clone();
     let flt = filter.clone();
@@ -1389,11 +1391,233 @@ async fn handle_tools_pcap_capture(Form(form): Form<PcapCaptureForm>) -> Json<Va
     })
     .await;
 
+    match &result {
+        Ok(Ok(packets)) => bapi_log!("info", "pcap.capture", &format!("{} packets captured", packets.len()), ""),
+        Ok(Err(e)) => bapi_log!("error", "pcap.capture", e, ""),
+        Err(e) => bapi_log!("error", "pcap.capture", &format!("task failed: {}", e), ""),
+    }
     match result {
         Ok(Ok(packets)) => Json(json!({"code": 0, "data": packets, "count": packets.len()})),
         Ok(Err(e)) => Json(json!({"code": 1, "msg": e})),
         Err(e) => Json(json!({"code": 1, "msg": format!("task failed: {}", e)})),
     }
+}
+
+#[derive(Deserialize)]
+struct SnmpRequestForm {
+    host: Option<String>,
+    port: Option<u16>,
+    community: Option<String>,
+    oid: Option<String>,
+}
+
+async fn handle_snmp_get(Form(form): Form<SnmpRequestForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(161);
+    let community = form.community.unwrap_or_else(|| "public".into());
+    let oid = form.oid.unwrap_or_else(|| "1.3.6.1.2.1.1.1.0".into());
+    bapi_log!("info", "snmp.get", &format!("host={}:{}, community={}, oid={}", host, port, community, oid));
+    let h = host.clone(); let c = community.clone(); let o = oid.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        crate::snmp::snmp_get(&h, port, &c, &o)
+    }).await;
+    match &result {
+        Ok(Ok(data)) => bapi_log!("info", "snmp.get", &format!("ok, {} results", data["results"].as_array().map(|a| a.len()).unwrap_or(0)), ""),
+        Ok(Err(e)) => bapi_log!("error", "snmp.get", e, ""),
+        Err(e) => bapi_log!("error", "snmp.get", &format!("task failed: {}", e), ""),
+    }
+    match result {
+        Ok(Ok(data)) => Json(json!({"code": 0, "data": data})),
+        Ok(Err(e)) => Json(json!({"code": 1, "msg": e})),
+        Err(e) => Json(json!({"code": 1, "msg": format!("task failed: {}", e)})),
+    }
+}
+
+async fn handle_snmp_walk(Form(form): Form<SnmpRequestForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(161);
+    let community = form.community.unwrap_or_else(|| "public".into());
+    let oid = form.oid.unwrap_or_else(|| "1.3.6.1.2.1.1".into());
+    bapi_log!("info", "snmp.walk", &format!("host={}:{}, community={}, oid={}", host, port, community, oid));
+    let h = host.clone(); let c = community.clone(); let o = oid.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        crate::snmp::snmp_walk(&h, port, &c, &o)
+    }).await;
+    match &result {
+        Ok(Ok(data)) => bapi_log!("info", "snmp.walk", &format!("ok, {} results", data["results"].as_array().map(|a| a.len()).unwrap_or(0)), ""),
+        Ok(Err(e)) => bapi_log!("error", "snmp.walk", e, ""),
+        Err(e) => bapi_log!("error", "snmp.walk", &format!("task failed: {}", e), ""),
+    }
+    match result {
+        Ok(Ok(data)) => Json(json!({"code": 0, "data": data})),
+        Ok(Err(e)) => Json(json!({"code": 1, "msg": e})),
+        Err(e) => Json(json!({"code": 1, "msg": format!("task failed: {}", e)})),
+    }
+}
+
+#[derive(Deserialize)]
+struct SambaConnectForm {
+    host: Option<String>,
+    port: Option<u16>,
+    username: Option<String>,
+    password: Option<String>,
+    share: Option<String>,
+    path: Option<String>,
+}
+
+async fn handle_samba_shares(Form(form): Form<SambaConnectForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(445);
+    let username = form.username.unwrap_or_else(|| "guest".into());
+    let password = form.password.unwrap_or_default();
+    Json(crate::samba::list_shares(&host, port, &username, &password).await)
+}
+
+async fn handle_samba_ls(Form(form): Form<SambaConnectForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(445);
+    let username = form.username.unwrap_or_else(|| "guest".into());
+    let password = form.password.unwrap_or_default();
+    let share = form.share.unwrap_or_else(|| "IPC$".into());
+    let path = form.path.unwrap_or_default();
+    bapi_log!("info", "samba.ls", &format!("host={}:{}, share={}, path={}", host, port, share, path));
+    Json(crate::samba::list_directory(&host, port, &username, &password, &share, &path).await)
+}
+
+async fn handle_samba_download(Form(form): Form<SambaConnectForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(445);
+    let username = form.username.unwrap_or_else(|| "guest".into());
+    let password = form.password.unwrap_or_default();
+    let share = form.share.unwrap_or_else(|| "IPC$".into());
+    let path = form.path.unwrap_or_default();
+    bapi_log!("info", "samba.download", &format!("host={}:{}, share={}, path={}", host, port, share, path));
+    let result = crate::samba::download_file(&host, port, &username, &password, &share, &path).await;
+    match &result {
+        Ok(data) => bapi_log!("info", "samba.download", &format!("ok, {} bytes", data.len()), ""),
+        Err(e) => bapi_log!("error", "samba.download", e, ""),
+    }
+    match result {
+        Ok(data) => Json(json!({"code": 0, "data": base64::encode(&data)})),
+        Err(e) => Json(json!({"code": 1, "msg": e})),
+    }
+}
+
+#[derive(Deserialize)]
+struct SambaUploadForm {
+    host: Option<String>,
+    port: Option<u16>,
+    username: Option<String>,
+    password: Option<String>,
+    share: Option<String>,
+    path: Option<String>,
+    content: Option<String>,
+    filename: Option<String>,
+}
+
+async fn handle_samba_upload(Form(form): Form<SambaUploadForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(445);
+    let username = form.username.unwrap_or_else(|| "guest".into());
+    let password = form.password.unwrap_or_default();
+    let share = form.share.unwrap_or_else(|| "IPC$".into());
+    let filename = form.filename.unwrap_or_else(|| "upload".into());
+    let path = format!("{}/{}", form.path.unwrap_or_default().trim_end_matches('/'), filename);
+    let content_b64 = form.content.unwrap_or_default();
+    let data = match base64::decode(&content_b64) {
+        Ok(d) => d,
+        Err(e) => return Json(json!({"code": 1, "msg": format!("base64 decode failed: {}", e)})),
+    };
+    bapi_log!("info", "samba.upload", &format!("host={}:{}, share={}, path={}, size={}", host, port, share, path, data.len()));
+    Json(crate::samba::upload_file(&host, port, &username, &password, &share, &path, &data).await)
+}
+
+async fn handle_samba_mkdir(Form(form): Form<SambaConnectForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(445);
+    let username = form.username.unwrap_or_else(|| "guest".into());
+    let password = form.password.unwrap_or_default();
+    let share = form.share.unwrap_or_else(|| "IPC$".into());
+    let path = form.path.unwrap_or_default();
+    bapi_log!("info", "samba.mkdir", &format!("host={}:{}, share={}, path={}", host, port, share, path));
+    Json(crate::samba::create_directory(&host, port, &username, &password, &share, &path).await)
+}
+
+async fn handle_samba_rm(Form(form): Form<SambaConnectForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(445);
+    let username = form.username.unwrap_or_else(|| "guest".into());
+    let password = form.password.unwrap_or_default();
+    let share = form.share.unwrap_or_else(|| "IPC$".into());
+    let path = form.path.unwrap_or_default();
+    bapi_log!("info", "samba.rm", &format!("host={}:{}, share={}, path={}", host, port, share, path));
+    Json(crate::samba::remove_file(&host, port, &username, &password, &share, &path).await)
+}
+
+#[derive(Deserialize)]
+struct SftpForm {
+    host: Option<String>,
+    port: Option<u16>,
+    username: Option<String>,
+    password: Option<String>,
+    path: Option<String>,
+    content: Option<String>,
+    filename: Option<String>,
+}
+
+async fn handle_sftp_ls(Form(form): Form<SftpForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(22);
+    let username = form.username.unwrap_or_else(|| "root".into());
+    let password = form.password.unwrap_or_default();
+    let path = form.path.unwrap_or_else(|| "/".into());
+    bapi_log!("info", "sftp.ls", &format!("host={}:{}, user={}, path={}", host, port, username, path));
+    Json(crate::sftp::list_directory(&host, port, &username, &password, &path).await)
+}
+
+async fn handle_sftp_download(Form(form): Form<SftpForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(22);
+    let username = form.username.unwrap_or_else(|| "root".into());
+    let password = form.password.unwrap_or_default();
+    let path = form.path.unwrap_or_default();
+    bapi_log!("info", "sftp.download", &format!("host={}:{}, user={}, path={}", host, port, username, path));
+    let result = crate::sftp::download_file(&host, port, &username, &password, &path).await;
+    match result {
+        Ok(data) => Json(json!({"code": 0, "data": base64::encode(&data)})),
+        Err(e) => Json(json!({"code": 1, "msg": e})),
+    }
+}
+
+async fn handle_sftp_upload(Form(form): Form<SftpForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(22);
+    let username = form.username.unwrap_or_else(|| "root".into());
+    let password = form.password.unwrap_or_default();
+    let path = format!("{}/{}", form.path.unwrap_or_default().trim_end_matches('/'), form.filename.unwrap_or_else(|| "upload".into()));
+    let data = base64::decode(&form.content.unwrap_or_default()).unwrap_or_default();
+    bapi_log!("info", "sftp.upload", &format!("host={}:{}, user={}, path={}, size={}", host, port, username, path, data.len()));
+    Json(crate::sftp::upload_file(&host, port, &username, &password, &path, &data).await)
+}
+
+async fn handle_sftp_mkdir(Form(form): Form<SftpForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(22);
+    let username = form.username.unwrap_or_else(|| "root".into());
+    let password = form.password.unwrap_or_default();
+    let path = form.path.unwrap_or_default();
+    bapi_log!("info", "sftp.mkdir", &format!("host={}:{}, user={}, path={}", host, port, username, path));
+    Json(crate::sftp::create_directory(&host, port, &username, &password, &path).await)
+}
+
+async fn handle_sftp_rm(Form(form): Form<SftpForm>) -> Json<Value> {
+    let host = form.host.unwrap_or_else(|| "127.0.0.1".into());
+    let port = form.port.unwrap_or(22);
+    let username = form.username.unwrap_or_else(|| "root".into());
+    let password = form.password.unwrap_or_default();
+    let path = form.path.unwrap_or_default();
+    bapi_log!("info", "sftp.rm", &format!("host={}:{}, user={}, path={}", host, port, username, path));
+    Json(crate::sftp::remove_file(&host, port, &username, &password, &path).await)
 }
 
 // ---- Netplan Handlers ----
@@ -2637,6 +2861,11 @@ async fn handle_favicon() -> impl IntoResponse {
     StatusCode::OK
 }
 
+async fn handle_api_log() -> Json<Value> {
+    let entries = crate::logger::global().drain();
+    Json(json!({"code": 0, "data": entries}))
+}
+
 async fn handle_app_js() -> Response {
     embedded_asset_response("app.js")
 }
@@ -2671,6 +2900,7 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/platform", get(handle_platform))
         .route("/interfaces", get(handle_interfaces))
         .route("/log", post(handle_log))
+        .route("/log/api", get(handle_api_log))
         .route("/favicon.ico", get(handle_favicon))
         .route("/", get(handle_index))
         .route("/docs/*path", get(handle_docs));
@@ -2841,6 +3071,19 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/tools/netstat", post(handle_tools_netstat))
         .route("/tools/pcap/interfaces", get(handle_tools_pcap_interfaces))
         .route("/tools/pcap/capture", post(handle_tools_pcap_capture))
+        .route("/snmp/get", post(handle_snmp_get))
+        .route("/snmp/walk", post(handle_snmp_walk))
+        .route("/samba/shares", post(handle_samba_shares))
+        .route("/samba/ls", post(handle_samba_ls))
+        .route("/samba/download", post(handle_samba_download))
+        .route("/samba/upload", post(handle_samba_upload))
+        .route("/samba/mkdir", post(handle_samba_mkdir))
+        .route("/samba/rm", post(handle_samba_rm))
+        .route("/sftp/ls", post(handle_sftp_ls))
+        .route("/sftp/download", post(handle_sftp_download))
+        .route("/sftp/upload", post(handle_sftp_upload))
+        .route("/sftp/mkdir", post(handle_sftp_mkdir))
+        .route("/sftp/rm", post(handle_sftp_rm))
         .route("/api/tools/log/list", get(handle_log_list))
         .route("/api/tools/log/tail", post(handle_log_tail))
         .route("/api/tools/log/content", post(handle_log_content))
@@ -2852,7 +3095,20 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/api/tools/ip-location", post(handle_tools_ip_location))
         .route("/api/tools/netstat", post(handle_tools_netstat))
         .route("/api/tools/pcap/interfaces", get(handle_tools_pcap_interfaces))
-        .route("/api/tools/pcap/capture", post(handle_tools_pcap_capture));
+        .route("/api/tools/pcap/capture", post(handle_tools_pcap_capture))
+        .route("/api/snmp/get", post(handle_snmp_get))
+        .route("/api/snmp/walk", post(handle_snmp_walk))
+        .route("/api/samba/shares", post(handle_samba_shares))
+        .route("/api/samba/ls", post(handle_samba_ls))
+        .route("/api/samba/download", post(handle_samba_download))
+        .route("/api/samba/upload", post(handle_samba_upload))
+        .route("/api/samba/mkdir", post(handle_samba_mkdir))
+        .route("/api/samba/rm", post(handle_samba_rm))
+        .route("/api/sftp/ls", post(handle_sftp_ls))
+        .route("/api/sftp/download", post(handle_sftp_download))
+        .route("/api/sftp/upload", post(handle_sftp_upload))
+        .route("/api/sftp/mkdir", post(handle_sftp_mkdir))
+        .route("/api/sftp/rm", post(handle_sftp_rm));
 
     // Auth layer applied to both web and API routes
     let auth_layer = middleware::from_fn_with_state(state.clone(), auth_middleware);
@@ -2860,8 +3116,8 @@ pub fn build_router(state: Arc<AppState>) -> Router {
     let auth_api = api_routes.layer(auth_layer.clone());
 
     // Prefixed API routes
-    let prefixed_api = Router::new()
-        .nest("/miitai-fwm/0.52", auth_api.clone());
+    let prefixed_backend_api = Router::new()
+        .nest("/miitai-fwm/0.52/backend", auth_api.clone());
 
     // WebSocket endpoints: browsers don't send Basic Auth headers on WS upgrade,
     // so these must bypass the auth middleware.
@@ -2873,6 +3129,6 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .merge(ws_routes)
         .merge(auth_web)
         .merge(auth_api)
-        .merge(prefixed_api)
+        .merge(prefixed_backend_api)
         .with_state(state)
 }

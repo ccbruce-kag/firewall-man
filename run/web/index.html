@@ -52,7 +52,11 @@
           return;
         }
         var tabBar = document.getElementById('tabBar');
-        var view = document.getElementById(mode + 'View');
+        var viewMap = {
+          tables: 'firewallView'
+        };
+        var viewId = viewMap[mode] || mode + 'View';
+        var view = document.getElementById(viewId);
         if (!tabBar || !view) {
           console.warn('[fwm-menu] view not ready', mode);
           return;
@@ -124,7 +128,7 @@
       console.log('[fwm-menu] delegated fallback installed');
     })();
   </script>
-  <script type="module" crossorigin src="/assets/index-CTPQoa7K.js"></script>
+  <script type="module" crossorigin src="/assets/index-EKEBs8Um.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-hTIHPUHf.css">
 </head>
 <body>

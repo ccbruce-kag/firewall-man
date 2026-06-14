@@ -50,10 +50,10 @@ export default function Sidebar() {
             <div className="text-truncate" id="menuGroupNetLabel">網路工具</div>
           </a>
           <ul className="menu-sub">
-            <li className="menu-item active" id="menuTables">
-              <a href="#" className="menu-link" id="menuTablesLink">
+            <li className="menu-item active" id="menuFirewallMan">
+              <a href="#" className="menu-link" id="menuFirewallManLink">
                 <i className="menu-icon tf-icons bx bx-shield-quarter"></i>
-                <div className="text-truncate" id="menuTablesLabel">防火牆管理</div>
+                <div className="text-truncate" id="menuFirewallManLabel">防火牆管理</div>
               </a>
             </li>
             <li className="menu-item" id="menuHaproxy">
@@ -78,6 +78,30 @@ export default function Sidebar() {
               <a href="#" className="menu-link" id="menuNetplanLink">
                 <i className="menu-icon tf-icons bx bx-wifi"></i>
                 <div className="text-truncate" id="menuNetplanLabel">Netplan 設定</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuPcap">
+              <a href="#" className="menu-link" id="menuPcapLink">
+                <i className="menu-icon tf-icons bx bx-wifi"></i>
+                <div className="text-truncate" id="menuPcapLabel">PCAP</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuSnmp">
+              <a href="#" className="menu-link" id="menuSnmpLink">
+                <i className="menu-icon tf-icons bx bx-analyse"></i>
+                <div className="text-truncate" id="menuSnmpLabel">SNMP</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuSamba">
+              <a href="#" className="menu-link" id="menuSambaLink">
+                <i className="menu-icon tf-icons bx bx-folder"></i>
+                <div className="text-truncate" id="menuSambaLabel">Samba</div>
+              </a>
+            </li>
+            <li className="menu-item" id="menuSftp">
+              <a href="#" className="menu-link" id="menuSftpLink">
+                <i className="menu-icon tf-icons bx bx-folder"></i>
+                <div className="text-truncate" id="menuSftpLabel">SFTP</div>
               </a>
             </li>
           </ul>

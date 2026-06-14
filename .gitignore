@@ -13,3 +13,4 @@ backend/Cargo.lock
 
 # Build output
 firewall-man
+.private

@@ -2,11 +2,15 @@ import Sidebar from './Sidebar'
 import Navbar from './Navbar'
 import Logger from './Logger'
 import DashboardView from './views/DashboardView'
-import TablesView from './views/TablesView'
+import FirewallView from './views/FirewallView'
 import JuniperView from './views/JuniperView'
 import HaproxyView from './views/HaproxyView'
 import NginxView from './views/NginxView'
 import NetplanView from './views/NetplanView'
+import PcapView from './views/PcapView'
+import SambaView from './views/SambaView'
+import SftpView from './views/SftpView'
+import SnmpView from './views/SnmpView'
 import AiView from './views/AiView'
 import ShellView from './views/ShellView'
 import ToolsView from './views/ToolsView'
@@ -39,11 +43,15 @@ export default function Layout() {
                   </div>
                 </div>
                 <DashboardView />
-                <TablesView />
+                <FirewallView />
                 <JuniperView />
                 <HaproxyView />
                 <NginxView />
                 <NetplanView />
+                <PcapView />
+                <SambaView />
+                <SftpView />
+                <SnmpView />
                 <AiView />
                 <ShellView />
                 <ToolsView />

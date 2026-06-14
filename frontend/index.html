@@ -33,11 +33,15 @@
       }, true);
       var menuViews = {
         menuDashLink: ['dashboard', 'General Dashboard', 'bx-bar-chart-alt-2'],
-        menuTablesLink: ['tables', 'Tables', 'bx-shield-quarter'],
+        menuFirewallManLink: ['firewallMan', 'Tables', 'bx-shield-quarter'],
         menuJuniperLink: ['juniper', 'Juniper Settings', 'bx-network-chart'],
         menuHaproxyLink: ['haproxy', 'HAProxy Management', 'bx-transfer'],
         menuNginxLink: ['nginx', 'Nginx Management', 'bx-windows'],
         menuNetplanLink: ['netplan', 'Netplan Config', 'bx-wifi'],
+        menuPcapLink: ['pcap', 'PCAP', 'bx-wifi'],
+        menuSnmpLink: ['snmp', 'SNMP', 'bx-analyse'],
+        menuSambaLink: ['samba', 'Samba', 'bx-folder'],
+        menuSftpLink: ['sftp', 'SFTP', 'bx-folder'],
         menuSysLink: ['system', 'System', 'bx-desktop'],
         menuToolsLink: ['tools', 'Tools', 'bx-wrench'],
         menuShellLink: ['shell', 'Shell', 'bx-terminal'],
@@ -62,8 +66,8 @@
           pane.style.display = 'none';
         });
         [
-          'dashboard','tables','system','juniper','haproxy','nginx','netplan',
-          'apiman','dbman','security','tools','ai','shell'
+          'dashboard','firewallMan','system','juniper','haproxy','nginx','netplan',
+          'apiman','dbman','sftp','samba','snmp','pcap','security','tools','ai','shell'
         ].forEach(function (viewMode) {
           var el = document.getElementById(viewMode + 'View');
           if (el) el.style.display = 'none';

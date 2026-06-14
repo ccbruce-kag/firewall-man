@@ -134,6 +134,10 @@ var _orig_ready = $;
       };
       return map[mode] || 'bx-file';
     }
+    function viewId(mode) {
+      var map = { tables: 'firewallView' };
+      return map[mode] || (mode + 'View');
+    }
     function renderTabs() {
       var $bar = $('#tabBar').empty();
       tabState.tabs.forEach(function (t, i) {
@@ -154,7 +158,7 @@ var _orig_ready = $;
       var $pane = $('#' + paneId);
       if (!$pane.length) {
         // Find the original view element and wrap it in a tab pane
-        var $origView = $('#' + mode + 'View');
+        var $origView = $('#' + viewId(mode));
         if ($origView.length) {
           // Remove inline display:none from original view so pane visibility controls it
           if ($origView.css('display') === 'none') $origView.css('display', '');
@@ -194,10 +198,10 @@ var _orig_ready = $;
       var paneId = TAB_VIEW_PREFIX + mode;
       var $pane = $('#' + paneId);
       if ($pane.length) {
-        var $view = $pane.find('#' + mode + 'View');
+        var $view = $pane.find('#' + viewId(mode));
         if ($view.length) {
           $view.unwrap();
-          $view.css('display', '');
+          $view.css('display', 'none');
         }
         $pane.remove();
       }
@@ -3228,10 +3232,11 @@ var _orig_ready = $;
         $('#menuDash,#menuTables,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuSys,#menuTools,#menuShell,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
       }
       function hideAllViews() {
-        $('#dashboardView,#tablesView,#systemView,#juniperView,#haproxyView,#nginxView,#netplanView,#apimanView,#dbmanView,#securityView,#toolsView,#aiView,#shellView').hide();
+        $('#dashboardView,#firewallView,#systemView,#juniperView,#haproxyView,#nginxView,#netplanView,#apimanView,#dbmanView,#securityView,#toolsView,#aiView,#shellView').hide();
       }
       // ─── Dashboard view toggle & timer ───
       function switchView(mode) {
+        hideAllViews();
         destroyTerminal();
         if (wsAI) { try { wsAI.close(); } catch(e) {} wsAI = null; aiRunning = false; }
         $('.action-buttons').hide();

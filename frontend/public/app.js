@@ -109,7 +109,7 @@ var _orig_ready = $;
     function tabLabel(mode) {
       var lang = i18n[currentLang] || {};
       var map = {
-        tables: lang.tablesLabel || 'Tables',
+        firewallMan: lang.firewallManLabel || 'FirewallMan',
         dashboard: lang.dashLabel || 'General Dashboard',
         system: lang.systemLabel || 'System',
         shell: lang.shellLabel || 'Shell',
@@ -127,7 +127,7 @@ var _orig_ready = $;
     }
     function tabIcon(mode) {
       var map = {
-        tables: 'bx-shield-quarter', dashboard: 'bx-bar-chart-alt-2', system: 'bx-desktop',
+        firewallMan: 'bx-shield-quarter', dashboard: 'bx-bar-chart-alt-2', system: 'bx-desktop',
         shell: 'bx-terminal', ai: 'bx-bot', tools: 'bx-wrench', haproxy: 'bx-transfer',
         nginx: 'bx-windows', juniper: 'bx-network-chart', netplan: 'bx-wifi',
         apiman: 'bx-link', dbman: 'bx-data', security: 'bx-shield',
@@ -232,7 +232,7 @@ var _orig_ready = $;
         clearConfirmPrefix: "確認清除", allRulesSuffix: "所有規則？", chainRulesSuffix: " 鏈的所有規則？",
         allMetricsSuffix: "所有統計數據？", ruleMetricsPrefix: "第 ", ruleMetricsSuffix: " 條規則的統計數據？",
         ruleNumberPrefix: "第", ruleNumberSuffix: "條規則", clearEmptyPrompt: "確認清除用戶自定義的所有空鏈？",
-        menuGroupDash: "儀表板", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", tablesLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "工具集合",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
+        menuGroupDash: "儀表板", dashLabel: "一般性儀表板", menuGroupNet: "網路工具", firewallManLabel: "防火牆管理",         menuGroupSys: "系統工具", toolsLabel: "工具集合",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "資安",
         menuApiManNew: "新增工作區", menuDbManNew: "新增連線",
         menuSecurityCvs: "CVS 資料庫", menuSecurityScan: "網路掃描",
         menuGroupAI: "AI", menuGroupHelp: "協助", systemLabel: "系統現況", docLabel: "命令文件",
@@ -320,7 +320,7 @@ var _orig_ready = $;
         clearConfirmPrefix: "Confirm to clear", allRulesSuffix: "all rules?", chainRulesSuffix: " chain rules?",
         allMetricsSuffix: "all counters?", ruleMetricsPrefix: "Rule #", ruleMetricsSuffix: " counters?",
         ruleNumberPrefix: "Rule #", ruleNumberSuffix: "", clearEmptyPrompt: "Clear all empty custom chains?",
-        menuGroupDash: "Dashboard", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", tablesLabel: "Tables",         menuGroupSys: "System Tools", toolsLabel: "Tools",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
+        menuGroupDash: "Dashboard", dashLabel: "General Dashboard", menuGroupNet: "Network Tools", firewallManLabel: "FirewallMan",         menuGroupSys: "System Tools", toolsLabel: "Tools",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "Security",
         menuApiManNew: "New Workspace", menuDbManNew: "New Connection",
         menuSecurityCvs: "CVS Database", menuSecurityScan: "Network Scan",
         menuGroupAI: "AI", menuGroupHelp: "Help", systemLabel: "System", docLabel: "Command Reference",
@@ -407,7 +407,7 @@ var _orig_ready = $;
         clearConfirmPrefix: "確認", allRulesSuffix: "すべてのルールをクリアしますか？", chainRulesSuffix: " チェインの全ルールをクリアしますか？",
         allMetricsSuffix: "すべての統計データをクリアしますか？", ruleMetricsPrefix: "ルール #", ruleMetricsSuffix: " の統計データをクリアしますか？",
         ruleNumberPrefix: "ルール #", ruleNumberSuffix: "", clearEmptyPrompt: "空のカスタムチェインをすべて削除しますか？",
-        menuGroupDash: "ダッシュボード", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", tablesLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "ツール集",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
+        menuGroupDash: "ダッシュボード", dashLabel: "一般ダッシュボード", menuGroupNet: "ネットワークツール", firewallManLabel: "ファイアウォール管理",         menuGroupSys: "システムツール", toolsLabel: "ツール集",         menuGroupApiMan: "ApiMan", menuGroupDbMan: "DbMan", menuGroupSecurity: "セキュリティ",
         menuApiManNew: "新規ワークスペース", menuDbManNew: "新規接続",
         menuSecurityCvs: "CVS データベース", menuSecurityScan: "ネットワークスキャン",
         menuGroupAI: "AI", menuGroupHelp: "ヘルプ", systemLabel: "システム情報", docLabel: "コマンドリファレンス",
@@ -494,7 +494,7 @@ var _orig_ready = $;
       $('#menuDashLabel').text(lng.dashLabel || 'General Dashboard');
       $('#menuSysLabel').text(lng.systemLabel || 'System');
       $('#menuGroupNetLabel').text(lng.menuGroupNet || 'Network Tools');
-      $('#menuTablesLabel').text(lng.tablesLabel || 'Tables');
+      $('#menuFirewallManLabel').text(lng.firewallManLabel || 'FirewallMan');
       $('#menuHaproxyLabel').text(lng.haproxyLabel || 'HaProxy 管理');
       $('#menuNginxLabel').text(lng.nginxLabel || 'Nginx 管理');
       $('#menuNetplanLabel').text(lng.netplanLabel || 'Netplan 設定');
@@ -3191,6 +3191,8 @@ var _orig_ready = $;
         haproxy: function() { ensureHaproxyDefaults(); loadHaproxyStatus(); loadHaproxySaved(); },
         nginx: function() { loadNginxEnv(); },
         netplan: function() { loadNetplanInterfaces(); },
+        pcap: function() { pcapLoadInterfaces(); },
+        snmp: function() {},
         apiman: function() { renderApiManTree(); },
         dbman: function() { loadDbManConnections(); loadDbManSavedQueries(); },
         security: function() { loadSecurityCvsSources(); },
@@ -3206,12 +3208,12 @@ var _orig_ready = $;
           setTimeout(loadLogFiles, 100);
         },
         system: function() { loadSystemInfo(); },
-        tables: function() { $('.action-buttons').show(); loadListRule(currentTableName()); },
+        firewallMan: function() { $('.action-buttons').show(); loadListRule(currentTableName()); },
       };
       var viewMenuMap = {
-        dashboard: 'menuDash', tables: 'menuTables', juniper: 'menuJuniper',
+        dashboard: 'menuDash', firewallMan: 'menuFirewallMan', juniper: 'menuJuniper',
         haproxy: 'menuHaproxy', nginx: 'menuNginx', netplan: 'menuNetplan',
-        apiman: 'menuApiManNew', dbman: 'menuDbManNew', security: 'menuSecurityCvs',
+        pcap: 'menuPcap', snmp: 'menuSnmp', apiman: 'menuApiManNew', dbman: 'menuDbManNew', security: 'menuSecurityCvs',
         tools: 'menuTools', system: 'menuSys', shell: 'menuShell', ai: 'menuAI',
       };
       // ─── Rebuild dynamic menus ───
@@ -3225,10 +3227,10 @@ var _orig_ready = $;
       });
       $('#logClear').on('click', function () { logger.clear(); });
       function inactiveAllLeaf() {
-        $('#menuDash,#menuTables,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuSys,#menuTools,#menuShell,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
+        $('#menuDash,#menuFirewallMan,#menuJuniper,#menuHaproxy,#menuNginx,#menuNetplan,#menuPcap,#menuSnmp,#menuSys,#menuTools,#menuShell,#menuApiManNew,#menuDbManNew,#menuSecurityCvs,#menuSecurityScan,#menuAI,#menuDoc').removeClass('active');
       }
       function hideAllViews() {
-        $('#dashboardView,#tablesView,#systemView,#juniperView,#haproxyView,#nginxView,#netplanView,#apimanView,#dbmanView,#securityView,#toolsView,#aiView,#shellView').hide();
+        $('#dashboardView,#firewallManView,#systemView,#juniperView,#haproxyView,#nginxView,#netplanView,#pcapView,#snmpView,#apimanView,#dbmanView,#securityView,#toolsView,#aiView,#shellView').hide();
       }
       // ─── Dashboard view toggle & timer ───
       function switchView(mode) {
@@ -3254,7 +3256,7 @@ var _orig_ready = $;
           if (!link) return;
           var viewMap = {
             menuDashLink: 'dashboard',
-            menuTablesLink: 'tables',
+            menuFirewallManLink: 'firewallMan',
             menuJuniperLink: 'juniper',
             menuHaproxyLink: 'haproxy',
             menuNginxLink: 'nginx',
@@ -3281,7 +3283,7 @@ var _orig_ready = $;
       }
       console.log('[app.js] binding menu click handlers...');
       $('#menuDashLink').on('click', function (e) { console.log('[app.js] menuDashLink clicked'); e.preventDefault(); switchView('dashboard'); });
-      $('#menuTablesLink').on('click', function (e) { console.log('[app.js] menuTablesLink clicked'); e.preventDefault(); switchView('tables'); });
+      $('#menuFirewallManLink').on('click', function (e) { console.log('[app.js] menuFirewallManLink clicked'); e.preventDefault(); switchView('firewallMan'); });
       console.log('[app.js] menu click handlers bound, menuDashLink found:', !!$('#menuDashLink').length, 'tableTabs found:', !!$('#tableTabs').length);
       $('#menuJuniperLink').on('click', function (e) { e.preventDefault(); switchView('juniper'); });
       $('#menuHaproxyLink').on('click', function (e) { e.preventDefault(); switchView('haproxy'); });
@@ -3438,11 +3440,11 @@ var _orig_ready = $;
       }
       // ─── Load initial (only if no tabs restored) ───
       if (!tabState.tabs || tabState.tabs.length === 0) {
-        tabState.tabs.push({ id: 'tables' });
-        tabState.activeId = 'tables';
+        tabState.tabs.push({ id: 'firewallMan' });
+        tabState.activeId = 'firewallMan';
         saveTabs();
         renderTabs();
-        activateTabImpl('tables');
+        activateTabImpl('firewallMan');
         const initialTable = currentTableName();
         loadListRule(initialTable);
       }
@@ -4715,7 +4717,7 @@ var _orig_ready = $;
       var logRefreshTimer = null;
       var logCurrentPath = null;
       function loadLogFiles() {
-        $.get('/tools/log/list', function (res) {
+        $.get(toolsBase + '/log/list', function (res) {
           if (res.code !== 0) {
             logger.warn('日誌列表載入失敗', res.msg);
             return;
@@ -4737,7 +4739,7 @@ var _orig_ready = $;
         logCurrentPath = path;
         $('#toolsLogStatus').text('載入中...');
         logger.info('Log Tail 請求', path + ' (' + lines + ' 行)');
-        $.post('/tools/log/tail', { path: path, lines: lines }, function (res) {
+        $.post(toolsBase + '/log/tail', { path: path, lines: lines }, function (res) {
           if (res.code !== 0) {
             $('#toolsLogOutput').text('錯誤: ' + (res.msg || '?'));
             $('#toolsLogStatus').text('失敗');
@@ -4760,7 +4762,7 @@ var _orig_ready = $;
         stopLogRefresh();
         if (!logCurrentPath) return;
         logRefreshTimer = setInterval(function () {
-          $.post('/tools/log/tail', { path: logCurrentPath, lines: $('#toolsLogLines').val() || 50 }, function (res) {
+          $.post(toolsBase + '/log/tail', { path: logCurrentPath, lines: $('#toolsLogLines').val() || 50 }, function (res) {
             if (res.code === 0) {
               var autoScroll = false;
               var out = document.getElementById('toolsLogOutput');
@@ -4800,11 +4802,11 @@ var _orig_ready = $;
         stopLogRefresh();
       });
       // ─── Tools event handlers ───
+      var toolsBase = '/miitai-fwm/0.52/backend/api/tools';
       function toolsRun(endpoint, data, outputId) {
         var $out = $(outputId);
         $out.text('執行中...');
-        var base = '/tools';
-        $.post(base + '/' + endpoint, data, function (res) {
+        $.post(toolsBase + '/' + endpoint, data, function (res) {
           var text = res.output || res.error || JSON.stringify(res, null, 2);
           $out.text(text);
           logger.debug('工具執行結果: ' + endpoint, text.substring(0, 200));
@@ -4826,7 +4828,7 @@ var _orig_ready = $;
         var $status = $('#toolsPingCStatus').text('掃描中... 254 個 IP');
         $('#toolsPingCBtn').prop('disabled', true);
         logger.info('Ping Class C 開始', network);
-        $.post('/tools/ping-classc', { network: network }, function (res) {
+        $.post(toolsBase + '/ping-classc', { network: network }, function (res) {
           if (res.code !== 0) { $status.text('錯誤: ' + (res.msg || '')); $('#toolsPingCBtn').prop('disabled', false); return; }
           var data = res.data;
           var results = data.results || [];
@@ -4860,8 +4862,7 @@ var _orig_ready = $;
       });
       $('#toolsIpLocBtn').on('click', function () {
         var ip = $('#toolsIpLocIp').val().trim();
-        var base = '/tools';
-        $.post(base + '/ip-location', { ip: ip || '' }, function (res) {
+        $.post(toolsBase + '/ip-location', { ip: ip || '' }, function (res) {
           if (res.data) {
             var d = res.data;
             var status = d.status === 'success' ? '<span class="badge bg-label-success">成功</span>' : '<span class="badge bg-label-danger">失敗</span>';
@@ -4888,7 +4889,7 @@ var _orig_ready = $;
       $('#toolsNetstatBtn').on('click', function () {
         var $out = $('#toolsNetstatOutput');
         $out.text('執行中...');
-        $.post('/tools/netstat', {}, function (res) {
+        $.post(toolsBase + '/netstat', {}, function (res) {
           var text = res.output || res.error || JSON.stringify(res, null, 2);
           $out.text(text);
           if (res.command) $('.tools-netstat-cmd-badge').text('命令: ' + res.command);
@@ -4897,31 +4898,31 @@ var _orig_ready = $;
       });
       // ─── PCAP ───
       function pcapLoadInterfaces() {
-        $.get('/tools/pcap/interfaces', function (res) {
+        $.get(toolsBase + '/pcap/interfaces', function (res) {
           if (res.code !== 0) return;
-          var $sel = $('#toolsPcapInterface').empty().append('<option value="">-- 選擇介面 --</option>');
+          var $sel = $('#pcapInterface').empty().append('<option value="">-- 選擇介面 --</option>');
           (res.data || []).forEach(function (iface) {
             $sel.append('<option value="' + iface.name + '">' + iface.name + (iface.description ? ' (' + iface.description + ')' : '') + '</option>');
           });
         });
       }
       var pcapPackets = [];
-      $('#toolsPcapStartBtn').on('click', function () {
-        var iface = $('#toolsPcapInterface').val();
+      $('#pcapStartBtn').on('click', function () {
+        var iface = $('#pcapInterface').val();
         if (!iface) { layer.msg('請選擇網路介面', { icon: 2 }); return; }
-        var filter = $('#toolsPcapFilter').val().trim();
-        var count = parseInt($('#toolsPcapCount').val()) || 50;
-        var timeout = parseInt($('#toolsPcapTimeout').val()) || 10;
-        $('#toolsPcapStatus').text('擷取中...').removeClass('text-muted').addClass('text-primary');
-        $('#toolsPcapStartBtn').prop('disabled', true);
-        $('#toolsPcapTbody').empty();
-        $('#toolsPcapHex').hide().text('');
+        var filter = $('#pcapFilter').val().trim();
+        var count = parseInt($('#pcapCount').val()) || 50;
+        var timeout = parseInt($('#pcapTimeout').val()) || 10;
+        $('#pcapStatus').text('擷取中...').removeClass('text-muted').addClass('text-primary');
+        $('#pcapStartBtn').prop('disabled', true);
+        $('#pcapTbody').empty();
+        $('#pcapHex').hide().text('');
         pcapPackets = [];
-        $.post('/tools/pcap/capture', { interface: iface, filter: filter, count: count, timeout: timeout }, function (res) {
-          $('#toolsPcapStartBtn').prop('disabled', false);
-          if (res.code !== 0) { $('#toolsPcapStatus').text('錯誤: ' + res.msg).removeClass('text-primary').addClass('text-danger'); return; }
+        $.post(toolsBase + '/pcap/capture', { interface: iface, filter: filter, count: count, timeout: timeout }, function (res) {
+          $('#pcapStartBtn').prop('disabled', false);
+          if (res.code !== 0) { $('#pcapStatus').text('錯誤: ' + res.msg).removeClass('text-primary').addClass('text-danger'); return; }
           pcapPackets = res.data || [];
-          var $tbody = $('#toolsPcapTbody');
+          var $tbody = $('#pcapTbody');
           (pcapPackets).forEach(function (pkt) {
             $tbody.append('<tr class="pcap-row" data-idx="' + pkt.index + '" style="cursor:pointer">' +
               '<td>' + pkt.index + '</td>' +
@@ -4932,27 +4933,27 @@ var _orig_ready = $;
               '<td>' + pkt.len + '</td>' +
               '<td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(pkt.info) + '</td></tr>');
           });
-          $('#toolsPcapStatus').text('完成: ' + pcapPackets.length + ' 個封包').removeClass('text-primary').addClass('text-success');
+          $('#pcapStatus').text('完成: ' + pcapPackets.length + ' 個封包').removeClass('text-primary').addClass('text-success');
           logger.info('PCAP 擷取完成', iface + ' ' + pcapPackets.length + ' packets');
         }, 'json').fail(function () {
-          $('#toolsPcapStartBtn').prop('disabled', false);
-          $('#toolsPcapStatus').text('請求失敗').removeClass('text-primary').addClass('text-danger');
+          $('#pcapStartBtn').prop('disabled', false);
+          $('#pcapStatus').text('請求失敗').removeClass('text-primary').addClass('text-danger');
         });
       });
       $(document).on('click', '.pcap-row', function () {
         var idx = $(this).data('idx');
         var pkt = pcapPackets.find(function (p) { return p.index === idx; });
-        if (!pkt || !pkt.hex) { $('#toolsPcapHex').hide(); return; }
+        if (!pkt || !pkt.hex) { $('#pcapHex').hide(); return; }
         $('.pcap-row').removeClass('table-active');
         $(this).addClass('table-active');
-        $('#toolsPcapHex').text('Packet #' + pkt.index + ' (' + pkt.proto + ', ' + pkt.len + ' bytes)\n' +
+        $('#pcapHex').text('Packet #' + pkt.index + ' (' + pkt.proto + ', ' + pkt.len + ' bytes)\n' +
           pkt.src + ' → ' + pkt.dst + '\n' + pkt.info + '\n\n' + pkt.hex).show();
       });
-      $('#toolsPcapClearBtn').on('click', function () {
-        $('#toolsPcapTbody').empty();
-        $('#toolsPcapHex').hide().text('');
+      $('#pcapClearBtn').on('click', function () {
+        $('#pcapTbody').empty();
+        $('#pcapHex').hide().text('');
         pcapPackets = [];
-        $('#toolsPcapStatus').text('').removeClass('text-success text-danger text-primary');
+        $('#pcapStatus').text('').removeClass('text-success text-danger text-primary');
       });
       function protoColor(proto) {
         var p = (proto || '').toUpperCase();
@@ -4962,15 +4963,6 @@ var _orig_ready = $;
         if (p === 'ARP') return '#6f42c1';
         return '#6c757d';
       }
-      var _origToolsActivator = viewActivators.tools;
-      viewActivators.tools = function() {
-        if (_origToolsActivator) _origToolsActivator();
-        setTimeout(pcapLoadInterfaces, 200);
-      };
-      $(document).on('shown.bs.tab', '#toolsTabs .nav-link', function () {
-        var target = $(this).attr('data-bs-target');
-        if (target === '#toolsPcapPane') pcapLoadInterfaces();
-      });
       $(document).on('shown.bs.tab', '#nginxTabs .nav-link', function () {
         var target = $(this).attr('data-bs-target');
         if (target === '#nginxEnvPane') loadNginxEnv();

@@ -1,6 +1,6 @@
-export default function TablesView() {
+export default function FirewallView() {
   return (
-    <div id="tablesView">
+    <div id="firewallManView">
       <div className="row" style={{ paddingRight: 145 }}>
         <div className="col-12">
           <ul className="nav nav-tabs nav-fill mb-3 iptables-table" id="tableTabs" role="tablist">
